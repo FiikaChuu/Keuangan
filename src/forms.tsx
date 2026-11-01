@@ -14,9 +14,10 @@ import {
   Download,
   Trash2,
   ArrowLeftRight,
+  Pencil,
 } from 'lucide-react';
 import type { Store, Transaction, Account, Goal } from './domain';
-import { categories, providers, today, money, balances, validateTransaction } from './domain';
+import { categories, providers, today, money, balances, replaceTransaction } from './domain';
 import {
   extractReceipt,
   parseReceipt,
@@ -25,7 +26,7 @@ import {
   readReceipt,
   deleteReceipt,
 } from './receipts';
-import { EmptyState, ProviderMark } from './ui';
+import { EmptyState, ProviderMark, CategoryPicker } from './ui';
 
 type Save = (next: Store) => boolean;
 export function TransactionForm({
@@ -35,12 +36,14 @@ export function TransactionForm({
   mode = 'manual',
   defaults = {},
   onAccount,
+  editingId,
 }: {
   store: Store;
   save: Save;
   close: () => void;
   mode?: 'manual' | 'receipt';
   defaults?: Partial<Transaction>;
+  editingId?: string;
   onAccount: () => void;
 }) {
   const [tab, setTab] = useState(mode);
@@ -54,12 +57,16 @@ export function TransactionForm({
         : ''),
   );
   const [toId, setToId] = useState(defaults.toId ?? '');
-  const [date, setDate] = useState(today());
-  const [category, setCategory] = useState('Makanan & minuman');
-  const [source, setSource] = useState('');
-  const [fee, setFee] = useState('');
-  const [note, setNote] = useState('');
-  const [reference, setReference] = useState('');
+  const [date, setDate] = useState(defaults.date ?? today());
+  const [category, setCategory] = useState(
+    defaults.category && categories.includes(defaults.category)
+      ? defaults.category
+      : 'Makanan & minuman',
+  );
+  const [source, setSource] = useState(defaults.source ?? '');
+  const [fee, setFee] = useState(defaults.fee ? String(defaults.fee) : '');
+  const [note, setNote] = useState(defaults.note ?? '');
+  const [reference, setReference] = useState(defaults.reference ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [hash, setHash] = useState('');
   const [busy, setBusy] = useState(false);
@@ -98,7 +105,7 @@ export function TransactionForm({
     setFile(file);
     try {
       const fingerprint = await hashFile(file);
-      if (store.transactions.some((t) => t.receiptHash === fingerprint)) {
+      if (store.transactions.some((t) => t.id !== editingId && t.receiptHash === fingerprint)) {
         setFile(null);
         throw new Error('Bukti ini sudah tercatat. Buka riwayat untuk melihat transaksinya.');
       }
@@ -140,7 +147,7 @@ export function TransactionForm({
     e.preventDefault();
     setError('');
     const tx: Transaction = {
-      id: crypto.randomUUID(),
+      id: editingId ?? crypto.randomUUID(),
       kind,
       title: title.trim(),
       amount: Number(amount),
@@ -152,12 +159,12 @@ export function TransactionForm({
       source: kind === 'income' ? source.trim() : '',
       note: note.trim(),
       reference: reference.trim() || undefined,
-      receiptId: file ? crypto.randomUUID() : undefined,
-      receiptHash: file && hash ? hash : undefined,
+      receiptId: file ? crypto.randomUUID() : defaults.receiptId,
+      receiptHash: file && hash ? hash : defaults.receiptHash,
     };
-    const invalid = validateTransaction(tx, store);
-    if (invalid) {
-      setError(invalid);
+    const result = replaceTransaction(store, tx, editingId);
+    if (result.error || !result.data) {
+      setError(result.error);
       return;
     }
     if (file && !hash) {
@@ -167,8 +174,11 @@ export function TransactionForm({
     setSaving(true);
     try {
       if (file && tx.receiptId) await saveReceipt(tx.receiptId, file);
-      if (save({ ...store, transactions: [tx, ...store.transactions] })) close();
-      else if (tx.receiptId) await deleteReceipt(tx.receiptId);
+      if (save(result.data)) {
+        close();
+        if (file && defaults.receiptId)
+          await deleteReceipt(defaults.receiptId).catch(() => undefined);
+      } else if (file && tx.receiptId) await deleteReceipt(tx.receiptId);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Transaksi belum tersimpan. Coba lagi.');
     } finally {
@@ -190,6 +200,15 @@ export function TransactionForm({
     );
   return (
     <form onSubmit={submit} className="form-stack">
+      {editingId && defaults.receiptId && !file && (
+        <div className="info-note">
+          <Paperclip size={17} />
+          <span>
+            Bukti asli tetap tersimpan saat detail transaksi diubah. Unggah bukti baru jika ingin
+            menggantinya.
+          </span>
+        </div>
+      )}
       <div className="form-tabs">
         <button
           type="button"
@@ -304,22 +323,17 @@ export function TransactionForm({
           </button>
         ))}
       </div>
-      <label>
-        Nama transaksi
-        <input
-          required
-          maxLength={100}
-          placeholder={
-            kind === 'income'
-              ? 'Mis. Project desain selesai'
-              : kind === 'transfer'
-                ? 'Mis. Untuk masa depan kita'
-                : 'Mis. Makan siang atau paket data'
-          }
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </label>
+      {kind === 'expense' && (
+        <div className="category-form-field">
+          <span className="field-label">Kategori</span>
+          <CategoryPicker value={category} onChange={setCategory} quick />
+          {category === 'Tarik tunai' && (
+            <small className="field-hint">
+              Dihitung sebagai pengeluaran. Tidak menambah dompet tunai.
+            </small>
+          )}
+        </div>
+      )}
       <div className="form-grid">
         <label>
           Nominal (Rp)
@@ -346,6 +360,22 @@ export function TransactionForm({
           />
         </label>
       </div>
+      <label>
+        Nama transaksi
+        <input
+          required
+          maxLength={100}
+          placeholder={
+            kind === 'income'
+              ? 'Mis. Project desain selesai'
+              : kind === 'transfer'
+                ? 'Mis. Untuk masa depan kita'
+                : 'Mis. Makan siang atau paket data'
+          }
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
       <label>
         {kind === 'income' ? 'Masuk ke rekening' : 'Dari rekening'}
         <select value={accountId} required onChange={(e) => setAccountId(e.target.value)}>
@@ -394,61 +424,59 @@ export function TransactionForm({
             Tidak harus rutin. Catat saat uang benar-benar diterima.
           </small>
         </label>
-      ) : (
-        <label>
-          Kategori
-          <select
-            aria-label="Kategori"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-          {category === 'Tarik tunai' && (
-            <small className="field-hint">
-              Dihitung sebagai pengeluaran. Tidak menambah dompet tunai.
-            </small>
-          )}
-        </label>
-      )}
-      <div className="form-grid">
-        {kind !== 'income' && (
+      ) : null}
+      <details
+        className="optional-fields"
+        open={
+          kind === 'transfer' ||
+          !!defaults.fee ||
+          !!defaults.note ||
+          !!defaults.reference ||
+          !!reference
+        }
+      >
+        <summary>
+          Detail tambahan <span>Biaya, referensi, dan catatan</span>
+        </summary>
+        <div className="optional-fields-content">
+          <div className="form-grid">
+            {kind !== 'income' && (
+              <label>
+                Biaya admin (opsional)
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="1000000000"
+                  step="1"
+                  placeholder="0"
+                  value={fee}
+                  onChange={(e) => setFee(e.target.value)}
+                />
+              </label>
+            )}
+            <label>
+              No. referensi (opsional)
+              <input
+                maxLength={100}
+                value={reference}
+                placeholder="Untuk cek duplikat"
+                onChange={(e) => setReference(e.target.value)}
+              />
+            </label>
+          </div>
           <label>
-            Biaya admin (opsional)
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              max="1000000000"
-              step="1"
-              placeholder="0"
-              value={fee}
-              onChange={(e) => setFee(e.target.value)}
+            Catatan (opsional)
+            <textarea
+              maxLength={2000}
+              rows={2}
+              placeholder="Detail kecil yang ingin kamu ingat…"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
             />
           </label>
-        )}
-        <label>
-          No. referensi (opsional)
-          <input
-            maxLength={100}
-            value={reference}
-            placeholder="Untuk cek duplikat"
-            onChange={(e) => setReference(e.target.value)}
-          />
-        </label>
-      </div>
-      <label>
-        Catatan (opsional)
-        <textarea
-          maxLength={2000}
-          rows={2}
-          placeholder="Detail kecil yang ingin kamu ingat…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </label>
+        </div>
+      </details>
       {error && (
         <p className="form-error" role="alert">
           {error}
@@ -684,10 +712,12 @@ export function TransactionDetail({
   transaction: t,
   store,
   onDelete,
+  onEdit,
 }: {
   transaction: Transaction;
   store: Store;
   onDelete: () => void;
+  onEdit: () => void;
 }) {
   const [url, setUrl] = useState('');
   const [type, setType] = useState('');
@@ -803,10 +833,16 @@ export function TransactionDetail({
         </div>
       )}
       {error && <p className="form-error">{error}</p>}
-      <button className="btn danger subtle" onClick={onDelete}>
-        <Trash2 size={16} />
-        Hapus transaksi
-      </button>
+      <div className="detail-actions">
+        <button className="btn primary" onClick={onEdit}>
+          <Pencil size={17} />
+          Edit transaksi
+        </button>
+        <button className="btn danger" onClick={onDelete}>
+          <Trash2 size={16} />
+          Hapus transaksi
+        </button>
+      </div>
     </div>
   );
 }

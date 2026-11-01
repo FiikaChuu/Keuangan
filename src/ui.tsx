@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import type { ReactNode } from 'react';
 import {
   ArrowDownLeft,
@@ -17,9 +17,23 @@ import {
   X,
   Cloud,
   Paperclip,
+  Pencil,
+  Trash2,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import type { Account, Store, Transaction } from './domain';
-import { providers, money, compact, displayDate, balanceHistory, categoryColors } from './domain';
+import {
+  providers,
+  money,
+  compact,
+  displayDate,
+  balanceHistory,
+  categoryColors,
+  categories,
+  totals,
+  daysAgo,
+} from './domain';
 
 export function Logo({ small = false }: { small?: boolean }) {
   return (
@@ -89,6 +103,7 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
@@ -103,6 +118,8 @@ export function Modal({
       50,
     );
     const onKey = (e: KeyboardEvent) => {
+      const dialogs = document.querySelectorAll('[aria-modal="true"]');
+      if (dialogs[dialogs.length - 1] !== ref.current) return;
       if (e.key === 'Escape') closeRef.current();
       if (e.key === 'Tab') {
         const elements = Array.from(
@@ -142,12 +159,12 @@ export function Modal({
         ref={ref}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-labelledby={titleId}
       >
+        <div className="sheet-handle" aria-hidden="true" />
         <div className="modal-heading">
           <div>
-            <span className="eyebrow">A LITTLE MORE ORGANIZED</span>
-            <h2 id="dialog-title">{title}</h2>
+            <h2 id={titleId}>{title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
           <button className="icon-btn" aria-label="Tutup dialog" onClick={onClose}>
@@ -184,74 +201,98 @@ export function TransactionList({
   transactions,
   onSelect,
   compact: isCompact = false,
+  onEdit,
+  onDelete,
 }: {
   store: Store;
   transactions: Transaction[];
   onSelect: (t: Transaction) => void;
   compact?: boolean;
+  onEdit?: (t: Transaction) => void;
+  onDelete?: (t: Transaction) => void;
 }) {
   if (!transactions.length)
     return (
       <EmptyState
-        title="Cerita uangmu dimulai di sini"
-        text="Catat pemasukan atau pengeluaran pertamamu. Sedikit demi sedikit, semuanya jadi lebih jelas."
+        title="Belum ada transaksi di sini"
+        text="Coba ubah filter, atau catat transaksi pertamamu. Setiap langkah kecil berarti."
       />
     );
   return (
-    <div className={`transaction-list ${isCompact ? 'compact' : ''}`}>
-      <div className="transaction-columns">
-        <span>Transaksi</span>
-        <span>Rekening</span>
-        <span>Tanggal</span>
-        <span>Nominal</span>
-      </div>
+    <div className={`transaction-list ${isCompact ? 'compact' : 'card-list'}`}>
       {transactions.map((t) => {
         const a = store.accounts.find((a) => a.id === t.accountId)!;
         const to = store.accounts.find((a) => a.id === t.toId);
+        const category =
+          t.kind === 'income' ? 'Pemasukan' : t.kind === 'transfer' ? 'Transfer' : t.category;
         return (
-          <button className="transaction-row" key={t.id} onClick={() => onSelect(t)}>
-            <span className={`transaction-category ${t.kind}`}>
-              <CategoryIcon
-                category={
-                  t.kind === 'income'
-                    ? 'Pemasukan'
-                    : t.kind === 'transfer'
-                      ? 'Transfer'
-                      : t.category
-                }
-              />
-            </span>
-            <span className="transaction-title">
-              <strong>
-                {t.title}
-                {t.receiptId && <Paperclip size={11} />}
-              </strong>
-              <small>
-                {t.kind === 'income'
-                  ? t.source
-                  : t.kind === 'transfer'
-                    ? `Ke ${to?.name ?? 'rekening lain'}`
-                    : t.category}
-              </small>
-            </span>
-            <span className="transaction-account">
-              <span className="account-dot" style={{ background: a.color }} />
-              {a.provider}
-            </span>
-            <span className="transaction-date">
-              {displayDate(t.date, { day: 'numeric', month: 'short' })}
-            </span>
-            <span className={`transaction-amount ${t.kind}`}>
-              <strong>
-                {t.kind === 'income' ? '+' : t.kind === 'transfer' ? '' : '−'}
-                {money(t.amount)}
-              </strong>
-              {t.fee > 0 && <small>Biaya {money(t.fee)}</small>}
-              <span className="mobile-tx-meta">
-                {a.provider} · {displayDate(t.date, { day: 'numeric', month: 'short' })}
+          <article className={`transaction-card ${t.kind}`} key={t.id}>
+            <button
+              className="transaction-main"
+              aria-label={`Lihat transaksi ${t.title}, ${money(t.amount)}`}
+              onClick={() => onSelect(t)}
+            >
+              <span className={`transaction-category ${t.kind}`}>
+                <CategoryIcon category={category} size={23} />
               </span>
-            </span>
-          </button>
+              <span className="transaction-copy">
+                <span className="transaction-title">
+                  <strong>{t.title}</strong>
+                  {t.receiptId && <Paperclip size={13} />}
+                </span>
+                <span className="transaction-description">
+                  {displayDate(t.date, { day: 'numeric', month: 'short' })}
+                  <i />
+                  {t.kind === 'income'
+                    ? t.source
+                    : t.kind === 'transfer'
+                      ? `Ke ${to?.name ?? 'rekening lain'}`
+                      : t.category}
+                </span>
+                <span className="transaction-provider">
+                  <span className="account-dot" style={{ background: a.color }} />
+                  {a.provider}
+                  {!isCompact && a.name !== a.provider && ` · ${a.name}`}
+                </span>
+              </span>
+              <span className={`transaction-amount ${t.kind}`}>
+                <strong>
+                  {t.kind === 'income' ? '+' : t.kind === 'expense' ? '−' : ''}
+                  {money(t.amount)}
+                </strong>
+                {isCompact ? (
+                  <small>{category}</small>
+                ) : (
+                  <span className={`kind-badge ${t.kind}`}>
+                    {t.kind === 'income'
+                      ? 'Uang masuk'
+                      : t.kind === 'transfer'
+                        ? 'Pindah dana'
+                        : 'Uang keluar'}
+                  </span>
+                )}
+                {t.fee > 0 && <small>Biaya {money(t.fee)}</small>}
+              </span>
+            </button>
+            {(onEdit || onDelete) && (
+              <div className="transaction-actions">
+                {onEdit && (
+                  <button aria-label={`Edit ${t.title}`} onClick={() => onEdit(t)}>
+                    <Pencil size={17} />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    aria-label={`Hapus ${t.title}`}
+                    className="delete-transaction"
+                    onClick={() => onDelete(t)}
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                )}
+              </div>
+            )}
+          </article>
         );
       })}
     </div>
@@ -411,4 +452,203 @@ export function SpendingDonut({ entries }: { entries: [string, number][] }) {
 }
 export function TrendIcon({ incoming = false }: { incoming?: boolean }) {
   return incoming ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />;
+}
+
+const categoryEmoji: Record<string, string> = {
+  'Makanan & minuman': '🍜',
+  Belanja: '🛍️',
+  Transportasi: '🚕',
+  'Kuota & internet': '📱',
+  Hiburan: '🎬',
+  Langganan: '🎧',
+  Kesehatan: '💊',
+  Pendidikan: '📚',
+  'Rumah & tagihan': '🏡',
+  Pasangan: '💜',
+  'Tarik tunai': '🏧',
+  Lainnya: '✨',
+};
+export function CategoryPicker({
+  value,
+  onChange,
+  allowAll = false,
+  quick = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  allowAll?: boolean;
+  quick?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="category-picker">
+      {quick && (
+        <div className="quick-categories" aria-label="Kategori cepat">
+          {categories.slice(0, 4).map((c) => (
+            <button
+              type="button"
+              key={c}
+              aria-pressed={value === c}
+              className={value === c ? 'selected' : ''}
+              onClick={() => onChange(c)}
+            >
+              <span>{categoryEmoji[c]}</span>
+              <small>
+                {
+                  (
+                    {
+                      'Makanan & minuman': 'Makanan',
+                      Belanja: 'Belanja',
+                      Transportasi: 'Transport',
+                      'Kuota & internet': 'Kuota',
+                    } as Record<string, string>
+                  )[c]
+                }
+              </small>
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        className="category-picker-trigger"
+        type="button"
+        aria-label={allowAll ? 'Filter kategori' : 'Pilih kategori'}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        <span>
+          {value ? (
+            <>
+              <span>{categoryEmoji[value]}</span>
+              {value}
+            </>
+          ) : (
+            'Semua kategori'
+          )}
+        </span>
+        <ChevronDown size={18} />
+      </button>
+      {open && (
+        <Modal
+          title="Pilih kategori"
+          subtitle="Temukan tempat yang pas untuk pengeluaranmu."
+          onClose={() => setOpen(false)}
+        >
+          <div className="category-options" role="listbox" aria-label="Kategori">
+            {[...(allowAll ? [''] : []), ...categories].map((c) => (
+              <button
+                key={c}
+                role="option"
+                type="button"
+                aria-selected={c === value}
+                className={c === value ? 'selected' : ''}
+                onClick={() => {
+                  onChange(c);
+                  setOpen(false);
+                }}
+              >
+                <span className="category-option-emoji">{categoryEmoji[c] ?? '🗂️'}</span>
+                <span>{c || 'Semua kategori'}</span>
+                {c === value && <Check size={21} />}
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+export function CashflowChart({
+  transactions,
+  days,
+}: {
+  transactions: Transaction[];
+  days: number;
+}) {
+  const count = days <= 7 ? 7 : 6;
+  const buckets = Array.from({ length: count }, (_, i) => {
+    const from = daysAgo(days - 1 - Math.floor((i * days) / count));
+    const to = daysAgo(days - 1 - Math.floor(((i + 1) * days) / count - 1));
+    return { date: from, ...totals(transactions.filter((t) => t.date >= from && t.date <= to)) };
+  });
+  const max = Math.max(100000, ...buckets.flatMap((b) => [b.income, b.expense])) * 1.12;
+  return (
+    <div className="cashflow-chart">
+      <div className="cashflow-legend">
+        <span>
+          <i />
+          Pemasukan
+        </span>
+        <span>
+          <i />
+          Pengeluaran
+        </span>
+      </div>
+      <svg
+        viewBox="0 0 720 250"
+        role="img"
+        aria-label={`Grafik pemasukan dan pengeluaran ${days} hari terakhir`}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <g key={i}>
+            <line
+              x1="48"
+              x2="700"
+              y1={25 + i * 57}
+              y2={25 + i * 57}
+              stroke="var(--line)"
+              strokeDasharray="3 5"
+            />
+            <text x="0" y={29 + i * 57} fontSize="11" fill="var(--muted)">
+              {compact(max * (1 - i / 3))}
+            </text>
+          </g>
+        ))}
+        {buckets.map((b, i) => {
+          const x = 70 + i * (620 / count);
+          return (
+            <g key={b.date}>
+              <rect
+                x={x}
+                y={196 - (b.income / max) * 171}
+                width="22"
+                height={(b.income / max) * 171}
+                rx="8"
+                fill="#83cda2"
+              >
+                <title>
+                  Pemasukan {displayDate(b.date)}: {money(b.income)}
+                </title>
+              </rect>
+              <rect
+                x={x + 27}
+                y={196 - (b.expense / max) * 171}
+                width="22"
+                height={(b.expense / max) * 171}
+                rx="8"
+                fill="#f58b8c"
+              >
+                <title>
+                  Pengeluaran {displayDate(b.date)}: {money(b.expense)}
+                </title>
+              </rect>
+              <text x={x + 24} y="231" textAnchor="middle" fontSize="11" fill="var(--muted)">
+                {displayDate(b.date, { day: 'numeric', month: 'short' })}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+export function downloadFile(content: BlobPart, type: string, name: string) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

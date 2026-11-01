@@ -49,11 +49,11 @@ export const categories = [
   'Lainnya',
 ];
 export const categoryColors: Record<string, string> = {
-  'Makanan & minuman': '#176d56',
-  Belanja: '#9fbda9',
-  Transportasi: '#c3d5a3',
-  'Kuota & internet': '#e4c899',
-  Hiburan: '#9fadda',
+  'Makanan & minuman': '#ef8587',
+  Belanja: '#242f50',
+  Transportasi: '#87cba7',
+  'Kuota & internet': '#e6bb6c',
+  Hiburan: '#a59bc8',
   Langganan: '#b8a8c9',
   Kesehatan: '#d9a0a4',
   'Rumah & tagihan': '#74a6a2',
@@ -181,6 +181,33 @@ export function validateTransaction(t: Transaction, store: Store) {
   )
     return 'Nomor referensi ini sudah tercatat pada rekening yang sama.';
   return '';
+}
+
+export function replaceTransaction(
+  store: Store,
+  transaction: Transaction,
+  editingId?: string,
+): { data?: Store; error: string } {
+  if (editingId && !store.transactions.some((t) => t.id === editingId))
+    return { error: 'Transaksi yang ingin diubah sudah tidak tersedia.' };
+  const withoutOriginal = {
+    ...store,
+    transactions: store.transactions.filter((t) => t.id !== editingId),
+  };
+  const error = validateTransaction(transaction, withoutOriginal);
+  if (error) return { error };
+  const data = {
+    ...store,
+    transactions: editingId
+      ? store.transactions.map((t) => (t.id === editingId ? transaction : t))
+      : [transaction, ...store.transactions],
+  };
+  if (Object.values(balances(data)).some((n) => n < 0))
+    return {
+      error:
+        'Perubahan membuat saldo rekening lain negatif. Periksa transaksi yang sudah memakai dana ini.',
+    };
+  return { data, error: '' };
 }
 function validDate(s: unknown): s is string {
   return (

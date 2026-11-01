@@ -27,7 +27,7 @@ test('dashboard renders without errors and navigation fits the viewport', async 
   await expect(page.getByRole('img', { name: /Grafik total saldo/ })).toBeVisible();
   for (const [desktop, mobile, heading] of [
     ['Dompet saya', 'Dompet', 'Uangmu, di satu tempat.'],
-    ['Transaksi', 'Riwayat', 'Semua jejak, satu cerita.'],
+    ['Transaksi', 'Riwayat', 'Transaksi'],
     ['Rencana uang', 'Rencana', 'Pemasukan berubah. Tujuan tetap.'],
     ['Ruang bersama', 'Bersama', 'Untuk cerita kita.'],
   ]) {
@@ -54,7 +54,8 @@ test('real-data flow: irregular income, expense, shared transfer and persistence
   await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
   await page.getByLabel('Nama transaksi').fill('Tarik untuk tunai');
   await page.getByLabel('Nominal (Rp)', { exact: true }).fill('200000');
-  await page.getByLabel('Kategori', { exact: true }).selectOption('Tarik tunai');
+  await page.getByRole('button', { name: 'Pilih kategori', exact: true }).click();
+  await page.getByRole('option', { name: 'Tarik tunai' }).click();
   await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Bersama' : 'Ruang bersama');
   await page.getByRole('button', { name: 'Akun bersama', exact: true }).click();
@@ -75,8 +76,10 @@ test('real-data flow: irregular income, expense, shared transfer and persistence
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
   await expect(page.getByText('Rp 202.500', { exact: true })).toBeVisible();
   await page.getByLabel('Cari nama, kategori, atau sumber transaksi').fill('Klien tidak tetap');
-  await expect(page.getByRole('button', { name: /Komisi desain/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Tarik untuk tunai/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Lihat transaksi Komisi desain/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /^Lihat transaksi Tarik untuk tunai/ }),
+  ).toHaveCount(0);
 });
 test('planning persists a 100 percent allocation and protects required obligations', async ({
   page,
@@ -136,7 +139,7 @@ test('local OCR reads an actual image, stores proof and blocks duplicate upload'
   await page.getByLabel('Nama transaksi').fill('Kopi dari bukti');
   await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: /Kopi dari bukti/ }).click();
+  await page.getByRole('button', { name: /^Lihat transaksi Kopi dari bukti/ }).click();
   await expect(page.getByAltText('Bukti Kopi dari bukti')).toBeVisible();
   await page.getByRole('button', { name: 'Tutup dialog' }).click();
   await page.getByRole('button', { name: 'Unggah bukti', exact: true }).click();
@@ -152,7 +155,7 @@ test('local OCR reads an actual image, stores proof and blocks duplicate upload'
   await page.getByRole('button', { name: 'Ganti & pulihkan' }).click();
   await expect(page.getByText('Pulihkan 1 transaksi dan 1 rekening?')).toHaveCount(0);
   await page.getByRole('button', { name: 'Tutup dialog' }).click();
-  await page.getByRole('button', { name: /Kopi dari bukti/ }).click();
+  await page.getByRole('button', { name: /^Lihat transaksi Kopi dari bukti/ }).click();
   await expect(page.getByAltText('Bukti Kopi dari bukti')).toBeVisible();
 });
 test('PDF text extraction proposes amount and source for review', async ({ page }) => {
@@ -211,4 +214,101 @@ test('complete backup, restore confirmation, and offline launch', async ({ page,
   await expect(page.getByRole('heading', { name: 'Lebih tenang, lebih terencana.' })).toBeVisible();
   await expect(page.getByText('Rp 5.000.000', { exact: true }).first()).toBeVisible();
   await context.setOffline(false);
+});
+
+test('advanced category and amount filters combine and reset correctly', async ({ page }) => {
+  await page.goto('/');
+  await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
+  await page.getByRole('button', { name: 'Filter lanjutan', exact: true }).click();
+  await page.getByRole('button', { name: 'Filter kategori', exact: true }).click();
+  await page.getByRole('option', { name: 'Kuota & internet' }).click();
+  await page.getByLabel('Nominal minimum', { exact: true }).fill('80000');
+  await page.getByLabel('Nominal maksimum', { exact: true }).fill('90000');
+  await expect(page.locator('.card-list .transaction-card')).toHaveCount(1);
+  await expect(
+    page.getByRole('button', { name: /^Lihat transaksi Paket data Telkomsel/ }),
+  ).toBeVisible();
+  await page.getByLabel('Nominal minimum', { exact: true }).fill('95000');
+  await expect(page.getByRole('alert')).toContainText('minimum tidak boleh melebihi');
+  await expect(page.locator('.card-list .transaction-card')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
+  await expect(page.locator('.card-list .transaction-card')).toHaveCount(14);
+});
+
+test('quick edit and confirmed delete update balances without duplicating a record', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
+  await page.getByRole('button', { name: 'Edit A good lunch', exact: true }).click();
+  await expect(page.getByLabel('Nominal (Rp)', { exact: true })).toHaveValue('45000');
+  await page.getByLabel('Nominal (Rp)', { exact: true }).fill('75000');
+  await page.getByLabel('Nama transaksi').fill('Lunch revisi');
+  await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  let state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
+  expect(state.transactions).toHaveLength(14);
+  expect(state.transactions.find((t: { title: string }) => t.title === 'Lunch revisi').amount).toBe(
+    75000,
+  );
+  await page.getByRole('button', { name: 'Hapus Lunch revisi', exact: true }).click();
+  await page.getByRole('button', { name: 'Batal', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Lihat transaksi Lunch revisi/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Hapus Lunch revisi', exact: true }).click();
+  await page.getByRole('button', { name: 'Ya, lanjutkan', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
+  expect(state.transactions).toHaveLength(13);
+  await page.reload();
+  await expect(page.getByText('Rp 14.585.010', { exact: true }).first()).toBeVisible();
+});
+
+test('category bottom sheet preserves its parent form and supports Escape', async ({ page }) => {
+  await ownAccount(page);
+  await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
+  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+  await page.getByLabel('Nama transaksi').fill('Belajar online');
+  await page.getByRole('button', { name: 'Pilih kategori', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(2);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(page.getByLabel('Nama transaksi')).toHaveValue('Belajar online');
+  await page.getByRole('button', { name: 'Pilih kategori', exact: true }).click();
+  await page.getByRole('option', { name: 'Pendidikan' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await page.getByLabel('Nominal (Rp)', { exact: true }).fill('100000');
+  await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Lihat transaksi Belajar online/ })).toBeVisible();
+});
+
+test('reports export actual transactions and appearance survives reload', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Lihat laporan', exact: true }).first().click();
+  await expect(page.getByRole('heading', { name: 'Laporan keuangan', exact: true })).toBeVisible();
+  await expect(
+    page.locator('.report-summary').getByText('Rp 5.200.000', { exact: true }),
+  ).toBeVisible();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Ekspor CSV', exact: true }).click();
+  const downloaded = await downloadPromise;
+  expect(downloaded.suggestedFilename()).toMatch(/^skysave-laporan-/);
+  await page.evaluate(() => {
+    window.print = () => {
+      document.body.dataset.printCalled = 'true';
+    };
+  });
+  await page.getByRole('button', { name: 'Cetak / simpan PDF', exact: true }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true');
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('.print-transactions')).toBeVisible();
+  await expect(page.locator('.print-transactions tbody tr')).toHaveCount(14);
+  await page.emulateMedia({ media: 'screen' });
+  await page.getByRole('button', { name: 'Tutup dialog', exact: true }).click();
+  await page.getByRole('button', { name: 'Buka pengaturan', exact: true }).click();
+  await page.getByRole('button', { name: 'Gelap', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByRole('heading', { name: 'Lebih tenang, lebih terencana.' })).toBeVisible();
 });

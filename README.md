@@ -14,7 +14,7 @@ npm run dev -- --port 5173
 The postinstall script copies OCR language data, WASM, and PDF workers from the integrity-checked npm dependencies into ignored public asset directories. No API key, database service, or bank credentials are needed. Fonts and document-processing assets are served locally.
 
 ```sh
-npm test                 # 19 financial and document-parsing tests
+npm test                 # 23 financial and document-parsing tests
 npm run build            # strict TypeScript check + production build
 npm run preview -- --port 4173
 npm run test:e2e         # desktop + iPhone-size Chromium; run build first
@@ -29,12 +29,15 @@ Browser tests use `/usr/bin/chromium`. Set `CHROMIUM_PATH` if Chromium is instal
 - Manual income with its source, categorized expenses, dated history, notes, transfer fees, and transfers between owned or shared accounts.
 - Cash withdrawals count as expenses; there is no cash wallet. Internal transfers are excluded from income/expense totals, while their fees count as expenses.
 - Receipt uploads: PNG, JPG, WEBP, or PDF (10 MB, up to 5 pages). Tesseract reads image text locally. PDF.js extracts text or renders scanned pages for OCR. Detection suggests amount, date, category, reference, and source bank when explicit and unambiguous. Confirmation remains required; the app never treats a bank logo alone as proof of the sending account.
+- Quick edit and confirmed deletion from transaction cards. Editing recalculates both sides of a transfer, keeps existing proof, and rejects changes that would create a negative balance or duplicate another record.
 - Original proof stored in IndexedDB and accessible from transaction details. SHA-256 proof fingerprint and account/reference checks prevent duplicates.
-- Search by title, category, account, reference, or income source; filter by transaction kind, account, and month; export the filtered result as CSV.
+- Search by title, category, account, reference, or income source; combine transaction kind, category, account, month, and min/max amount filters; sort and export the filtered result as CSV.
 - Flexible allocation from **existing personal balance minus unpaid obligations**, excluding shared wallets. Adjustable percentages always sum to 100%. A shortfall is surfaced before allocating optional spending. This is a transparent rules-based assistant, not a prediction of irregular future income or a bank-product recommendation engine.
 - Goals tied to dedicated wallets, one goal per wallet, with progress from recorded balances. Recording a proposed transfer still requires explicit confirmation.
 - Shared-account balances, goals, and transfer history. This release is a single-device record, not shared login or collaborative editing.
 - JSON backup and confirmed restore of accounts, transactions, goals, planning, and available original proofs. Backups contain sensitive financial information and should be kept private.
+- Responsive navy, warm neutral, mint, and coral design, touch-friendly category sheets, light/dark/system appearance, and cashflow/saldo chart switching.
+- Reports with selectable periods, actual transaction totals and category breakdown, CSV export, and browser printing / Save as PDF. The print layout includes transaction details.
 - Installable PWA manifest and production service worker. The application shell is precached. OCR/PDF supporting public assets are cached on use; first-time OCR requires the app server to be reachable.
 
 ## Data and financial boundaries
@@ -58,7 +61,10 @@ On iPhone Safari: open the published HTTPS address, then **Share → Add to Home
 ```text
 src/domain.ts       Financial model, validation, balances, allocations, demo and CSV
 src/receipts.ts     Local OCR/PDF extraction, conservative parsing, proof storage
-src/App.tsx         App navigation, pages, planning, backup and restore
+src/App.tsx         App navigation, planning, backup and restore
+src/Dashboard.tsx   Responsive overview and data-derived insights
+src/TransactionsPage.tsx Combined filters and transaction card actions
+src/Reports.tsx     Period reports, CSV export and print/PDF layout
 src/forms.tsx       Account, goal, transaction and proof flows
 src/ui.tsx          Accessible dialogs, charts, account marks and ledger components
 src/styles.css     Responsive design system and reduced-motion support

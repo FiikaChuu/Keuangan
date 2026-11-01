@@ -12,6 +12,7 @@ import {
   today,
   totals,
   validateTransaction,
+  replaceTransaction,
 } from '../src/domain.ts';
 import type { Store, Transaction } from '../src/domain.ts';
 import { parseReceipt, parseRupiah } from '../src/receipts.ts';
@@ -227,4 +228,55 @@ test('CSV escapes formulas, quotes and newlines', () => {
   const output = csv([transaction({ title: '=SUM(A1)', note: 'a,"b"\nc' })], s.accounts);
   assert.ok(output.includes("'=SUM(A1)"));
   assert.ok(output.includes('"a,""b""\nc"'));
+});
+
+test('editing an expense recalculates balance without counting its receipt twice', () => {
+  const s = fixture();
+  const original = transaction({
+    receiptId: 'proof',
+    receiptHash: 'a'.repeat(64),
+    reference: 'REF123',
+  });
+  s.transactions = [original];
+  const result = replaceTransaction(s, { ...original, amount: 125000 }, original.id);
+  assert.equal(result.error, '');
+  assert.equal(balances(result.data!).a, 4875000);
+  assert.equal(result.data!.transactions.length, 1);
+  assert.equal(result.data!.transactions[0].receiptId, 'proof');
+});
+test('editing a transfer checks both the sending and receiving balance', () => {
+  const s = fixture();
+  s.transactions = [
+    transaction({
+      id: 'transfer',
+      kind: 'transfer',
+      amount: 500000,
+      toId: 'b',
+      category: 'Transfer',
+    }),
+    transaction({ id: 'spent', accountId: 'b', amount: 1400000 }),
+  ];
+  const result = replaceTransaction(s, { ...s.transactions[0], amount: 100000 }, 'transfer');
+  assert.match(result.error, /saldo rekening lain negatif/);
+  assert.equal(result.data, undefined);
+});
+test('an edited record still cannot reuse another record’s proof or reference', () => {
+  const s = fixture();
+  s.transactions = [
+    transaction({ id: 'one', receiptHash: 'b'.repeat(64), reference: 'FIRST' }),
+    transaction({ id: 'two', reference: 'SECOND' }),
+  ];
+  assert.notEqual(
+    replaceTransaction(s, { ...s.transactions[1], receiptHash: 'b'.repeat(64) }, 'two').error,
+    '',
+  );
+  assert.notEqual(
+    replaceTransaction(s, { ...s.transactions[1], reference: 'FIRST' }, 'two').error,
+    '',
+  );
+});
+test('editing a missing transaction does not create an unintended new record', () => {
+  const result = replaceTransaction(fixture(), transaction(), 'deleted');
+  assert.match(result.error, /sudah tidak tersedia/);
+  assert.equal(result.data, undefined);
 });

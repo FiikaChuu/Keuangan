@@ -8,27 +8,26 @@ import {
   Heart,
   Plus,
   ArrowUpRight,
-  ArrowDownLeft,
   ChevronDown,
   ChevronRight,
   Search,
-  UploadCloud,
   Bell,
   Settings,
   ShieldCheck,
   ArrowRight,
   Leaf,
   Download,
-  SlidersHorizontal,
   X,
   Check,
   Info,
   Target,
   TrendingUp,
-  CalendarDays,
   Coffee,
   PiggyBank,
-  MoreHorizontal,
+  FileChartColumn,
+  Sun,
+  Moon,
+  Monitor,
   Smartphone,
   RefreshCw,
   Trash2,
@@ -44,33 +43,30 @@ import {
   emptyStore,
   isStore,
   today,
-  daysAgo,
-  totals,
   allocations,
-  spendingByCategory,
-  csv,
 } from './domain';
-import {
-  Logo,
-  ProviderMark,
-  TransactionList,
-  BalanceChart,
-  SpendingDonut,
-  EmptyState,
-  Modal,
-} from './ui';
+import { Logo, ProviderMark, TransactionList, EmptyState, Modal } from './ui';
 import { TransactionForm, AccountForm, GoalForm, TransactionDetail } from './forms';
+import TransactionsPage from './TransactionsPage';
+import Overview from './Dashboard';
+import Reports from './Reports';
 import { clearReceipts, deleteReceipt, readReceipt, saveReceipt } from './receipts';
 
 type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
 type Dialog =
-  | { type: 'transaction'; mode?: 'manual' | 'receipt'; defaults?: Partial<Transaction> }
+  | {
+      type: 'transaction';
+      mode?: 'manual' | 'receipt';
+      defaults?: Partial<Transaction>;
+      editingId?: string;
+    }
   | { type: 'account'; shared?: boolean }
   | { type: 'goal' }
   | { type: 'settings' }
   | { type: 'detail'; tx: Transaction }
   | { type: 'confirm'; title: string; text: string; action: () => void }
   | { type: 'notifications' }
+  | { type: 'reports' }
   | null;
 const navItems = [
   { id: 'overview' as const, label: 'Ringkasan', short: 'Beranda', icon: LayoutDashboard },
@@ -193,6 +189,16 @@ export default function App() {
         }
     }
   }
+  function askDelete(t: Transaction) {
+    setDialog({
+      type: 'confirm',
+      title: 'Hapus catatan transaksi?',
+      text: 'Transaksi dan bukti terkait akan dihapus dari skySave. Saldo tercatat akan dihitung ulang. Tindakan ini tidak memengaruhi rekening bank.',
+      action: () => {
+        void removeTransaction(t);
+      },
+    });
+  }
   const goalCard = (g: Goal) => {
     const current = b[g.accountId];
     const progress = Math.min(100, (current / g.target) * 100);
@@ -280,7 +286,7 @@ export default function App() {
     </button>
   );
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-page={page}>
       <aside className="sidebar">
         <a
           href="#"
@@ -312,6 +318,10 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <button className="nav-item reports-nav" onClick={() => setDialog({ type: 'reports' })}>
+          <FileChartColumn size={19} />
+          <span>Laporan keuangan</span>
+        </button>
         <div className="sidebar-bottom">
           <div className="sidebar-note">
             <span className="note-illustration">
@@ -429,6 +439,7 @@ export default function App() {
               detail={(t) => setDialog({ type: 'detail', tx: t })}
               accountCard={accountCard}
               onAccount={() => setDialog({ type: 'account' })}
+              onReport={() => setDialog({ type: 'reports' })}
             />
           )}
           {page === 'accounts' && (
@@ -525,13 +536,17 @@ export default function App() {
             </>
           )}
           {page === 'transactions' && (
-            <Transactions
+            <TransactionsPage
               store={store}
               search={search}
               setSearch={setSearch}
               detail={(t) => setDialog({ type: 'detail', tx: t })}
               onAdd={() => setDialog({ type: 'transaction' })}
               onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
+              onEdit={(tx) => setDialog({ type: 'transaction', defaults: tx, editingId: tx.id })}
+              onDelete={askDelete}
+              onReport={() => setDialog({ type: 'reports' })}
+              onSettings={() => setDialog({ type: 'settings' })}
             />
           )}
           {page === 'plan' && (
@@ -712,12 +727,14 @@ export default function App() {
       )}
       {dialog?.type === 'transaction' && (
         <Modal
-          title="Catat langkah kecilmu."
+          title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'}
           subtitle="Satu transaksi, satu gambaran yang lebih jelas."
           wide
           onClose={close}
         >
           <TransactionForm
+            key={dialog.editingId ?? 'new'}
+            editingId={dialog.editingId}
             store={store}
             save={save}
             close={close}
@@ -750,6 +767,9 @@ export default function App() {
           <TransactionDetail
             transaction={dialog.tx}
             store={store}
+            onEdit={() =>
+              setDialog({ type: 'transaction', defaults: dialog.tx, editingId: dialog.tx.id })
+            }
             onDelete={() => {
               const t = dialog.tx;
               setDialog({
@@ -778,6 +798,16 @@ export default function App() {
               </button>
             </div>
           </div>
+        </Modal>
+      )}
+      {dialog?.type === 'reports' && (
+        <Modal
+          title="Laporan keuangan"
+          subtitle="Gambaran yang jelas, untuk langkah berikutnya."
+          wide
+          onClose={close}
+        >
+          <Reports store={store} />
         </Modal>
       )}
       {dialog?.type === 'settings' && (
@@ -883,448 +913,6 @@ function PageHeading({
   );
 }
 
-function Overview({
-  store,
-  total,
-  onAdd,
-  onUpload,
-  go,
-  detail,
-  accountCard,
-  onAccount,
-}: {
-  store: Store;
-  total: number;
-  onAdd: () => void;
-  onUpload: () => void;
-  go: (p: Page) => void;
-  detail: (t: Transaction) => void;
-  accountCard: (a: Account) => ReactNode;
-  onAccount: () => void;
-}) {
-  const [days, setDays] = useState(30);
-  const [visible, setVisible] = useState(true);
-  const tx = store.transactions.filter((t) => t.date >= daysAgo(days - 1) && t.date <= today());
-  const summary = totals(tx);
-  const allocation = allocations(store);
-  const recent = [...store.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  return (
-    <>
-      <PageHeading
-        eyebrow="A LITTLE CLARITY, EVERY DAY"
-        title="Lebih tenang, lebih terencana."
-        description="Kenali uangmu hari ini. Siapkan cerita baik untuk nanti."
-        action={
-          <>
-            <button className="btn secondary" onClick={onUpload}>
-              <ScanIcon />
-              Unggah bukti
-            </button>
-            <button className="btn primary" onClick={onAdd}>
-              <Plus size={17} />
-              Catat transaksi
-            </button>
-          </>
-        }
-      />
-      <div className="overview-period">
-        <span>
-          <span className="status-dot" />
-          Your money, in balance.
-        </span>
-        <label>
-          <CalendarDays size={13} />
-          <select
-            aria-label="Periode ringkasan"
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-          >
-            <option value="30">30 hari terakhir</option>
-            <option value="7">7 hari terakhir</option>
-          </select>
-          <ChevronDown size={12} />
-        </label>
-      </div>
-      <div className="summary-grid">
-        <section className="total-card">
-          <div className="total-decoration" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="total-card-top">
-            <span>
-              <Wallet size={15} />
-              Total saldo tercatat
-            </span>
-            <button
-              aria-label={visible ? 'Sembunyikan saldo' : 'Tampilkan saldo'}
-              onClick={() => setVisible(!visible)}
-            >
-              <MoreHorizontal size={19} />
-            </button>
-          </div>
-          <strong className="total-amount">{visible ? money(total) : 'Rp ••••••••'}</strong>
-          <div className="total-card-bottom">
-            <span>
-              <span className="light-dot" />
-              {store.accounts.length} dompet, satu cerita
-            </span>
-            <span className="total-mini-logo">
-              <CloudIcon />
-            </span>
-          </div>
-        </section>
-        <section className="stat-card">
-          <div className="stat-top">
-            <span className="stat-icon income">
-              <ArrowDownLeft size={19} />
-            </span>
-            <span>Pemasukan</span>
-            <ArrowUpRight size={16} />
-          </div>
-          <strong>{money(summary.income)}</strong>
-          <div className="stat-bottom">
-            <span className="stat-tag income">
-              {tx.filter((t) => t.kind === 'income').length} pemasukan
-            </span>
-            <span>Diterima {days} hari ini</span>
-          </div>
-          <div className="stat-spark income" aria-hidden="true">
-            <svg viewBox="0 0 130 36">
-              <path d="M0 30 L15 26 L28 29 L44 17 L59 22 L75 12 L90 17 L107 5 L120 9 L130 1" />
-            </svg>
-          </div>
-        </section>
-        <section className="stat-card">
-          <div className="stat-top">
-            <span className="stat-icon expense">
-              <ArrowUpRight size={19} />
-            </span>
-            <span>Pengeluaran</span>
-            <ArrowUpRight size={16} />
-          </div>
-          <strong>{money(summary.expense)}</strong>
-          <div className="stat-bottom">
-            <span className="stat-tag expense">
-              {tx.filter((t) => t.kind === 'expense').length} pengeluaran
-            </span>
-            <span>Termasuk biaya admin</span>
-          </div>
-          <div className="stat-spark expense" aria-hidden="true">
-            <svg viewBox="0 0 130 36">
-              <path d="M0 29 L15 24 L28 28 L44 20 L59 25 L75 10 L90 16 L107 9 L120 12 L130 3" />
-            </svg>
-          </div>
-        </section>
-      </div>
-      <div className="middle-grid">
-        <section className="panel balance-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Perjalanan saldomu</h2>
-              <p>Langkah kecil yang membentuk gambaran besar.</p>
-            </div>
-            <span className="chart-legend">
-              <i />
-              Total saldo
-            </span>
-          </div>
-          <BalanceChart store={store} days={days} />
-        </section>
-        <section className="smart-card">
-          <div className="smart-card-top">
-            <span className="smart-icon">
-              <Sparkles size={17} />
-            </span>
-            <span>SKY INSIGHT</span>
-            <span className="ai-badge">FOR YOU</span>
-          </div>
-          <h2>
-            Setiap rupiah
-            <br />
-            punya tujuan.
-          </h2>
-          <p>
-            {allocation.shortfall
-              ? 'Tenang, mulai dari kebutuhan wajib. Kita atur langkah berikutnya bersama.'
-              : 'Pemasukan boleh berubah. Rencana baik tetap bisa dibuat.'}
-          </p>
-          <div className="smart-amount">
-            <small>
-              {allocation.shortfall ? 'Kekurangan cadangan wajib' : 'Dana yang bisa kamu atur'}
-            </small>
-            <strong>{money(allocation.shortfall || allocation.available)}</strong>
-          </div>
-          <button onClick={() => go('plan')}>
-            Atur rencana uangmu
-            <ArrowUpRight size={17} />
-          </button>
-          <svg
-            className="smart-card-flower"
-            aria-hidden="true"
-            width="180"
-            height="180"
-            viewBox="0 0 180 180"
-          >
-            <g stroke="currentColor" strokeWidth="19" strokeLinecap="round">
-              <path d="M90 23v134M23 90h134M43 43l94 94M43 137l94-94" />
-            </g>
-          </svg>
-        </section>
-      </div>
-      <section className="wallets-section">
-        <div className="section-title">
-          <h2>
-            Dompet kamu<span className="count-badge">{store.accounts.length}</span>
-          </h2>
-          <button className="text-btn" onClick={() => go('accounts')}>
-            Lihat semua
-            <ArrowRight size={14} />
-          </button>
-        </div>
-        {store.accounts.length ? (
-          <div className="wallet-strip">
-            {store.accounts
-              .filter((a) => !a.shared)
-              .slice(0, 4)
-              .map((a) => accountCard(a))}
-            <button
-              className="add-wallet compact-add"
-              aria-label="Tambah dompet"
-              onClick={onAccount}
-            >
-              <Plus size={21} />
-            </button>
-          </div>
-        ) : (
-          <EmptyState
-            title="Selamat datang di ruang barumu"
-            text="Tambahkan rekening pertama untuk mulai mengenali keuanganmu."
-            action={
-              <button className="btn primary" onClick={onAccount}>
-                <Plus size={16} />
-                Tambah dompet
-              </button>
-            }
-          />
-        )}
-      </section>
-      <div className="bottom-grid">
-        <section className="panel recent-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Jejak transaksi</h2>
-              <p>Setiap cerita uang, tercatat rapi.</p>
-            </div>
-            <button className="text-btn" onClick={() => go('transactions')}>
-              Lihat semua
-              <ArrowRight size={13} />
-            </button>
-          </div>
-          <TransactionList store={store} transactions={recent} onSelect={detail} compact />
-        </section>
-        <section className="panel spending-panel">
-          <div className="panel-heading">
-            <h2>Uangnya ke mana?</h2>
-            <span className="muted-label">{days} hari</span>
-          </div>
-          <SpendingDonut entries={spendingByCategory(tx, '')} />
-        </section>
-      </div>
-      <div className="daily-note">
-        <span>✧</span>
-        <p>“Menabung bukan tentang seberapa banyak. Tapi tentang mulai, dan terus melangkah.”</p>
-        <span className="daily-note-label">A GENTLE REMINDER</span>
-      </div>
-    </>
-  );
-}
-function ScanIcon() {
-  return <UploadCloud size={17} strokeWidth={1.7} />;
-}
-function CloudIcon() {
-  return (
-    <svg width="32" height="22" viewBox="0 0 32 22" fill="none" aria-hidden="true">
-      <path
-        d="M7 18a5 5 0 0 1-1-10 9 9 0 0 1 17-1 6 6 0 1 1 1 11H7Z"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <path d="M12 13h8m-4-4v8" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  );
-}
-
-function Transactions({
-  store,
-  search,
-  setSearch,
-  detail,
-  onAdd,
-  onUpload,
-}: {
-  store: Store;
-  search: string;
-  setSearch: (v: string) => void;
-  detail: (t: Transaction) => void;
-  onAdd: () => void;
-  onUpload: () => void;
-}) {
-  const [kind, setKind] = useState('all');
-  const [month, setMonth] = useState('');
-  const [account, setAccount] = useState('');
-  const isAccountSearch = store.accounts.some((a) => a.id === search);
-  const filtered = store.transactions
-    .filter((t) => {
-      const a = store.accounts.find((a) => a.id === t.accountId);
-      const to = store.accounts.find((a) => a.id === t.toId);
-      return (
-        (kind === 'all' || t.kind === kind) &&
-        (!month || t.date.startsWith(month)) &&
-        (!account || t.accountId === account || t.toId === account) &&
-        (isAccountSearch
-          ? t.accountId === search || t.toId === search
-          : `${t.title} ${t.category} ${t.source} ${t.note} ${t.reference ?? ''} ${a?.provider} ${a?.name} ${to?.name ?? ''}`
-              .toLowerCase()
-              .includes(search.toLowerCase()))
-      );
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const sum = totals(filtered);
-  return (
-    <>
-      <PageHeading
-        eyebrow="YOUR MONEY, YOUR STORY"
-        title="Semua jejak, satu cerita."
-        description="Pemasukan, pengeluaran, dan perpindahan dana yang tercatat."
-        action={
-          <>
-            <button className="btn secondary" onClick={onUpload}>
-              <ScanIcon />
-              Unggah bukti
-            </button>
-            <button className="btn primary" onClick={onAdd}>
-              <Plus size={17} />
-              Catat transaksi
-            </button>
-          </>
-        }
-      />
-      <div className="transaction-summary">
-        <div>
-          <span>Pemasukan terfilter</span>
-          <strong className="positive">+{money(sum.income)}</strong>
-        </div>
-        <div>
-          <span>Pengeluaran terfilter</span>
-          <strong>{money(sum.expense)}</strong>
-        </div>
-        <div>
-          <span>Transaksi ditemukan</span>
-          <strong>
-            {filtered.length}
-            <small> transaksi</small>
-          </strong>
-        </div>
-      </div>
-      <section className="panel ledger-panel">
-        <div className="ledger-tools">
-          <div className="search-field">
-            <Search size={17} />
-            <input
-              id="transaction-search"
-              aria-label="Cari nama, kategori, atau sumber transaksi"
-              placeholder="Cari cerita uangmu…"
-              value={isAccountSearch ? '' : search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button aria-label="Hapus pencarian" onClick={() => setSearch('')}>
-                <X size={15} />
-              </button>
-            )}
-          </div>
-          <button
-            className="btn secondary small-btn"
-            onClick={() =>
-              download(
-                csv(filtered, store.accounts),
-                'text/csv;charset=utf-8',
-                `skysave-transaksi-${today()}.csv`,
-              )
-            }
-          >
-            <Download size={15} />
-            Ekspor CSV
-          </button>
-        </div>
-        <div className="ledger-filters">
-          <div className="filter-tabs">
-            {[
-              ['all', 'Semua'],
-              ['expense', 'Pengeluaran'],
-              ['income', 'Pemasukan'],
-              ['transfer', 'Transfer'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                className={kind === value ? 'active' : ''}
-                onClick={() => setKind(value)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="filter-inputs">
-            <label>
-              <SlidersHorizontal size={14} />
-              <select
-                aria-label="Filter rekening"
-                value={isAccountSearch ? search : account}
-                onChange={(e) => {
-                  setAccount(e.target.value);
-                  if (isAccountSearch) setSearch('');
-                }}
-              >
-                <option value="">Semua rekening</option>
-                {store.accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.provider} · {a.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <CalendarDays size={14} />
-              <input
-                aria-label="Filter bulan"
-                type="month"
-                value={month}
-                max={today().slice(0, 7)}
-                onChange={(e) => setMonth(e.target.value)}
-              />
-              {month && (
-                <button aria-label="Hapus filter bulan" onClick={() => setMonth('')}>
-                  <X size={12} />
-                </button>
-              )}
-            </label>
-          </div>
-        </div>
-        <TransactionList store={store} transactions={filtered} onSelect={detail} />
-        <div className="ledger-footer">
-          <span>{filtered.length} transaksi · Nominal dalam rupiah</span>
-          <span>
-            <ShieldCheck size={12} />
-            Transfer antar akun tidak menambah pengeluaran.
-          </span>
-        </div>
-      </section>
-    </>
-  );
-}
-
 function Planning({
   store,
   save,
@@ -1365,7 +953,7 @@ function Planning({
       name: 'Untuk future you',
       subtitle: 'Tabungan & dana darurat',
       icon: PiggyBank,
-      color: '#24765d',
+      color: '#53aa8d',
       amount: preview.saving,
       account: store.accounts.find(
         (a) => !a.shared && store.goals.some((g) => g.accountId === a.id),
@@ -1376,7 +964,7 @@ function Planning({
       name: 'Enjoy a little',
       subtitle: 'Jajan, hiburan, hal yang kamu suka',
       icon: Coffee,
-      color: '#ba8554',
+      color: '#d4a05c',
       amount: preview.fun,
       account: undefined,
     },
@@ -1385,7 +973,7 @@ function Planning({
       name: 'A little for us',
       subtitle: 'Alokasi ke akun bersama',
       icon: Heart,
-      color: '#a1819b',
+      color: '#9694bf',
       amount: preview.together,
       account: store.accounts.find((a) => a.shared),
     },
@@ -1595,6 +1183,16 @@ function SettingsPanel({
   notify: (s: string) => void;
   recovery: boolean;
 }) {
+  const [theme, setTheme] = useState(document.documentElement.dataset.theme ?? 'light');
+  function chooseTheme(value: string) {
+    setTheme(value);
+    document.documentElement.dataset.theme = value;
+    try {
+      localStorage.setItem('skysave.theme', value);
+    } catch {
+      notify('Tema diterapkan untuk sesi ini. Preferensi belum bisa disimpan.');
+    }
+  }
   const [busy, setBusy] = useState(false);
   const [imported, setImported] = useState<{ data: Store; receipts: ReceiptBackup[] } | null>(null);
   const [error, setError] = useState('');
@@ -1733,6 +1331,28 @@ function SettingsPanel({
   }
   return (
     <div className="settings-content">
+      <section className="appearance-settings">
+        <h3>Tampilan yang nyaman untukmu</h3>
+        <p>Pilih suasana skySave sesuai harimu.</p>
+        <div className="theme-options">
+          {[
+            { id: 'light', label: 'Terang', icon: Sun },
+            { id: 'dark', label: 'Gelap', icon: Moon },
+            { id: 'system', label: 'Sistem', icon: Monitor },
+          ].map((t) => (
+            <button
+              key={t.id}
+              aria-pressed={theme === t.id}
+              className={theme === t.id ? 'selected' : ''}
+              onClick={() => chooseTheme(t.id)}
+            >
+              <t.icon size={22} />
+              <span>{t.label}</span>
+              {theme === t.id && <Check size={14} />}
+            </button>
+          ))}
+        </div>
+      </section>
       <div className="settings-privacy">
         <ShieldCheck size={25} />
         <div>
