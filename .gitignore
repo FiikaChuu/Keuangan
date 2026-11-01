@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+playwright-report/
+test-results/
+public/ocr/
+public/pdf/
+.env*
+!.env.example

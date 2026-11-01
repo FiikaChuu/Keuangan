@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "skySave — Your money, in balance.",
+  "short_name": "skySave",
+  "description": "Ruang tenang untuk uang, rencana, dan masa depanmu.",
+  "lang": "id",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f9f8",
+  "theme_color": "#f7f9f8",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

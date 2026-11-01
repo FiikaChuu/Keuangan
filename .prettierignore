@@ -1,0 +1,8 @@
+node_modules/
+dist/
+public/ocr/
+public/pdf/
+package-lock.json
+test-results/
+playwright-report/
+*.tsbuildinfo
