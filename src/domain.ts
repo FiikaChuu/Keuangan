@@ -49,14 +49,14 @@ export const categories = [
   'Lainnya',
 ];
 export const categoryColors: Record<string, string> = {
-  'Makanan & minuman': '#ef8587',
-  Belanja: '#242f50',
-  Transportasi: '#87cba7',
-  'Kuota & internet': '#e6bb6c',
-  Hiburan: '#a59bc8',
+  'Makanan & minuman': '#f37777',
+  Belanja: '#7ccb8c',
+  Transportasi: '#f6ae31',
+  'Kuota & internet': '#3ed0c2',
+  Hiburan: '#f6ae31',
   Langganan: '#b8a8c9',
   Kesehatan: '#d9a0a4',
-  'Rumah & tagihan': '#74a6a2',
+  'Rumah & tagihan': '#1d2949',
   'Biaya transfer': '#c1c8cf',
 };
 export const providers = [

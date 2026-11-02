@@ -9,11 +9,15 @@ function database(): Promise<IDBDatabase> {
   });
 }
 export async function saveReceipt(id: string, file: Blob) {
+  // Materialize bytes before opening the transaction. Some WebKit builds cannot
+  // serialize Blob/File backing storage into IndexedDB; buffers preserve the
+  // original bytes and avoid asynchronous file reads inside a live transaction.
+  const record = { data: await file.arrayBuffer(), type: file.type };
   const db = await database();
   try {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('files', 'readwrite');
-      tx.objectStore('files').put(file, id);
+      tx.objectStore('files').put(record, id);
       tx.oncomplete = () => resolve();
       tx.onerror = () =>
         reject(new Error('Bukti gagal disimpan. Periksa ruang penyimpanan perangkat.'));
@@ -28,7 +32,17 @@ export async function readReceipt(id: string): Promise<Blob | undefined> {
   try {
     return await new Promise((resolve, reject) => {
       const r = db.transaction('files').objectStore('files').get(id);
-      r.onsuccess = () => resolve(r.result);
+      r.onsuccess = () => {
+        const value = r.result;
+        if (value === undefined || value instanceof Blob) {
+          // Keep proofs saved by earlier skySave versions readable.
+          resolve(value);
+        } else if (value?.data instanceof ArrayBuffer && typeof value.type === 'string') {
+          resolve(new Blob([value.data], { type: value.type }));
+        } else {
+          reject(new Error('Format bukti tersimpan tidak dapat dibuka.'));
+        }
+      };
       r.onerror = () => reject(new Error('Bukti tidak dapat dibuka.'));
     });
   } finally {

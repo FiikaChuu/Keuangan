@@ -1,13 +1,35 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { today } from '../../src/domain';
+import { today, demoStore } from '../../src/domain';
 
 async function navigate(page: Page, name: string) {
-  const nav =
-    page.viewportSize()!.width <= 800
-      ? page.getByRole('navigation', { name: 'Navigasi mobile' })
-      : page.getByRole('navigation', { name: 'Navigasi utama' });
-  await nav.getByRole('button', { name, exact: true }).click();
+  const mobile = page.viewportSize()!.width <= 800;
+  const aliases: Record<string, string> = {
+    Riwayat: 'Transaksi',
+    Dompet: 'Dompet saya',
+    Beranda: 'Ringkasan',
+    Rencana: 'Rencana uang',
+    Bersama: 'Ruang bersama',
+    Setelan: 'Pengaturan',
+  };
+  name = aliases[name] ?? name;
+  const nav = page.getByRole('navigation', {
+    name: mobile ? 'Navigasi mobile' : 'Navigasi utama',
+  });
+  if (mobile && ['Rencana uang', 'Ruang bersama'].includes(name)) {
+    await nav.getByRole('button', { name: 'Dompet saya', exact: true }).click();
+    await page.locator('.wallet-tools').getByRole('button', { name, exact: true }).click();
+  } else {
+    await nav.getByRole('button', { name, exact: true }).click();
+  }
+}
+async function uploadProof(page: Page) {
+  const upload = page.getByRole('button', { name: 'Unggah bukti', exact: true });
+  if (await upload.isVisible()) await upload.click();
+  else {
+    await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+    await page.getByRole('button', { name: 'Dari bukti transaksi', exact: true }).click();
+  }
 }
 async function ownAccount(page: Page) {
   await page.goto('/');
@@ -22,14 +44,16 @@ test('dashboard renders without errors and navigation fits the viewport', async 
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Lebih tenang, lebih terencana.' })).toBeVisible();
-  await expect(page.getByText('data contoh', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.locator('.dashboard-demo-mobile:visible, .demo-banner:visible')).toHaveCount(1);
   await expect(page.getByRole('img', { name: /Grafik total saldo/ })).toBeVisible();
   for (const [desktop, mobile, heading] of [
-    ['Dompet saya', 'Dompet', 'Uangmu, di satu tempat.'],
+    ['Dompet saya', 'Dompet', 'Dompet'],
     ['Transaksi', 'Riwayat', 'Transaksi'],
-    ['Rencana uang', 'Rencana', 'Pemasukan berubah. Tujuan tetap.'],
-    ['Ruang bersama', 'Bersama', 'Untuk cerita kita.'],
+    ['Rencana uang', 'Rencana', 'Rencana uang'],
+    ['Ruang bersama', 'Bersama', 'Ruang bersama'],
+    ['Laporan', 'Laporan', 'Laporan'],
+    ['Pengaturan', 'Pengaturan', 'Pengaturan'],
   ]) {
     await navigate(page, page.viewportSize()!.width <= 800 ? mobile : desktop);
     await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
@@ -103,7 +127,7 @@ test('local OCR reads an actual image, stores proof and blocks duplicate upload'
 }) => {
   await ownAccount(page);
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
-  await page.getByRole('button', { name: 'Unggah bukti', exact: true }).click();
+  await uploadProof(page);
   const date = today().split('-').reverse().join('/');
   const data = await page.evaluate((date) => {
     const c = document.createElement('canvas');
@@ -142,26 +166,31 @@ test('local OCR reads an actual image, stores proof and blocks duplicate upload'
   await page.getByRole('button', { name: /^Lihat transaksi Kopi dari bukti/ }).click();
   await expect(page.getByAltText('Bukti Kopi dari bukti')).toBeVisible();
   await page.getByRole('button', { name: 'Tutup dialog' }).click();
-  await page.getByRole('button', { name: 'Unggah bukti', exact: true }).click();
+  await uploadProof(page);
   await page.locator('.upload-zone input').setInputFiles(file);
   await expect(page.getByRole('alert')).toContainText('Bukti ini sudah tercatat');
   await page.getByRole('button', { name: 'Tutup dialog' }).click();
-  await page.getByRole('button', { name: 'Buka pengaturan' }).click();
+  await navigate(page, 'Pengaturan');
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Unduh cadangan lengkap' }).click();
   const backupPath = await (await downloadPromise).path();
+  const { readFile } = await import('node:fs/promises');
+  const backup = JSON.parse(await readFile(backupPath!, 'utf8'));
+  expect(backup.receipts).toHaveLength(1);
+  expect(backup.receipts[0].data).toBe(data);
+  expect(backup.receipts[0].type).toBe('image/png');
   await page.locator('.file-action input').setInputFiles(backupPath!);
   await expect(page.getByText('Pulihkan 1 transaksi dan 1 rekening?')).toBeVisible();
   await page.getByRole('button', { name: 'Ganti & pulihkan' }).click();
   await expect(page.getByText('Pulihkan 1 transaksi dan 1 rekening?')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Tutup dialog' }).click();
+  await navigate(page, 'Transaksi');
   await page.getByRole('button', { name: /^Lihat transaksi Kopi dari bukti/ }).click();
   await expect(page.getByAltText('Bukti Kopi dari bukti')).toBeVisible();
 });
 test('PDF text extraction proposes amount and source for review', async ({ page }) => {
   await ownAccount(page);
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
-  await page.getByRole('button', { name: 'Unggah bukti', exact: true }).click();
+  await uploadProof(page);
   const text =
     'BT /F1 20 Tf 50 740 Td (SeaBank) Tj 0 -40 Td (Sumber dana: SeaBank) Tj 0 -40 Td (Total pembayaran Rp 225.000) Tj 0 -40 Td (No referensi PDF12345) Tj ET';
   const objects = [
@@ -194,7 +223,7 @@ test('PDF text extraction proposes amount and source for review', async ({ page 
 });
 test('complete backup, restore confirmation, and offline launch', async ({ page, context }) => {
   await ownAccount(page);
-  await page.getByRole('button', { name: 'Buka pengaturan' }).click();
+  await navigate(page, 'Pengaturan');
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Unduh cadangan lengkap' }).click();
   const backup = await downloadPromise;
@@ -204,14 +233,14 @@ test('complete backup, restore confirmation, and offline launch', async ({ page,
   await expect(page.getByText('Pulihkan 0 transaksi dan 1 rekening?')).toBeVisible();
   await page.getByRole('button', { name: 'Ganti & pulihkan' }).click();
   await expect(page.getByText('Pulihkan 0 transaksi dan 1 rekening?')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Tutup dialog' }).click();
+  await navigate(page, 'Ringkasan');
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
   await page.reload();
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Lebih tenang, lebih terencana.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
   await expect(page.getByText('Rp 5.000.000', { exact: true }).first()).toBeVisible();
   await context.setOffline(false);
 });
@@ -220,6 +249,15 @@ test('advanced category and amount filters combine and reset correctly', async (
   await page.goto('/');
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
   await page.getByRole('button', { name: 'Filter lanjutan', exact: true }).click();
+  await expect(page.getByText('Semua bulan', { exact: true })).toBeVisible();
+  const month = today().slice(0, 7);
+  await page.getByLabel('Filter bulan', { exact: true }).fill(month);
+  await expect(page.locator('.card-list .transaction-card')).toHaveCount(
+    demoStore().transactions.filter((t) => t.date.startsWith(month)).length,
+  );
+  await page.getByRole('button', { name: 'Hapus filter bulan', exact: true }).click();
+  await expect(page.getByText('Semua bulan', { exact: true })).toBeVisible();
+  await expect(page.locator('.card-list .transaction-card')).toHaveCount(14);
   await page.getByRole('button', { name: 'Filter kategori', exact: true }).click();
   await page.getByRole('option', { name: 'Kuota & internet' }).click();
   await page.getByLabel('Nominal minimum', { exact: true }).fill('80000');
@@ -284,8 +322,9 @@ test('category bottom sheet preserves its parent form and supports Escape', asyn
 
 test('reports export actual transactions and appearance survives reload', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Lihat laporan', exact: true }).first().click();
-  await expect(page.getByRole('heading', { name: 'Laporan keuangan', exact: true })).toBeVisible();
+  await navigate(page, 'Laporan');
+  await expect(page.getByRole('heading', { name: 'Laporan', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
   await expect(
     page.locator('.report-summary').getByText('Rp 5.200.000', { exact: true }),
   ).toBeVisible();
@@ -304,11 +343,115 @@ test('reports export actual transactions and appearance survives reload', async 
   await expect(page.locator('.print-transactions')).toBeVisible();
   await expect(page.locator('.print-transactions tbody tr')).toHaveCount(14);
   await page.emulateMedia({ media: 'screen' });
-  await page.getByRole('button', { name: 'Tutup dialog', exact: true }).click();
-  await page.getByRole('button', { name: 'Buka pengaturan', exact: true }).click();
+  await navigate(page, 'Pengaturan');
   await page.getByRole('button', { name: 'Gelap', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.getByRole('heading', { name: 'Lebih tenang, lebih terencana.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+});
+
+test('account sheet preserves the form and spends only from the selected wallet', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await navigate(page, 'Transaksi');
+  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+  await page.getByLabel('Nama transaksi').fill('Biaya dari OVO');
+  await page.getByLabel('Nominal (Rp)', { exact: true }).fill('500000');
+  await page.getByRole('button', { name: 'Dari rekening', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(2);
+  await page.getByRole('option', { name: /OVO · Little treats/ }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(page.getByLabel('Nama transaksi')).toHaveValue('Biaya dari OVO');
+  await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Saldo');
+  await page.getByLabel('Nominal (Rp)', { exact: true }).fill('65000');
+  await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
+  const created = state.transactions.find((t: { title: string }) => t.title === 'Biaya dari OVO');
+  expect(created.accountId).toBe(
+    state.accounts.find((a: { provider: string }) => a.provider === 'OVO').id,
+  );
+  await navigate(page, 'Dompet saya');
+  await expect(page.getByText('Rp 302.000', { exact: true }).first()).toBeVisible();
+});
+
+test('insight preferences change dashboard content and persist after reload', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.figma-insight-card')).toHaveCount(6);
+  await navigate(page, 'Pengaturan');
+  const toggle = page.getByRole('switch', { name: 'Saran alokasi dan tabungan' });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await navigate(page, 'Ringkasan');
+  await expect(page.locator('.figma-insight-card')).toHaveCount(4);
+  await page.reload();
+  await expect(page.locator('.figma-insight-card')).toHaveCount(4);
+  await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
+  await page
+    .getByRole('img', { name: /Grafik total saldo/ })
+    .hover({ position: { x: 200, y: 70 } });
+  await page.getByRole('button', { name: 'Mingguan', exact: true }).click();
+  await expect(page.getByRole('img', { name: /Grafik total saldo/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Perbarui insight', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: /diperbarui/i })).toBeVisible();
+});
+
+test('report filters exclude transfer principal and reject a future reporting date', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await navigate(page, 'Laporan');
+  await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
+  await page.getByRole('button', { name: 'Transfer', exact: true }).click();
+  const summary = page.locator('.report-summary');
+  await expect(summary.getByText('Rp 0', { exact: true })).toHaveCount(4);
+  await expect(summary.getByText('Rp 1.450.000', { exact: true })).toBeVisible();
+  await expect(summary.getByText('2', { exact: true })).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Ekspor CSV', exact: true }).click();
+  const file = await (await download).path();
+  const { readFile } = await import('node:fs/promises');
+  const csv = await readFile(file!, 'utf8');
+  expect(csv).toContain('Tabungan dana darurat');
+  expect(csv).not.toContain('A good lunch');
+  await page.getByLabel('Tanggal laporan').fill('2099-01-01');
+  await expect(page.getByRole('alert')).toContainText('tanggal yang valid');
+  await expect(page.getByRole('button', { name: 'Ekspor CSV', exact: true })).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: 'Cetak / simpan PDF', exact: true }),
+  ).toBeDisabled();
+});
+
+test('iPhone layouts and nested forms fit narrow, large and landscape screens', async ({
+  page,
+}) => {
+  await page.goto('/');
+  for (const [width, height] of [
+    [375, 667],
+    [393, 852],
+    [430, 932],
+    [852, 393],
+  ]) {
+    await page.setViewportSize({ width, height });
+    for (const name of ['Ringkasan', 'Dompet saya', 'Transaksi', 'Laporan', 'Pengaturan']) {
+      await navigate(page, name);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        `${name} at ${width}px`,
+      ).toBeTruthy();
+    }
+    await navigate(page, 'Transaksi');
+    await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+    await page.getByLabel('Nama transaksi').fill('Catatan dengan nama yang panjang untuk diuji');
+    await page.getByRole('button', { name: 'Dari rekening', exact: true }).click();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `account sheet at ${width}px`,
+    ).toBeTruthy();
+    await page.getByRole('button', { name: 'Tutup dialog', exact: true }).last().click();
+    await page.getByRole('button', { name: 'Tutup dialog', exact: true }).click();
+  }
 });

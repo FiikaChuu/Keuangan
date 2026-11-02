@@ -1,0 +1,1491 @@
+/* Design tokens and dashboard composition adapted from the supplied HomeIphone export. */
+:root {
+  font-family:
+    'Poppins',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  --bg: #f9f8f6;
+  --surface: #ffffff;
+  --soft: #f0eeeb;
+  --ink: #1e263e;
+  --muted: #676d7e;
+  --line: #e4e2dd;
+  --navy: #1d2949;
+  --accent: #1d2949;
+  --accent-text: #fcfcfc;
+  --mint: #7ccb8c;
+  --mint-soft: #edf8ef;
+  --mint-ink: #397c49;
+  --coral: #f37777;
+  --coral-soft: #fff0ef;
+  --coral-ink: #ae414b;
+  --turquoise: #3ed0c2;
+  --turquoise-soft: #e5f8f5;
+  --turquoise-ink: #207c75;
+  --warning: #f6ae31;
+  --warning-soft: #fff4df;
+  --warning-ink: #986110;
+}
+:root[data-theme='dark'] {
+  --bg: #171c2a;
+  --surface: #212839;
+  --soft: #2b3244;
+  --ink: #edf0fa;
+  --muted: #a6aec3;
+  --line: #343c50;
+  --navy: #1d2949;
+  --accent: #becbea;
+  --accent-text: #202c49;
+  --mint: #91d59d;
+  --mint-soft: #293c32;
+  --mint-ink: #9ed9a9;
+  --coral: #f69b9d;
+  --coral-soft: #453137;
+  --coral-ink: #ffb2b4;
+  --turquoise-soft: #253d3e;
+  --turquoise-ink: #86ded4;
+  --warning-soft: #403829;
+  --warning-ink: #edc276;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='system'] {
+    --bg: #171c2a;
+    --surface: #212839;
+    --soft: #2b3244;
+    --ink: #edf0fa;
+    --muted: #a6aec3;
+    --line: #343c50;
+    --navy: #1d2949;
+    --accent: #becbea;
+    --accent-text: #202c49;
+    --mint: #91d59d;
+    --mint-soft: #293c32;
+    --mint-ink: #9ed9a9;
+    --coral: #f69b9d;
+    --coral-soft: #453137;
+    --coral-ink: #ffb2b4;
+    --turquoise-soft: #253d3e;
+    --turquoise-ink: #86ded4;
+    --warning-soft: #403829;
+    --warning-ink: #edc276;
+  }
+}
+h1,
+h2,
+h3 {
+  font-weight: 600;
+}
+.page-heading h1 {
+  font-weight: 600;
+  letter-spacing: -0.7px;
+}
+.logo {
+  font-weight: 700;
+}
+.logo-save {
+  font-weight: 500;
+}
+.logo-dot {
+  color: var(--turquoise);
+}
+.transaction-title > strong,
+.transaction-amount > strong {
+  font-weight: 600;
+}
+.page-heading p {
+  line-height: 1.8;
+}
+.figma-dashboard {
+  min-width: 0;
+}
+.figma-dashboard-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.figma-dashboard-header h1 {
+  font-size: 30px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+  color: var(--ink);
+}
+.figma-dashboard-header p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dashboard-header-actions .btn {
+  font-size: 11px;
+  min-height: 44px;
+  border-radius: 14px;
+}
+.dashboard-settings-mobile {
+  display: none;
+}
+.figma-period-control {
+  display: flex;
+  align-items: center;
+  width: 360px;
+  max-width: 100%;
+  min-height: 44px;
+  background: var(--soft);
+  border-radius: 16px;
+  padding: 4px 5px;
+  grid-column: 1/-1;
+  gap: 5px;
+}
+.figma-period-control > button {
+  flex: 1;
+  padding: 9px 12px;
+  min-height: 36px;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--muted);
+}
+.figma-period-control > button.selected {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.dashboard-demo-mobile {
+  display: none;
+}
+.figma-metrics-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 22px;
+  margin-bottom: 24px;
+}
+.figma-balance-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 15px;
+  padding: 27px 30px;
+  background: #1d2949;
+  border-radius: 24px;
+  color: #fff;
+  overflow: hidden;
+}
+.figma-balance-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.figma-balance-heading > span {
+  color: #fcfcfcb3;
+  font-size: 14px;
+  font-weight: 500;
+}
+.figma-balance-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.figma-wallet-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff14;
+  border-radius: 12px;
+  padding: 5px 8px;
+  font-size: 10px;
+  color: #dce3f1;
+  white-space: nowrap;
+}
+.figma-balance-heading button {
+  display: grid;
+  place-items: center;
+  height: 27px;
+  width: 27px;
+  color: #cdd6e7;
+  border-radius: 8px;
+  padding: 0;
+}
+.figma-balance-heading button:hover {
+  background: #ffffff16;
+}
+.figma-balance-amount {
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.figma-balance-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.figma-balance-breakdown > div {
+  display: grid;
+  gap: 5px;
+}
+.figma-balance-breakdown dt {
+  font-size: 10px;
+  color: #b9c4d9;
+}
+.figma-balance-breakdown dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f5f7fd;
+}
+.figma-manage-wallets {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 0 0;
+  margin-top: 5px;
+  border-top: 1px solid #ffffff17;
+  color: #dae3f3;
+  font-size: 11px;
+  font-weight: 500;
+}
+.figma-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.figma-stat {
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 0.5px solid var(--soft);
+  min-width: 0;
+}
+.figma-stat > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+.figma-stat h2 {
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.figma-stat > div > span {
+  display: grid;
+  place-items: center;
+  height: 27px;
+  width: 27px;
+  border-radius: 10px;
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+  flex-shrink: 0;
+}
+.figma-stat > strong {
+  display: block;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.figma-stat p,
+.figma-stat > button {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.8;
+  font-weight: 400;
+}
+.figma-stat > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  text-align: left;
+}
+.figma-stat > button:hover {
+  color: var(--ink);
+}
+.figma-stat.income > strong {
+  color: var(--mint-ink);
+}
+.figma-stat.expense > strong {
+  color: var(--coral-ink);
+}
+.figma-stat.saving > strong {
+  color: var(--warning-ink);
+}
+.figma-stat.together > strong {
+  color: var(--turquoise-ink);
+}
+.figma-stat.expense > div > span {
+  background: var(--coral-soft);
+  color: var(--coral-ink);
+}
+.figma-stat.saving > div > span {
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+}
+.figma-stat.together > div > span {
+  background: var(--turquoise-soft);
+  color: var(--turquoise-ink);
+}
+.figma-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(290px, 1fr);
+  grid-template-areas: 'cashflow wallets' 'balance net' 'spending insights' 'recent insights';
+  align-items: start;
+  gap: 24px;
+}
+.figma-cashflow {
+  grid-area: cashflow;
+}
+.figma-balance-trend {
+  grid-area: balance;
+}
+.figma-net-trend {
+  grid-area: net;
+}
+.figma-spending {
+  grid-area: spending;
+}
+.figma-insights {
+  grid-area: insights;
+}
+.figma-wallets {
+  grid-area: wallets;
+}
+.figma-recent {
+  grid-area: recent;
+}
+.figma-dashboard .panel {
+  border: 0.5px solid var(--soft);
+  border-radius: 18px;
+}
+.figma-dashboard .panel-heading {
+  padding: 18px 20px 0;
+  min-width: 0;
+}
+.figma-dashboard .panel-heading h2 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+.figma-dashboard .panel-heading > .text-btn {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.figma-tiny-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.figma-tiny-legend i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  background: var(--turquoise);
+  border-radius: 50%;
+}
+.figma-chart-panel {
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+}
+.figma-chart-panel .chart-container,
+.net-flow-chart,
+.figma-chart-panel .cashflow-chart {
+  padding: 16px 18px 12px;
+}
+.figma-chart-panel .chart-current {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 15px;
+}
+.figma-chart-panel .chart-current > span {
+  font-size: 9px;
+  color: var(--muted);
+}
+.figma-chart-panel .chart-current > strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.net-flow-chart > svg,
+.figma-chart-panel .chart-container > svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.figma-chart-panel .cashflow-legend {
+  font-size: 10px;
+  margin: 0 0 13px;
+  gap: 16px;
+}
+.figma-chart-panel .cashflow-legend > span:first-child i {
+  background: #7ccb8c;
+}
+.figma-chart-panel .cashflow-legend > span:last-child i {
+  background: #f37777;
+}
+.figma-chart-panel svg text {
+  font-family: 'Poppins', sans-serif;
+}
+.chart-note {
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin-top: 8px;
+}
+.figma-donut-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  align-items: center;
+  padding: 5px 14px 15px;
+}
+.figma-donut-layout .donut {
+  width: 185px;
+  height: 185px;
+  margin: 4px auto;
+}
+.figma-donut-layout .donut > span {
+  z-index: 1;
+  gap: 5px;
+}
+.figma-donut-layout .donut > span::before {
+  content: '';
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 2px 9px #00000012;
+  position: absolute;
+  z-index: -1;
+}
+.figma-donut-layout .donut strong {
+  font-family: 'Poppins', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.figma-donut-layout .donut small {
+  font-size: 7px;
+  text-align: center;
+}
+.figma-donut-layout .spending-legend {
+  padding: 0 9px 0 0;
+  gap: 14px;
+  min-width: 0;
+}
+.figma-donut-layout .spending-legend > div {
+  font-size: 11px;
+  gap: 7px;
+}
+.figma-donut-layout .spending-legend > div > span {
+  min-width: 0;
+  font-size: 10px;
+  gap: 7px;
+  line-height: 1.6;
+}
+.figma-donut-layout .spending-legend strong {
+  font-size: 10px;
+  font-weight: 600;
+}
+.figma-donut-layout .spending-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.figma-insights-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 13px;
+  margin: 0 0 10px;
+}
+.figma-insights-header > h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+.figma-insights-header > h2 > svg {
+  color: var(--turquoise);
+}
+.figma-insights-header > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 20px;
+  background: var(--turquoise-soft);
+  color: var(--turquoise-ink);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.figma-insights-header > button:hover {
+  filter: brightness(0.96);
+}
+.insight-method {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+.figma-insight-cards {
+  display: grid;
+  gap: 14px;
+}
+.figma-insight-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 0.5px solid var(--soft);
+}
+.figma-insight-icon {
+  height: 34px;
+  width: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--turquoise-soft);
+  color: var(--turquoise-ink);
+}
+.figma-insight-card.success .figma-insight-icon {
+  background: var(--mint-soft);
+  color: var(--mint-ink);
+}
+.figma-insight-card.warning .figma-insight-icon {
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+}
+.figma-insight-card.coral .figma-insight-icon {
+  background: var(--coral-soft);
+  color: var(--coral-ink);
+}
+.figma-insight-card > div {
+  min-width: 0;
+  flex: 1;
+}
+.figma-insight-tag {
+  display: block;
+  font-size: 9px;
+  color: var(--turquoise-ink);
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+.figma-insight-card.success .figma-insight-tag {
+  color: var(--mint-ink);
+}
+.figma-insight-card.warning .figma-insight-tag {
+  color: var(--warning-ink);
+}
+.figma-insight-card.coral .figma-insight-tag {
+  color: var(--coral-ink);
+}
+.figma-insight-card h3 {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.figma-insight-card p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.figma-insight-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 0 0;
+  color: var(--turquoise-ink);
+  font-size: 9px;
+  font-weight: 500;
+}
+.insights-updated {
+  padding: 12px 0 0;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.figma-wallets .wallet-strip {
+  padding: 14px 18px 5px;
+}
+.figma-wallets .wallet-card {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 15px;
+}
+.figma-wallets .wallet-card:first-child {
+  background: var(--navy);
+  color: #fff;
+}
+.figma-wallets .wallet-card:first-child .wallet-name > span,
+.figma-wallets .wallet-card:first-child .wallet-card-top > span:last-child,
+.figma-wallets .wallet-card:first-child .wallet-balance > svg {
+  color: #c0cadd;
+}
+.figma-wallets .wallet-balance > strong {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.figma-wallets .wallet-name > strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.figma-wallets .wallet-name > span {
+  font-size: 9px;
+}
+.figma-wallets .provider-mark {
+  height: 26px;
+  min-width: 28px;
+}
+.figma-wallets .all-wallets {
+  padding: 14px 18px 18px;
+  font-size: 10px;
+  font-weight: 500;
+}
+.figma-recent .compact.transaction-list {
+  padding: 6px 20px;
+}
+.figma-recent .compact .transaction-category {
+  width: 37px;
+  height: 40px;
+  border-radius: 12px;
+}
+.figma-recent .compact .transaction-title > strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.figma-recent .compact .transaction-amount > strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.figma-recent .compact .transaction-main {
+  grid-template-columns: 37px minmax(0, 1fr) 119px;
+  gap: 10px;
+}
+.figma-recent .compact .transaction-description,
+.figma-recent .compact .transaction-provider {
+  font-size: 9px;
+}
+.figma-bottom-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+.figma-bottom-actions > .btn {
+  font-size: 11px;
+  font-weight: 500;
+  min-height: 46px;
+}
+.mobile-nav {
+  box-shadow: 0 -15px 40px #0961f51a;
+}
+@media (min-width: 1600px) {
+  .figma-dashboard-header h1 {
+    font-size: 34px;
+  }
+  .figma-metrics-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 25px;
+  }
+  .figma-balance-card {
+    padding: 30px 35px;
+  }
+  .figma-balance-amount {
+    font-size: 43px;
+  }
+  .figma-balance-heading > span {
+    font-size: 15px;
+  }
+  .figma-balance-breakdown dd {
+    font-size: 15px;
+  }
+  .figma-stat {
+    padding: 21px;
+  }
+  .figma-stat h2 {
+    font-size: 14px;
+  }
+  .figma-stat > strong {
+    font-size: 29px;
+  }
+  .figma-stat p,
+  .figma-stat > button {
+    font-size: 11px;
+  }
+  .figma-dashboard-grid {
+    gap: 26px;
+    grid-template-columns: minmax(0, 1.8fr) minmax(320px, 1fr);
+  }
+  .figma-dashboard .panel-heading h2 {
+    font-size: 17px;
+  }
+  .figma-insight-card {
+    padding: 19px;
+  }
+  .figma-insight-card h3 {
+    font-size: 13px;
+  }
+  .figma-insight-card p {
+    font-size: 12px;
+  }
+}
+@media (min-width: 801px) and (max-width: 1250px) {
+  .figma-metrics-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 18px;
+  }
+  .figma-balance-card {
+    padding: 22px;
+  }
+  .figma-balance-heading > span {
+    font-size: 12px;
+  }
+  .figma-balance-amount {
+    font-size: 28px;
+  }
+  .figma-wallet-count {
+    font-size: 8px;
+    padding: 4px 6px;
+  }
+  .figma-balance-breakdown {
+    gap: 16px;
+  }
+  .figma-balance-breakdown dd {
+    font-size: 11px;
+  }
+  .figma-stat {
+    padding: 15px;
+  }
+  .figma-stat h2 {
+    font-size: 11px;
+  }
+  .figma-stat > strong {
+    font-size: 22px;
+  }
+  .figma-stat p,
+  .figma-stat > button {
+    font-size: 9px;
+  }
+  .figma-dashboard-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(270px, 1fr);
+    gap: 19px;
+  }
+  .figma-dashboard .panel-heading {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+  .figma-dashboard .panel-heading h2 {
+    font-size: 13px;
+  }
+  .figma-wallets .wallet-strip {
+    padding-left: 14px;
+    padding-right: 14px;
+    gap: 9px;
+  }
+  .figma-wallets .wallet-card {
+    padding: 12px;
+  }
+  .figma-wallets .wallet-balance > strong {
+    font-size: 14px;
+  }
+  .figma-chart-panel .chart-container,
+  .net-flow-chart,
+  .figma-chart-panel .cashflow-chart {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .figma-donut-layout {
+    gap: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .figma-donut-layout .donut {
+    height: 160px;
+    width: 160px;
+  }
+  .figma-donut-layout .donut > span::before {
+    height: 91px;
+    width: 91px;
+  }
+  .figma-donut-layout .donut strong {
+    font-size: 14px;
+  }
+  .figma-donut-layout .spending-legend > div > span {
+    font-size: 9px;
+  }
+  .figma-insight-card {
+    padding: 14px;
+    gap: 10px;
+  }
+  .figma-insight-card p {
+    font-size: 10px;
+  }
+  .figma-insight-card h3 {
+    font-size: 11px;
+  }
+}
+@media (max-width: 800px) {
+  .figma-dashboard-header {
+    gap: 17px;
+    margin-bottom: 20px;
+  }
+  .figma-dashboard-header h1 {
+    font-size: 28px;
+  }
+  .figma-dashboard-header p {
+    font-size: 12px;
+  }
+  .dashboard-header-actions {
+    gap: 9px;
+  }
+  .dashboard-header-actions .btn {
+    font-size: 10px;
+    padding: 12px;
+  }
+  .figma-metrics-layout {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  .figma-balance-card {
+    padding: 23px;
+    gap: 12px;
+  }
+  .figma-balance-heading > span {
+    font-size: 13px;
+  }
+  .figma-balance-amount {
+    font-size: 34px;
+  }
+  .figma-balance-breakdown {
+    gap: 22px;
+  }
+  .figma-balance-breakdown > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .figma-balance-breakdown dt {
+    font-size: 11px;
+  }
+  .figma-balance-breakdown dd {
+    font-size: 12px;
+  }
+  .figma-manage-wallets {
+    display: none;
+  }
+  .figma-summary-grid {
+    gap: 14px;
+  }
+  .figma-stat {
+    padding: 18px;
+  }
+  .figma-stat > strong {
+    font-size: 25px;
+    white-space: nowrap;
+  }
+  .figma-stat h2 {
+    font-size: 13px;
+  }
+  .figma-stat p,
+  .figma-stat > button {
+    font-size: 11px;
+  }
+  .figma-dashboard-grid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr);
+    gap: 20px;
+  }
+  .figma-dashboard .panel-heading {
+    padding: 18px 18px 0;
+  }
+  .figma-dashboard .panel-heading h2 {
+    font-size: 14px;
+  }
+  .figma-tiny-legend {
+    font-size: 8px;
+  }
+  .figma-insights-header > h2 {
+    font-size: 16px;
+  }
+  .figma-insights-header > button {
+    font-size: 9px;
+  }
+  .figma-donut-layout {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  .figma-donut-layout .donut {
+    width: 175px;
+    height: 175px;
+  }
+  .figma-donut-layout .spending-legend {
+    padding: 0 14px 15px;
+    gap: 12px;
+  }
+  .figma-donut-layout .donut strong {
+    font-size: 16px;
+  }
+  .figma-recent .compact .transaction-main {
+    grid-template-columns: 35px minmax(0, 1fr) 100px;
+    gap: 9px;
+  }
+  .figma-recent .compact .transaction-category {
+    width: 35px;
+    height: 39px;
+  }
+  .figma-recent .compact .transaction-title > strong {
+    font-size: 10px;
+  }
+  .figma-recent .compact .transaction-amount > strong {
+    font-size: 12px;
+  }
+  .figma-recent .compact .transaction-description,
+  .figma-recent .compact .transaction-provider {
+    font-size: 8px;
+  }
+  .figma-insight-card {
+    gap: 10px;
+    padding: 14px;
+  }
+  .figma-insight-card p {
+    font-size: 10px;
+  }
+  .figma-insight-card h3 {
+    font-size: 11px;
+  }
+}
+@media (max-width: 580px) {
+  .app-shell[data-page='overview'] .topbar,
+  .app-shell[data-page='overview'] > .main-shell > main > .demo-banner {
+    display: none;
+  }
+  .app-shell[data-page='overview'] main {
+    padding: 24px 24px calc(100px + env(safe-area-inset-bottom));
+  }
+  .dashboard-demo-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--turquoise-soft);
+    font-size: 9px;
+    color: var(--turquoise-ink);
+  }
+  .dashboard-demo-mobile > button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 0;
+  }
+  .figma-dashboard-header {
+    gap: 13px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .figma-dashboard-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.4px;
+    line-height: 32px;
+  }
+  .figma-dashboard-header p {
+    font-size: 12px;
+    margin-top: 1px;
+    line-height: 20px;
+  }
+  .dashboard-header-actions {
+    gap: 7px;
+  }
+  .dashboard-header-actions > .btn {
+    min-height: 37px;
+    height: 37px;
+    width: 37px;
+    min-width: 37px;
+    padding: 0;
+    border-radius: 12px;
+  }
+  .dashboard-header-actions > .btn > span {
+    display: none;
+  }
+  .dashboard-settings-mobile {
+    display: inline-grid;
+    width: 34px;
+    height: 37px;
+    background: var(--soft);
+    border-radius: 12px;
+  }
+  .dashboard-header-actions > .btn > svg {
+    width: 17px;
+    height: 17px;
+  }
+  .dashboard-settings-mobile > svg {
+    width: 17px;
+    height: 17px;
+  }
+  .figma-period-control {
+    min-height: 44px;
+    width: 100%;
+    border-radius: 16px;
+    padding: 4px 5px;
+  }
+  .figma-period-control > button {
+    min-height: 36px;
+    border-radius: 11px;
+    padding: 7px 8px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .figma-metrics-layout {
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .figma-balance-card {
+    padding: 18px;
+    gap: 7px;
+    border-radius: 24px;
+  }
+  .figma-balance-heading {
+    gap: 8px;
+  }
+  .figma-balance-heading > span {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .figma-balance-heading > div {
+    gap: 4px;
+  }
+  .figma-wallet-count {
+    font-size: 9px;
+    padding: 5px 7px;
+    gap: 4px;
+  }
+  .figma-balance-heading button {
+    width: 25px;
+    height: 25px;
+  }
+  .figma-balance-amount {
+    font-size: 32px;
+    line-height: 1.5;
+    letter-spacing: -0.7px;
+    font-weight: 600;
+  }
+  .figma-balance-breakdown {
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .figma-balance-breakdown > div {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+  .figma-balance-breakdown dt {
+    font-size: 9px;
+    color: #c2cbe0;
+  }
+  .figma-balance-breakdown dd {
+    font-size: 10px;
+    font-weight: 400;
+  }
+  .figma-summary-grid {
+    gap: 14px;
+  }
+  .figma-stat {
+    padding: 14px;
+    border-radius: 24px;
+  }
+  .figma-stat > div {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .figma-stat h2 {
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .figma-stat > div > span {
+    width: 25px;
+    height: 25px;
+    border-radius: 10px;
+  }
+  .figma-stat > div > span > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .figma-stat > strong {
+    font-size: clamp(16px, 4.65vw, 24px);
+    line-height: 1.5;
+    font-weight: 600;
+    letter-spacing: -0.6px;
+    white-space: nowrap;
+  }
+  .figma-stat p,
+  .figma-stat > button {
+    font-size: 9px;
+    line-height: 1.8;
+    margin-top: 3px;
+  }
+  .figma-stat > button {
+    gap: 5px;
+  }
+  .figma-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'cashflow' 'balance' 'net' 'spending' 'insights' 'wallets' 'recent';
+    gap: 14px;
+  }
+  .figma-dashboard .panel {
+    border-radius: 18px;
+  }
+  .figma-dashboard .panel-heading {
+    padding: 14px 18px 0;
+    gap: 10px;
+  }
+  .figma-dashboard .panel-heading h2 {
+    font-size: 14px;
+    line-height: 24px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .figma-dashboard .panel-heading > .text-btn {
+    font-size: 9px;
+    gap: 3px;
+  }
+  .figma-dashboard .panel-heading > .text-btn > svg {
+    width: 12px;
+    height: 12px;
+  }
+  .figma-chart-panel .cashflow-chart {
+    padding: 10px 14px 13px;
+  }
+  .figma-chart-panel .cashflow-legend {
+    font-size: 9px;
+    gap: 13px;
+    margin-bottom: 7px;
+  }
+  .figma-chart-panel .cashflow-chart > svg {
+    min-height: 165px;
+  }
+  .figma-chart-panel .chart-container,
+  .net-flow-chart {
+    padding: 11px 14px 12px;
+  }
+  .figma-chart-panel .chart-current {
+    gap: 5px 9px;
+    margin-bottom: 10px;
+  }
+  .figma-chart-panel .chart-current > span {
+    font-size: 8px;
+  }
+  .figma-chart-panel .chart-current > strong {
+    font-size: 10px;
+  }
+  .figma-chart-panel .chart-container > svg,
+  .net-flow-chart > svg {
+    min-height: 159px;
+  }
+  .figma-tiny-legend {
+    font-size: 8px;
+    gap: 4px;
+  }
+  .chart-note {
+    font-size: 8px;
+    line-height: 1.8;
+    margin-top: 3px;
+  }
+  .figma-donut-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px 13px 15px;
+  }
+  .figma-donut-layout .donut {
+    width: 155px;
+    height: 155px;
+    margin: 0 0 0 -4px;
+  }
+  .figma-donut-layout .donut > span::before {
+    width: 88px;
+    height: 88px;
+  }
+  .figma-donut-layout .donut strong {
+    font-size: 13px;
+    letter-spacing: -0.4px;
+  }
+  .figma-donut-layout .donut small {
+    font-size: 6px;
+  }
+  .figma-donut-layout .spending-legend {
+    padding: 0 1px 0 0;
+    gap: 13px;
+  }
+  .figma-donut-layout .spending-legend > div {
+    gap: 5px;
+    font-size: 9px;
+  }
+  .figma-donut-layout .spending-legend > div > span {
+    font-size: 8px;
+    line-height: 1.5;
+    gap: 5px;
+  }
+  .figma-donut-layout .spending-legend strong {
+    font-size: 9px;
+    font-weight: 600;
+  }
+  .figma-donut-layout .spending-legend i {
+    width: 6px;
+    height: 6px;
+  }
+  .figma-insights {
+    margin-top: 8px;
+  }
+  .figma-insights-header {
+    margin-bottom: 7px;
+  }
+  .figma-insights-header > h2 {
+    font-size: 16px;
+    font-weight: 600;
+    gap: 7px;
+  }
+  .figma-insights-header > button {
+    min-height: 33px;
+    font-size: 10px;
+    padding: 7px 10px;
+  }
+  .insight-method {
+    font-size: 9px;
+    line-height: 1.8;
+    margin-bottom: 12px;
+  }
+  .figma-insight-cards {
+    gap: 14px;
+  }
+  .figma-insight-card {
+    padding: 14px;
+    gap: 13px;
+    border-radius: 16px;
+  }
+  .figma-insight-icon {
+    height: 33px;
+    width: 33px;
+    border-radius: 9px;
+  }
+  .figma-insight-card > div {
+    flex: 1;
+    min-width: 0;
+  }
+  .figma-insight-tag {
+    font-size: 8px;
+    line-height: 1.6;
+    margin-bottom: 4px;
+  }
+  .figma-insight-card h3 {
+    font-size: 11px;
+    line-height: 1.7;
+    font-weight: 500;
+  }
+  .figma-insight-card p {
+    font-size: 10px;
+    line-height: 1.8;
+    margin-top: 4px;
+  }
+  .figma-insight-link {
+    font-size: 9px;
+    padding-top: 7px;
+  }
+  .figma-wallets .wallet-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px 16px 3px;
+  }
+  .figma-wallets .wallet-card {
+    padding: 14px;
+    border-radius: 15px;
+  }
+  .figma-wallets .wallet-balance > strong {
+    font-size: 16px;
+  }
+  .figma-recent .compact.transaction-list {
+    padding: 5px 16px;
+  }
+  .figma-recent .compact .transaction-main {
+    grid-template-columns: 35px minmax(0, 1fr) 105px;
+    gap: 9px;
+  }
+  .figma-recent .compact .transaction-title > strong {
+    font-size: 10px;
+  }
+  .figma-recent .compact .transaction-amount > strong {
+    font-size: 12px;
+  }
+  .figma-recent .compact .transaction-provider,
+  .figma-recent .compact .transaction-description {
+    font-size: 8px;
+  }
+  .figma-bottom-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .figma-bottom-actions > .btn {
+    font-size: 10px;
+    padding: 12px 8px;
+    border-radius: 14px;
+    min-height: 46px;
+    gap: 6px;
+  }
+  .figma-bottom-actions > .btn > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .mobile-nav {
+    border-radius: 24px 24px 0 0;
+    padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+  }
+  .mobile-nav > button {
+    font-size: 10px;
+    letter-spacing: 0.1px;
+    gap: 6px;
+    font-weight: 500;
+  }
+  .mobile-nav > button.active {
+    font-weight: 600;
+  }
+  .mobile-nav > button.active::before {
+    display: none;
+  }
+  .mobile-nav > button > svg {
+    width: 23px;
+    height: 23px;
+  }
+  .transaction-summary strong {
+    font-size: clamp(10px, 3.15vw, 16px);
+  }
+}
+@media (max-width: 370px) {
+  .app-shell[data-page='overview'] main {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .figma-dashboard-header h1 {
+    font-size: 23px;
+  }
+  .figma-dashboard-header p {
+    font-size: 10px;
+  }
+  .dashboard-header-actions {
+    gap: 5px;
+  }
+  .dashboard-header-actions > .btn {
+    height: 34px;
+    min-height: 34px;
+    width: 34px;
+    min-width: 34px;
+  }
+  .dashboard-settings-mobile {
+    width: 30px;
+    height: 34px;
+  }
+  .figma-balance-card {
+    padding: 16px;
+  }
+  .figma-balance-heading > span {
+    font-size: 12px;
+  }
+  .figma-balance-amount {
+    font-size: 30px;
+  }
+  .figma-balance-breakdown {
+    gap: 12px;
+  }
+  .figma-balance-breakdown dd {
+    font-size: 9px;
+  }
+  .figma-stat {
+    padding: 13px;
+  }
+  .figma-stat h2 {
+    font-size: 10px;
+  }
+  .figma-stat > strong {
+    font-size: 16px;
+  }
+  .figma-stat p,
+  .figma-stat > button {
+    font-size: 8px;
+  }
+  .figma-dashboard .panel-heading h2 {
+    font-size: 13px;
+  }
+  .figma-donut-layout {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .figma-donut-layout .donut {
+    width: 145px;
+    height: 145px;
+  }
+  .figma-donut-layout .donut > span::before {
+    width: 82px;
+    height: 82px;
+  }
+  .figma-donut-layout .donut strong {
+    font-size: 12px;
+  }
+}
+@media print {
+  :root,
+  :root[data-theme] {
+    --bg: #fff;
+    --surface: #fff;
+    --soft: #f5f5f5;
+    --ink: #111;
+    --muted: #555;
+    --line: #ddd;
+    --mint-ink: #258056;
+    --coral-ink: #c85055;
+  }
+}

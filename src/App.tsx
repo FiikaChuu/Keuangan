@@ -50,9 +50,11 @@ import { TransactionForm, AccountForm, GoalForm, TransactionDetail } from './for
 import TransactionsPage from './TransactionsPage';
 import Overview from './Dashboard';
 import Reports from './Reports';
+import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
+import type { InsightPreferences } from './preferences';
 import { clearReceipts, deleteReceipt, readReceipt, saveReceipt } from './receipts';
 
-type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
+type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together' | 'reports' | 'settings';
 type Dialog =
   | {
       type: 'transaction';
@@ -62,16 +64,19 @@ type Dialog =
     }
   | { type: 'account'; shared?: boolean }
   | { type: 'goal' }
-  | { type: 'settings' }
   | { type: 'detail'; tx: Transaction }
   | { type: 'confirm'; title: string; text: string; action: () => void }
   | { type: 'notifications' }
-  | { type: 'reports' }
   | null;
-const navItems = [
+const primaryNavItems = [
   { id: 'overview' as const, label: 'Ringkasan', short: 'Beranda', icon: LayoutDashboard },
-  { id: 'transactions' as const, label: 'Transaksi', short: 'Riwayat', icon: ArrowLeftRight },
   { id: 'accounts' as const, label: 'Dompet saya', short: 'Dompet', icon: Wallet },
+  { id: 'transactions' as const, label: 'Transaksi', short: 'Transaksi', icon: ArrowLeftRight },
+  { id: 'reports' as const, label: 'Laporan', short: 'Laporan', icon: FileChartColumn },
+  { id: 'settings' as const, label: 'Pengaturan', short: 'Setelan', icon: Settings },
+];
+const navItems = [
+  ...primaryNavItems,
   { id: 'plan' as const, label: 'Rencana uang', short: 'Rencana', icon: Sparkles },
   { id: 'together' as const, label: 'Ruang bersama', short: 'Bersama', icon: Heart },
 ];
@@ -106,6 +111,15 @@ export default function App() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
+  const [preferences, setPreferences] = useState(readInsightPreferences);
+  function changePreferences(value: InsightPreferences) {
+    try {
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(value));
+      setPreferences(value);
+    } catch {
+      notify('Preferensi belum tersimpan. Periksa penyimpanan browser.');
+    }
+  }
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   function notify(message: string) {
     setToast(message);
@@ -125,7 +139,7 @@ export default function App() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       setStore(next);
       setRecoveryError('');
-      notify('Tersimpan. Satu langkah lebih teratur.');
+      notify('Perubahan tersimpan.');
       return true;
     } catch {
       notify(
@@ -318,10 +332,6 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <button className="nav-item reports-nav" onClick={() => setDialog({ type: 'reports' })}>
-          <FileChartColumn size={19} />
-          <span>Laporan keuangan</span>
-        </button>
         <div className="sidebar-bottom">
           <div className="sidebar-note">
             <span className="note-illustration">
@@ -343,11 +353,11 @@ export default function App() {
               <ArrowUpRight size={15} />
             </button>
           </div>
-          <button className="nav-item settings-nav" onClick={() => setDialog({ type: 'settings' })}>
+          <button className="nav-item settings-nav" onClick={() => setPage('settings')}>
             <Settings size={19} strokeWidth={1.7} />
             Pengaturan
           </button>
-          <button className="profile" onClick={() => setDialog({ type: 'settings' })}>
+          <button className="profile" onClick={() => setPage('settings')}>
             <span className="avatar">
               S<span />
             </span>
@@ -372,7 +382,7 @@ export default function App() {
             <strong>{navItems.find((n) => n.id === page)?.label}</strong>
           </div>
           <div className="topbar-actions">
-            <button className="local-badge" onClick={() => setDialog({ type: 'settings' })}>
+            <button className="local-badge" onClick={() => setPage('settings')}>
               <ShieldCheck size={13} />
               <span>Private by design</span>
             </button>
@@ -398,7 +408,7 @@ export default function App() {
             <button
               className="top-avatar"
               aria-label="Buka pengaturan"
-              onClick={() => setDialog({ type: 'settings' })}
+              onClick={() => setPage('settings')}
             >
               S
             </button>
@@ -423,11 +433,17 @@ export default function App() {
           {recoveryError && (
             <div className="recovery-banner" role="alert">
               {recoveryError}
-              <button className="text-btn" onClick={() => setDialog({ type: 'settings' })}>
+              <button className="text-btn" onClick={() => setPage('settings')}>
                 Buka pengaturan
                 <ArrowRight size={14} />
               </button>
             </div>
+          )}
+          {(page === 'plan' || page === 'together') && (
+            <button className="secondary-page-back" onClick={() => setPage('accounts')}>
+              <ChevronRight size={17} />
+              <span>Kembali ke dompet</span>
+            </button>
           )}
           {page === 'overview' && (
             <Overview
@@ -439,15 +455,18 @@ export default function App() {
               detail={(t) => setDialog({ type: 'detail', tx: t })}
               accountCard={accountCard}
               onAccount={() => setDialog({ type: 'account' })}
-              onReport={() => setDialog({ type: 'reports' })}
+              onReport={() => setPage('reports')}
+              onSettings={() => setPage('settings')}
+              onStartOwn={startOwn}
+              preferences={preferences}
             />
           )}
           {page === 'accounts' && (
             <>
               <PageHeading
                 eyebrow="A PLACE FOR EVERY RUPIAH"
-                title="Uangmu, di satu tempat."
-                description="Rekening berbeda. Satu pandangan yang lebih jelas."
+                title="Dompet"
+                description="Saldo rekening dan e-walletmu."
                 action={
                   <button className="btn primary" onClick={() => setDialog({ type: 'account' })}>
                     <Plus size={17} />
@@ -474,6 +493,18 @@ export default function App() {
                     {money(store.accounts.filter((a) => a.shared).reduce((s, a) => s + b[a.id], 0))}
                   </strong>
                 </div>
+              </div>
+              <div className="wallet-tools">
+                <button onClick={() => setPage('plan')}>
+                  <PiggyBank size={19} />
+                  <span>Rencana uang</span>
+                  <ChevronRight size={16} />
+                </button>
+                <button onClick={() => setPage('together')}>
+                  <Heart size={19} />
+                  <span>Ruang bersama</span>
+                  <ChevronRight size={16} />
+                </button>
               </div>
               <div className="section-title">
                 <h2>
@@ -545,8 +576,8 @@ export default function App() {
               onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
               onEdit={(tx) => setDialog({ type: 'transaction', defaults: tx, editingId: tx.id })}
               onDelete={askDelete}
-              onReport={() => setDialog({ type: 'reports' })}
-              onSettings={() => setDialog({ type: 'settings' })}
+              onReport={() => setPage('reports')}
+              onSettings={() => setPage('settings')}
             />
           )}
           {page === 'plan' && (
@@ -562,7 +593,7 @@ export default function App() {
             <>
               <PageHeading
                 eyebrow="BETTER, TOGETHER"
-                title="Untuk cerita kita."
+                title="Ruang bersama"
                 description="Mimpi bersama, dimulai dari langkah kecil hari ini."
                 action={
                   <button
@@ -689,6 +720,34 @@ export default function App() {
               </section>
             </>
           )}
+          {page === 'reports' && (
+            <section className="reports-page">
+              <PageHeading
+                eyebrow=""
+                title="Laporan"
+                description="Ringkasan keuangan yang bisa kamu simpan."
+              />
+              <Reports store={store} />
+            </section>
+          )}
+          {page === 'settings' && (
+            <section className="settings-page">
+              <PageHeading
+                eyebrow=""
+                title="Pengaturan"
+                description="Atur pengalaman skySave sesuai kebutuhanmu."
+              />
+              <SettingsPanel
+                store={store}
+                save={(s) => save(s, true)}
+                startOwn={startOwn}
+                notify={notify}
+                recovery={!!recoveryError}
+                preferences={preferences}
+                onPreferences={changePreferences}
+              />
+            </section>
+          )}
           <footer className="page-footer">
             <span>
               <Logo small />
@@ -702,9 +761,11 @@ export default function App() {
         </main>
       </div>
       <nav className="mobile-nav" aria-label="Navigasi mobile">
-        {navItems.map((n) => (
+        {primaryNavItems.map((n) => (
           <button
             key={n.id}
+            aria-label={n.label}
+            aria-current={page === n.id ? 'page' : undefined}
             className={page === n.id ? 'active' : ''}
             onClick={() => {
               setPage(n.id);
@@ -746,7 +807,7 @@ export default function App() {
       )}
       {dialog?.type === 'account' && (
         <Modal
-          title={dialog.shared ? 'Dompet untuk berdua.' : 'Kenalan dengan dompet baru.'}
+          title={dialog.shared ? 'Tambah akun bersama' : 'Tambah dompet'}
           subtitle="Tambahkan catatan rekening, bukan koneksi bank."
           onClose={close}
         >
@@ -755,7 +816,7 @@ export default function App() {
       )}
       {dialog?.type === 'goal' && (
         <Modal
-          title="Ada mimpi yang ingin dicapai?"
+          title="Tujuan tabungan"
           subtitle="Beri nama, tentukan target, dan mulai perlahan."
           onClose={close}
         >
@@ -798,31 +859,6 @@ export default function App() {
               </button>
             </div>
           </div>
-        </Modal>
-      )}
-      {dialog?.type === 'reports' && (
-        <Modal
-          title="Laporan keuangan"
-          subtitle="Gambaran yang jelas, untuk langkah berikutnya."
-          wide
-          onClose={close}
-        >
-          <Reports store={store} />
-        </Modal>
-      )}
-      {dialog?.type === 'settings' && (
-        <Modal
-          title="Ruangmu, aturanmu."
-          subtitle="Kelola data dan kenyamanan skySave."
-          onClose={close}
-        >
-          <SettingsPanel
-            store={store}
-            save={(s) => save(s, true)}
-            startOwn={startOwn}
-            notify={notify}
-            recovery={!!recoveryError}
-          />
         </Modal>
       )}
       {dialog?.type === 'notifications' && (
@@ -982,7 +1018,7 @@ function Planning({
     <>
       <PageHeading
         eyebrow="MAKE ROOM FOR WHAT MATTERS"
-        title="Pemasukan berubah. Tujuan tetap."
+        title="Rencana uang"
         description="Rencana fleksibel dari uang yang sudah ada, bukan penghasilan yang belum pasti."
         action={
           <button className="btn secondary" onClick={onGoal}>
@@ -1176,12 +1212,16 @@ function SettingsPanel({
   startOwn,
   notify,
   recovery,
+  preferences,
+  onPreferences,
 }: {
   store: Store;
   save: (s: Store) => boolean;
   startOwn: () => void;
   notify: (s: string) => void;
   recovery: boolean;
+  preferences: InsightPreferences;
+  onPreferences: (value: InsightPreferences) => void;
 }) {
   const [theme, setTheme] = useState(document.documentElement.dataset.theme ?? 'light');
   function chooseTheme(value: string) {
@@ -1331,6 +1371,62 @@ function SettingsPanel({
   }
   return (
     <div className="settings-content">
+      <section className="settings-local-profile">
+        <span>S</span>
+        <div>
+          <h2>Ruang pribadi</h2>
+          <p>Tersimpan di perangkat ini</p>
+        </div>
+      </section>
+      <section className="settings-section recording-settings">
+        <h3>
+          <Wallet size={18} />
+          PENCATATAN
+        </h3>
+        <dl>
+          <div>
+            <dt>Mata uang</dt>
+            <dd>Rp · Rupiah Indonesia</dd>
+          </div>
+          <div>
+            <dt>Pemasukan</dt>
+            <dd>Tidak tetap</dd>
+          </div>
+          <div>
+            <dt>Penarikan tunai</dt>
+            <dd>Dicatat sebagai pengeluaran</dd>
+          </div>
+        </dl>
+      </section>
+      <section className="settings-section insight-preferences">
+        <h3>
+          <Bell size={18} />
+          INFORMASI DI APLIKASI
+        </h3>
+        <p>Atur informasi yang ditampilkan di dashboard saat skySave dibuka.</p>
+        {(
+          [
+            { id: 'allocation', label: 'Saran alokasi dan tabungan' },
+            { id: 'spending', label: 'Pola pengeluaran' },
+            { id: 'anomaly', label: 'Pemeriksaan transaksi besar' },
+            { id: 'together', label: 'Ringkasan dana bersama' },
+          ] as const
+        ).map((item) => (
+          <div key={item.id}>
+            <span>{item.label}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-label={item.label}
+              aria-checked={preferences[item.id]}
+              onClick={() => onPreferences({ ...preferences, [item.id]: !preferences[item.id] })}
+            >
+              <i />
+            </button>
+          </div>
+        ))}
+      </section>
+
       <section className="appearance-settings">
         <h3>Tampilan yang nyaman untukmu</h3>
         <p>Pilih suasana skySave sesuai harimu.</p>
@@ -1356,7 +1452,7 @@ function SettingsPanel({
       <div className="settings-privacy">
         <ShieldCheck size={25} />
         <div>
-          <h3>Private by design.</h3>
+          <h3>Penyimpanan lokal</h3>
           <p>
             Tanpa koneksi bank dan tanpa server penyimpan data. Catatan serta bukti berada pada
             browser ini. Belum ada sinkronisasi antarperangkat atau login keluarga.
@@ -1448,8 +1544,8 @@ function SettingsPanel({
           </p>
         </div>
       </div>
-      <div className="settings-section">
-        <h3>Ruang baru</h3>
+      <div className="settings-section settings-danger">
+        <h3>HAPUS DATA</h3>
         <button className="settings-action reset-action" disabled={busy} onClick={startOwn}>
           <Trash2 size={18} />
           <span>
@@ -1463,7 +1559,7 @@ function SettingsPanel({
       </div>
       <div className="settings-version">
         <Logo />
-        <span>v0.1 · Made for your peace of mind.</span>
+        <span>v0.1 · Data pada perangkat ini</span>
       </div>
     </div>
   );

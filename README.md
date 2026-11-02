@@ -14,13 +14,13 @@ npm run dev -- --port 5173
 The postinstall script copies OCR language data, WASM, and PDF workers from the integrity-checked npm dependencies into ignored public asset directories. No API key, database service, or bank credentials are needed. Fonts and document-processing assets are served locally.
 
 ```sh
-npm test                 # 23 financial and document-parsing tests
+npm test                 # 27 financial, analytics, calendar and document-parsing tests
 npm run build            # strict TypeScript check + production build
 npm run preview -- --port 4173
-npm run test:e2e         # desktop + iPhone-size Chromium; run build first
+npm run test:e2e         # desktop + iPhone-size Chromium + iPhone WebKit; run build first
 ```
 
-Browser tests use `/usr/bin/chromium`. Set `CHROMIUM_PATH` if Chromium is installed elsewhere. They exercise real OCR, persistence, financial flows, backup/restore, and offline startup against the production build. The iPhone-size project tests responsive behavior in Chromium; it is not a physical iPhone/Safari certification.
+Browser tests use `/usr/bin/chromium` plus Playwright WebKit. Set `CHROMIUM_PATH` if Chromium is installed elsewhere. Install WebKit and its system dependencies with `npx playwright install --with-deps webkit` on a machine where package installation is permitted; `WEBKIT_EXECUTABLE_PATH` can select an existing WebKit launcher. Run only the Chromium projects with `npm run test:e2e -- --project=desktop --project=iphone-size` when WebKit is unavailable. The full suite contains 14 scenarios across all three projects. It exercises real OCR, persistence, financial flows, proof-preserving backup/restore, offline startup, report filters, insight preferences, and 375/393/430 px plus landscape layouts against the production build. WebKit emulation is not physical iPhone/Safari certification.
 
 ## What works
 
@@ -36,8 +36,8 @@ Browser tests use `/usr/bin/chromium`. Set `CHROMIUM_PATH` if Chromium is instal
 - Goals tied to dedicated wallets, one goal per wallet, with progress from recorded balances. Recording a proposed transfer still requires explicit confirmation.
 - Shared-account balances, goals, and transfer history. This release is a single-device record, not shared login or collaborative editing.
 - JSON backup and confirmed restore of accounts, transactions, goals, planning, and available original proofs. Backups contain sensitive financial information and should be kept private.
-- Responsive navy, warm neutral, mint, and coral design, touch-friendly category sheets, light/dark/system appearance, and cashflow/saldo chart switching.
-- Reports with selectable periods, actual transaction totals and category breakdown, CSV export, and browser printing / Save as PDF. The print layout includes transaction details.
+- iPhone-first layout adapted from the supplied design exports: local Poppins, navy, warm neutral, rounded cards, five-tab navigation, category/account bottom sheets, and light/dark/system appearance. Dashboard period controls update three charts and a five-category breakdown. Local insight preferences change the dashboard and persist across reloads. See [the mobile design notes](docs/mobile-design.md).
+- Full-page reports with weekly/monthly/yearly periods, a validated end date, transaction-kind filters, six actual summary values, CSV export, and browser printing / Save as PDF. The print layout includes filtered transaction details and income sources.
 - Installable PWA manifest and production service worker. The application shell is precached. OCR/PDF supporting public assets are cached on use; first-time OCR requires the app server to be reachable.
 
 ## Data and financial boundaries
@@ -65,9 +65,13 @@ src/App.tsx         App navigation, planning, backup and restore
 src/Dashboard.tsx   Responsive overview and data-derived insights
 src/TransactionsPage.tsx Combined filters and transaction card actions
 src/Reports.tsx     Period reports, CSV export and print/PDF layout
+src/analytics.ts    Period buckets, report calendar ranges and local insights
+src/preferences.ts Persisted dashboard insight preferences
 src/forms.tsx       Account, goal, transaction and proof flows
 src/ui.tsx          Accessible dialogs, charts, account marks and ledger components
-src/styles.css     Responsive design system and reduced-motion support
+src/styles.css     Base responsive styles and reduced-motion support
+src/figma-dashboard.css Supplied design tokens and dashboard composition
+src/mobile-ui.css  iPhone screens, forms, sheets and report print layout
 scripts/           Reproducible local assets and service-worker template
 tests/             Financial/parsing tests and production browser tests
 ```

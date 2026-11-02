@@ -6,6 +6,7 @@ import {
   balanceHistory,
   csv,
   demoStore,
+  daysAgo,
   emptyStore,
   isStore,
   spendingByCategory,
@@ -16,6 +17,12 @@ import {
 } from '../src/domain.ts';
 import type { Store, Transaction } from '../src/domain.ts';
 import { parseReceipt, parseRupiah } from '../src/receipts.ts';
+import {
+  cashflowBuckets,
+  moneyInsights,
+  periodTransactions,
+  reportRange,
+} from '../src/analytics.ts';
 
 function fixture(): Store {
   return {
@@ -279,4 +286,72 @@ test('editing a missing transaction does not create an unintended new record', (
   const result = replaceTransaction(fixture(), transaction(), 'deleted');
   assert.match(result.error, /sudah tidak tersedia/);
   assert.equal(result.data, undefined);
+});
+
+test('cashflow periods include each boundary once and exclude internal transfer principal', () => {
+  for (const days of [7, 30, 365]) {
+    const tx = Array.from({ length: days }, (_, i) =>
+      transaction({
+        id: `day-${i}`,
+        date: daysAgo(i),
+        kind: 'income',
+        amount: 100,
+        source: 'Komisi',
+      }),
+    );
+    tx.push(transaction({ id: 'move', kind: 'transfer', toId: 'b', amount: 1000000, fee: 2500 }));
+    tx.push(transaction({ id: 'outside', date: daysAgo(days), amount: 999999 }));
+    const buckets = cashflowBuckets(tx, days);
+    assert.equal(buckets[0].start, daysAgo(days - 1));
+    assert.equal(buckets.at(-1)!.end, today());
+    assert.equal(
+      buckets.reduce((s, b) => s + b.income, 0),
+      days * 100,
+    );
+    assert.equal(
+      buckets.reduce((s, b) => s + b.expense, 0),
+      2500,
+    );
+    assert.equal(buckets.at(-1)!.cumulative, days * 100 - 2500);
+    assert.equal(periodTransactions(tx, days).length, days + 1);
+  }
+});
+test('report dates use real calendar boundaries and reject missing or future dates', () => {
+  assert.deepEqual(reportRange('week', '2024-03-02'), {
+    start: '2024-02-25',
+    end: '2024-03-02',
+    error: '',
+  });
+  assert.equal(reportRange('month', '2024-02-29').start, '2024-02-01');
+  assert.equal(reportRange('year', '2024-02-29').start, '2024-01-01');
+  for (const date of ['', '2025-02-29', '2024-02-31', '2099-01-01', 'not-a-date']) {
+    const result = reportRange('month', date);
+    assert.notEqual(result.error, '');
+    assert.equal(result.start, '');
+  }
+});
+test('insights work with no history and never forecast irregular income', () => {
+  const s = fixture();
+  const empty = moneyInsights(s, 30);
+  assert.equal(empty.length, 6);
+  assert.equal(empty.find((i) => i.id === 'anomaly')!.tone, 'accent');
+  s.transactions.push(transaction({ kind: 'income', source: 'Komisi klien', amount: 150000 }));
+  const income = moneyInsights(s, 30).find((i) => i.id === 'income')!;
+  assert.match(income.body, /150\.000/);
+  assert.doesNotMatch(income.body, /diprediksi|diproyeksikan|bulan depan/);
+  assert.ok(moneyInsights(emptyStore(), 7).every((i) => !/NaN|Infinity/.test(i.body)));
+});
+test('large spending warning requires enough history and compares against the other transactions', () => {
+  const s = fixture();
+  s.transactions = Array.from({ length: 5 }, (_, i) =>
+    transaction({ id: `small-${i}`, amount: 10000 }),
+  );
+  s.transactions[0].amount = 100000;
+  assert.equal(moneyInsights(s, 7).find((i) => i.id === 'anomaly')!.tone, 'accent');
+  s.transactions.push(transaction({ id: 'sixth', amount: 10000 }));
+  const warning = moneyInsights(s, 7).find((i) => i.id === 'anomaly')!;
+  assert.equal(warning.tone, 'warning');
+  assert.match(warning.body, /10×/);
+  s.transactions[0].amount = 30000;
+  assert.equal(moneyInsights(s, 7).find((i) => i.id === 'anomaly')!.tone, 'accent');
 });

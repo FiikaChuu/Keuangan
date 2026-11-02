@@ -23,6 +23,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { Account, Store, Transaction } from './domain';
+import { cashflowBuckets } from './analytics';
 import {
   providers,
   money,
@@ -31,8 +32,6 @@ import {
   balanceHistory,
   categoryColors,
   categories,
-  totals,
-  daysAgo,
 } from './domain';
 
 export function Logo({ small = false }: { small?: boolean }) {
@@ -66,6 +65,79 @@ export function ProviderMark({
     >
       {provider?.short ?? account.provider.slice(0, 2)}
     </span>
+  );
+}
+
+export function AccountPicker({
+  accounts,
+  values,
+  value,
+  onChange,
+  label,
+}: {
+  accounts: Account[];
+  values: Record<string, number>;
+  value: string;
+  onChange: (id: string) => void;
+  label: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = accounts.find((a) => a.id === value);
+  return (
+    <div className="account-picker">
+      <button
+        type="button"
+        className="account-picker-trigger"
+        aria-label={label}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+      >
+        <span>{selected ? `${selected.provider} · ${selected.name}` : 'Pilih rekening'}</span>
+        <ChevronDown size={18} />
+      </button>
+      {open && (
+        <Modal
+          title={label}
+          subtitle="Pilih rekening yang benar untuk transaksi ini."
+          onClose={() => setOpen(false)}
+        >
+          <div className="account-options" role="listbox" aria-label={label}>
+            {accounts.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                role="option"
+                aria-selected={value === a.id}
+                className={value === a.id ? 'selected' : ''}
+                onClick={() => {
+                  onChange(a.id);
+                  setOpen(false);
+                }}
+              >
+                <ProviderMark account={a} />
+                <span>
+                  <strong>
+                    {a.provider} · {a.name}
+                  </strong>
+                  <small>
+                    {money(values[a.id])}
+                    {a.shared ? ' · Bersama' : ''}
+                    {a.suffix ? ` · ••${a.suffix}` : ''}
+                  </small>
+                </span>
+                {value === a.id && <Check size={21} />}
+              </button>
+            ))}
+            {!accounts.length && (
+              <EmptyState
+                title="Belum ada rekening lain"
+                text="Tambahkan rekening tujuan dari halaman Dompet terlebih dahulu."
+              />
+            )}
+          </div>
+        </Modal>
+      )}
+    </div>
   );
 }
 export function CategoryIcon({ category, size = 19 }: { category: string; size?: number }) {
@@ -311,10 +383,11 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
     (s, p, i) =>
       i === 0
         ? `M ${p[0]},${p[1]}`
-        : `${s} C ${coords[i - 1][0] + 12},${coords[i - 1][1]} ${p[0] - 12},${p[1]} ${p[0]},${p[1]}`,
+        : `${s} C ${coords[i - 1][0] + (p[0] - coords[i - 1][0]) / 3},${coords[i - 1][1]} ${p[0] - (p[0] - coords[i - 1][0]) / 3},${p[1]} ${p[0]},${p[1]}`,
     '',
   );
-  const hoverIndex = hover ?? points.length - 1;
+  const hoverIndex = Math.min(hover ?? points.length - 1, points.length - 1);
+  const hitWidth = 650 / (points.length - 1);
   return (
     <div className="chart-container">
       <div className="chart-current">
@@ -331,8 +404,8 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
       >
         <defs>
           <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#42997b" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#42997b" stopOpacity="0.005" />
+            <stop offset="0%" stopColor="#3ed0c2" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#3ed0c2" stopOpacity="0.005" />
           </linearGradient>
         </defs>
         {[0, 1, 2, 3].map((i) => (
@@ -342,22 +415,22 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
               x2="698"
               y1={30 + i * 48}
               y2={30 + i * 48}
-              stroke="#e9eeeb"
+              stroke="var(--line)"
               strokeDasharray="3 5"
             />
-            <text x="0" y={34 + i * 48} fill="#9ba7a1" fontSize="10">
+            <text x="0" y={34 + i * 48} fill="var(--muted)" fontSize="10">
               {compact(max - (i * (max - min)) / 3)}
             </text>
           </g>
         ))}
         <path d={`${path} L 698,178 L 48,178 Z`} fill="url(#chartFill)" />
-        <path d={path} fill="none" stroke="#32866a" strokeWidth="2.8" />
+        <path d={path} fill="none" stroke="#3ed0c2" strokeWidth="2.8" />
         {coords.map((p, i) => (
           <rect
             key={i}
-            x={p[0] - 12}
+            x={p[0] - hitWidth / 2}
             y="10"
-            width="24"
+            width={hitWidth}
             height="175"
             fill="transparent"
             onMouseEnter={() => setHover(i)}
@@ -367,7 +440,7 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
           cx={coords[hoverIndex][0]}
           cy={coords[hoverIndex][1]}
           r="5"
-          fill="#32866a"
+          fill="#3ed0c2"
           stroke="white"
           strokeWidth="3"
         />
@@ -383,7 +456,7 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
             x={coords[i][0]}
             y="207"
             textAnchor={i === days - 1 ? 'end' : i === 0 ? 'start' : 'middle'}
-            fill="#9ba7a1"
+            fill="var(--muted)"
             fontSize="10"
           >
             {displayDate(points[i].date, { day: 'numeric', month: 'short' })}
@@ -393,10 +466,16 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
     </div>
   );
 }
-export function SpendingDonut({ entries }: { entries: [string, number][] }) {
+export function SpendingDonut({
+  entries,
+  compactCenter = false,
+}: {
+  entries: [string, number][];
+  compactCenter?: boolean;
+}) {
   const total = entries.reduce((sum, [, n]) => sum + n, 0);
-  const top = entries.slice(0, 3);
-  const rest = entries.slice(3).reduce((s, [, n]) => s + n, 0);
+  const top = entries.slice(0, entries.length > 5 ? 4 : 5);
+  const rest = entries.slice(top.length).reduce((s, [, n]) => s + n, 0);
   if (rest) top.push(['Lainnya', rest]);
   let accumulated = 0;
   return (
@@ -429,7 +508,11 @@ export function SpendingDonut({ entries }: { entries: [string, number][] }) {
         </svg>
         <span>
           <small>Total pengeluaran</small>
-          <strong>{money(total)}</strong>
+          <strong title={money(total)}>
+            {compactCenter && total >= 1e6
+              ? `Rp ${new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 2 }).format(total)}`
+              : money(total)}
+          </strong>
         </span>
       </div>
       <div className="spending-legend">
@@ -566,12 +649,11 @@ export function CashflowChart({
   transactions: Transaction[];
   days: number;
 }) {
-  const count = days <= 7 ? 7 : 6;
-  const buckets = Array.from({ length: count }, (_, i) => {
-    const from = daysAgo(days - 1 - Math.floor((i * days) / count));
-    const to = daysAgo(days - 1 - Math.floor(((i + 1) * days) / count - 1));
-    return { date: from, ...totals(transactions.filter((t) => t.date >= from && t.date <= to)) };
-  });
+  const buckets = cashflowBuckets(transactions, days).map((bucket) => ({
+    ...bucket,
+    date: bucket.start,
+  }));
+  const count = buckets.length;
   const max = Math.max(100000, ...buckets.flatMap((b) => [b.income, b.expense])) * 1.12;
   return (
     <div className="cashflow-chart">
@@ -615,7 +697,7 @@ export function CashflowChart({
                 width="22"
                 height={(b.income / max) * 171}
                 rx="8"
-                fill="#83cda2"
+                fill="#7ccb8c"
               >
                 <title>
                   Pemasukan {displayDate(b.date)}: {money(b.income)}
@@ -627,7 +709,7 @@ export function CashflowChart({
                 width="22"
                 height={(b.expense / max) * 171}
                 rx="8"
-                fill="#f58b8c"
+                fill="#f37777"
               >
                 <title>
                   Pengeluaran {displayDate(b.date)}: {money(b.expense)}

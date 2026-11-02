@@ -26,7 +26,7 @@ import {
   readReceipt,
   deleteReceipt,
 } from './receipts';
-import { EmptyState, ProviderMark, CategoryPicker } from './ui';
+import { EmptyState, ProviderMark, CategoryPicker, AccountPicker } from './ui';
 
 type Save = (next: Store) => boolean;
 export function TransactionForm({
@@ -376,34 +376,30 @@ export function TransactionForm({
           onChange={(e) => setTitle(e.target.value)}
         />
       </label>
-      <label>
-        {kind === 'income' ? 'Masuk ke rekening' : 'Dari rekening'}
-        <select value={accountId} required onChange={(e) => setAccountId(e.target.value)}>
-          <option value="">Pilih rekening</option>
-          {store.accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.provider} · {a.name}
-              {a.shared ? ' (bersama)' : ''} — {money(balances(store)[a.id])}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="form-account-field">
+        <span className="field-label">
+          {kind === 'income' ? 'Masuk ke rekening' : 'Dari rekening'}
+        </span>
+        <AccountPicker
+          label={kind === 'income' ? 'Masuk ke rekening' : 'Dari rekening'}
+          accounts={store.accounts}
+          values={balances(store)}
+          value={accountId}
+          onChange={setAccountId}
+        />
+      </div>
       {kind === 'transfer' ? (
         <>
-          <label>
-            Ke rekening
-            <select value={toId} required onChange={(e) => setToId(e.target.value)}>
-              <option value="">Pilih rekening tujuan</option>
-              {store.accounts
-                .filter((a) => a.id !== accountId)
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.provider} · {a.name}
-                    {a.shared ? ' (bersama)' : ''}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <div className="form-account-field">
+            <span className="field-label">Ke rekening</span>
+            <AccountPicker
+              label="Ke rekening"
+              accounts={store.accounts.filter((a) => a.id !== accountId)}
+              values={balances(store)}
+              value={toId}
+              onChange={setToId}
+            />
+          </div>
           <p className="field-hint">
             <ArrowLeftRight size={14} />
             Transfer ke akun bersama tetap perpindahan saldo. Hanya biaya yang dihitung sebagai

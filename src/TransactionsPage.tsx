@@ -223,8 +223,9 @@ export default function TransactionsPage({
               </label>
               <label className="filter-field">
                 Bulan transaksi
-                <div className="month-filter">
+                <div className={`month-filter ${month ? '' : 'empty'}`}>
                   <CalendarDays size={17} />
+                  {!month && <span className="month-placeholder">Semua bulan</span>}
                   <input
                     type="month"
                     aria-label="Filter bulan"
