@@ -11,7 +11,7 @@ npm ci --cache /tmp/skysave-npm-cache
 npm run dev -- --port 5173
 ```
 
-The postinstall script copies OCR language data, WASM, and PDF workers from the integrity-checked npm dependencies into ignored public asset directories. No API key, database service, or bank credentials are needed. Noto Sans fonts and document-processing assets are served locally.
+The postinstall script copies OCR language data, WASM, and PDF workers from the integrity-checked npm dependencies into ignored public asset directories. No API key, database service, or bank credentials are needed. Noto Sans WOFF2 files and their license are tracked in `src/assets/fonts/` and loaded through `src/fonts.css`. Document-processing assets are served locally. The font does not require an npm package or an external font service.
 
 ```sh
 npm test                 # 27 financial, analytics, calendar, currency and document-parsing tests

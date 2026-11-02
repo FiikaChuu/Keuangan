@@ -6,7 +6,7 @@ Tujuh SVG tambahan untuk Home, Transaksi, pemilih kategori/rekening, formulir, f
 
 ## Tampilan
 
-- Noto Sans lokal: isi regular 400, label medium 500, nominal semibold 600; latar `#f9f8f6`, navy `#1d2949`, kartu putih, kontrol abu netral, aksen turquoise, hijau, coral, dan amber sesuai referensi.
+- Noto Sans lokal yang disertakan di repositori (`src/assets/fonts`, tanpa impor paket npm saat runtime): isi regular 400, label medium 500, nominal semibold 600; latar `#f9f8f6`, navy `#1d2949`, kartu putih, kontrol abu netral, aksen turquoise, hijau, coral, dan amber sesuai referensi.
 - Nominal di kartu diringkas mulai jutaan (contoh Rp 14,54 jt), dengan Rp dan satuan lebih kecil. Nilai lengkap tetap dibaca pembaca layar, tersedia pada tooltip/detail transaksi, serta dipakai pada cetak dan ekspor. Data rupiah asli tidak diubah.
 - Lebar acuan 393 px, jarak tepi 24 px, kartu membulat, grafik pada kartu terpisah, lembar pilihan dari bawah, dan lima tab navigasi.
 - Navigasi: Beranda, Dompet, Transaksi, Laporan, Setelan. Rencana uang dan ruang bersama tersedia dari Dompet dan kartu ringkasan.
