@@ -53,11 +53,11 @@ export function cashflowBuckets(transactions: Transaction[], days: number) {
 
 export type MoneyInsight = {
   id: 'allocation' | 'spending' | 'together';
-  tone: 'accent' | 'warning' | 'coral';
+  tone: 'accent' | 'warning' | 'success';
   label: string;
+  context: string;
   title: string;
   body: string;
-  destination?: 'plan' | 'transactions' | 'together';
 };
 
 export function moneyInsights(store: Store, days: number): MoneyInsight[] {
@@ -75,29 +75,29 @@ export function moneyInsights(store: Store, days: number): MoneyInsight[] {
       id: 'allocation',
       tone: plan.shortfall ? 'warning' : 'accent',
       label: 'Rencana',
+      context: 'Dana pribadi',
       title: 'Rencana dana pribadi',
       body: plan.shortfall
         ? `Dana pribadi kurang ${money(plan.shortfall)} dari cadangan wajibmu. Penuhi cadangan sebelum menambah belanja opsional.`
         : `${money(plan.available)} tersedia setelah cadangan wajib. Alokasi tabungan ${store.plan.saving}%: ${money(plan.saving)}.`,
-      destination: 'plan',
     },
     {
       id: 'spending',
       tone: 'accent',
-      label: 'Pengeluaran',
+      label: 'Pola',
+      context: 'Pengeluaran',
       title: 'Belanja paling besar',
       body: top
-        ? `${top[0]}: ${money(top[1])}, atau ${Math.round((top[1] / sum.expense) * 100)}% dari pengeluaran ${days} hari terakhir.`
+        ? `${top[0]} menjadi pengeluaran terbesar: ${money(top[1])}, atau ${Math.round((top[1] / sum.expense) * 100)}% dari total ${days} hari terakhir.`
         : 'Catat transaksi atau unggah bukti untuk melihat pengeluaran per kategori.',
-      destination: 'transactions',
     },
     {
       id: 'together',
-      tone: 'coral',
-      label: 'Bersama',
+      tone: 'success',
+      label: 'Ringkasan',
+      context: 'Akun bersama',
       title: 'Saldo akun bersama',
-      body: `${money(shared)} tersimpan di catatan akun bersama, terpisah dari alokasi pribadi. Perpindahannya dihitung sebagai transfer.`,
-      destination: 'together',
+      body: `Saldo akun bersama ${money(shared)}. Dana ini dipisahkan dari rencana dana pribadimu.`,
     },
   ];
 }

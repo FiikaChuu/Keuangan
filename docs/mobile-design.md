@@ -4,10 +4,12 @@ Implementasi mengikuti delapan ekspor React dan gambar referensi yang diberikan 
 
 ## Tampilan
 
-- Poppins lokal, latar `#f9f8f6`, navy `#1d2949`, kartu putih, kontrol abu hangat, aksen turquoise, hijau, coral, dan amber sesuai referensi.
+- Tipografi sistem iPhone (SF pada Safari iOS), latar netral `#f5f5f7`, navy `#1d2949`, kartu putih, kontrol abu netral, aksen turquoise, hijau, coral, dan amber sesuai referensi.
 - Lebar acuan 393 px, jarak tepi 24 px, kartu membulat, grafik pada kartu terpisah, lembar pilihan dari bawah, dan lima tab navigasi.
-- Navigasi: Beranda, Dompet, Transaksi, Laporan, Setelan. Rencana uang dan ruang bersama tersedia dari Dompet dan tautan insight.
+- Navigasi: Beranda, Dompet, Transaksi, Laporan, Setelan. Rencana uang dan ruang bersama tersedia dari Dompet dan kartu ringkasan.
 - Dashboard mobile berisi saldo, empat ringkasan, tiga grafik, diagram kategori, dan tiga insight penting: rencana dana pribadi, belanja paling besar, serta saldo akun bersama. Rincian dompet dan transaksi berada pada tab masing-masing.
+- Kartu Sky Insights mengikuti contoh terbaru: ikon pastel kecil, label dan konteks satu baris, lalu satu paragraf data. Tanpa judul besar atau tombol tambahan di setiap kartu.
+- Header Dashboard memakai subjudul “Your financial overview” dan satu aksi unggah dengan ikon awan/panah. Aksi yang sama dipakai pada header Transaksi; input manual tetap tersedia melalui tab formulir.
 - Urutan transaksi memakai tombol dan lembar pilihan SkyWallet: terbaru, terlama, atau nominal terbesar, dengan penanda pilihan aktif.
 - Safe area iPhone, tinggi layar dinamis, konten formulir yang bisa digulir dengan judul/X dan tombol simpan tetap terlihat, serta fokus dan penutupan dialog bertingkat. Tampilan menggunakan status bar dan indikator Home milik perangkat.
 - Ikon SVG yang hanya disebut dalam ekspor tanpa berkas aslinya digantikan ikon lokal Lucide atau emoji kategori. Tidak memerlukan pemuatan aset Figma.

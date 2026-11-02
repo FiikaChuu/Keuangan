@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
   UploadCloud,
-  ScanLine,
   FileText,
   Check,
   LoaderCircle,
@@ -26,7 +25,7 @@ import {
   readReceipt,
   deleteReceipt,
 } from './receipts';
-import { EmptyState, ProviderMark, CategoryPicker, AccountPicker, ProviderPicker } from './ui';
+import { EmptyState, CategoryPicker, AccountPicker, ProviderPicker } from './ui';
 
 type Save = (next: Store) => boolean;
 export function TransactionForm({
@@ -214,7 +213,13 @@ export function TransactionForm({
           <button
             type="button"
             className={tab === 'manual' ? 'active' : ''}
-            onClick={() => setTab('manual')}
+            onClick={() => {
+              setTab('manual');
+              if (!accountId)
+                setAccountId(
+                  store.accounts.find((a) => !a.shared)?.id ?? store.accounts[0]?.id ?? '',
+                );
+            }}
           >
             <Plus size={16} />
             Input manual
@@ -224,7 +229,7 @@ export function TransactionForm({
             className={tab === 'receipt' ? 'active' : ''}
             onClick={() => setTab('receipt')}
           >
-            <ScanLine size={16} />
+            <UploadCloud size={16} />
             Dari bukti transaksi
           </button>
         </div>
@@ -532,16 +537,6 @@ export function AccountForm({
   return (
     <form onSubmit={submit} className="form-stack modal-form">
       <div className="modal-form-content">
-        <div className="account-form-visual">
-          <ProviderMark
-            account={{ provider, color: providers.find((p) => p.name === provider)!.color }}
-            large
-          />
-          <div>
-            <strong>Ruang baru untuk uangmu.</strong>
-            <span>Tanpa login bank. Tanpa koneksi rekening.</span>
-          </div>
-        </div>
         <div className="form-account-field">
           <span className="field-label">Bank atau e-wallet</span>
           <ProviderPicker value={provider} onChange={setProvider} />

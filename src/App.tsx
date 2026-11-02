@@ -448,14 +448,12 @@ export default function App() {
             <Overview
               store={store}
               total={total}
-              onAdd={() => setDialog({ type: 'transaction' })}
               onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
               go={setPage}
               detail={(t) => setDialog({ type: 'detail', tx: t })}
               accountCard={accountCard}
               onAccount={() => setDialog({ type: 'account' })}
               onReport={() => setPage('reports')}
-              onSettings={() => setPage('settings')}
               onStartOwn={startOwn}
               preferences={preferences}
             />
@@ -571,12 +569,10 @@ export default function App() {
               search={search}
               setSearch={setSearch}
               detail={(t) => setDialog({ type: 'detail', tx: t })}
-              onAdd={() => setDialog({ type: 'transaction' })}
               onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
               onEdit={(tx) => setDialog({ type: 'transaction', defaults: tx, editingId: tx.id })}
               onDelete={askDelete}
               onReport={() => setPage('reports')}
-              onSettings={() => setPage('settings')}
             />
           )}
           {page === 'plan' && (
@@ -593,7 +589,7 @@ export default function App() {
               <PageHeading
                 eyebrow="BETTER, TOGETHER"
                 title="Ruang bersama"
-                description="Mimpi bersama, dimulai dari langkah kecil hari ini."
+                description="Saldo dan tujuan akun bersama."
                 action={
                   <button
                     className="btn primary"
@@ -605,44 +601,13 @@ export default function App() {
                 }
               />
               <div className="together-hero">
-                <div>
-                  <span className="light-pill">
-                    <Heart size={13} />A little for us
-                  </span>
-                  <h2>
-                    Tumbuh sendiri.
-                    <br />
-                    Melangkah bersama.
-                  </h2>
-                  <p>
-                    Ruang khusus untuk uang dan tujuan kalian.
-                    <br />
-                    Terpisah dari kebutuhan pribadi, tetap dalam kendali.
-                  </p>
-                  <div className="together-total">
-                    <small>Total dana bersama</small>
-                    <strong>
-                      {money(
-                        store.accounts.filter((a) => a.shared).reduce((s, a) => s + b[a.id], 0),
-                      )}
-                    </strong>
-                  </div>
-                </div>
-                <div className="together-art" aria-hidden="true">
-                  <div className="art-orbit orbit-one" />
-                  <div className="art-orbit orbit-two" />
-                  <span className="heart-one">
-                    <Heart size={62} strokeWidth={1.1} />
-                  </span>
-                  <span className="heart-two">
-                    <Heart size={42} strokeWidth={1.2} />
-                  </span>
-                  <span className="art-star">✧</span>
-                  <span className="art-text">
-                    a future worth
-                    <br />
-                    saving for.
-                  </span>
+                <div className="together-total">
+                  <small>Total dana bersama</small>
+                  <strong>
+                    {money(
+                      store.accounts.filter((a) => a.shared).reduce((sum, a) => sum + b[a.id], 0),
+                    )}
+                  </strong>
                 </div>
               </div>
               <div className="info-note together-info">
@@ -734,7 +699,7 @@ export default function App() {
               <PageHeading
                 eyebrow=""
                 title="Pengaturan"
-                description="Atur pengalaman SkyWallet sesuai kebutuhanmu."
+                description="Tampilan dan preferensi aplikasi."
               />
               <SettingsPanel
                 store={store}
@@ -786,12 +751,7 @@ export default function App() {
         </div>
       )}
       {dialog?.type === 'transaction' && (
-        <Modal
-          title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'}
-          subtitle="Satu transaksi, satu gambaran yang lebih jelas."
-          wide
-          onClose={close}
-        >
+        <Modal title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'} wide onClose={close}>
           <TransactionForm
             key={dialog.editingId ?? 'new'}
             editingId={dialog.editingId}
@@ -862,7 +822,7 @@ export default function App() {
       )}
       {dialog?.type === 'notifications' && (
         <Modal
-          title="A little money check-in."
+          title="Ringkasan keuangan"
           subtitle="Insight dari catatanmu, tanpa menebak penghasilan berikutnya."
           onClose={close}
         >
@@ -985,7 +945,7 @@ function Planning({
   const rows = [
     {
       key: 'saving' as const,
-      name: 'Untuk future you',
+      name: 'Tabungan',
       subtitle: 'Tabungan & dana darurat',
       icon: PiggyBank,
       color: '#53aa8d',
@@ -996,7 +956,7 @@ function Planning({
     },
     {
       key: 'fun' as const,
-      name: 'Enjoy a little',
+      name: 'Pribadi',
       subtitle: 'Jajan, hiburan, hal yang kamu suka',
       icon: Coffee,
       color: '#d4a05c',
@@ -1005,7 +965,7 @@ function Planning({
     },
     {
       key: 'together' as const,
-      name: 'A little for us',
+      name: 'Akun bersama',
       subtitle: 'Alokasi ke akun bersama',
       icon: Heart,
       color: '#9694bf',
@@ -1030,8 +990,8 @@ function Planning({
         <form className="panel plan-editor" onSubmit={submit}>
           <div className="panel-heading">
             <div>
-              <h2>Bagi dengan lebih mindful.</h2>
-              <p>Atur prioritasmu. Kita bantu hitung sisanya.</p>
+              <h2>Alokasi dana</h2>
+              <p>Atur pembagian setelah cadangan wajib.</p>
             </div>
             <Sparkles size={20} />
           </div>
@@ -1179,7 +1139,7 @@ function Planning({
         </aside>
       </div>
       <div className="section-title spaced">
-        <h2>Little goals, big meaning.</h2>
+        <h2>Tujuan tabungan</h2>
         <button className="text-btn" onClick={onGoal}>
           Tambah tujuan
           <Plus size={15} />

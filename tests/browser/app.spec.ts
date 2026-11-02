@@ -24,12 +24,11 @@ async function navigate(page: Page, name: string) {
   }
 }
 async function uploadProof(page: Page) {
-  const upload = page.getByRole('button', { name: 'Unggah bukti', exact: true });
-  if (await upload.isVisible()) await upload.click();
-  else {
-    await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
-    await page.getByRole('button', { name: 'Dari bukti transaksi', exact: true }).click();
-  }
+  await page.locator('main').getByRole('button', { name: 'Unggah bukti', exact: true }).click();
+}
+async function manualTransaction(page: Page) {
+  await uploadProof(page);
+  await page.getByRole('button', { name: 'Input manual', exact: true }).click();
 }
 async function ownAccount(page: Page) {
   await page.goto('/');
@@ -45,6 +44,8 @@ test('dashboard renders without errors and navigation fits the viewport', async 
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByText('Your financial overview', { exact: true })).toBeVisible();
+  await expect(page.locator('.dashboard-header-actions > button')).toHaveCount(1);
   await expect(page.locator('.dashboard-demo-mobile:visible, .demo-banner:visible')).toHaveCount(1);
   await expect(page.getByRole('img', { name: /Grafik total saldo/ })).toBeVisible();
   for (const [desktop, mobile, heading] of [
@@ -68,14 +69,14 @@ test('real-data flow: irregular income, expense, shared transfer and persistence
 }) => {
   await ownAccount(page);
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
-  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+  await manualTransaction(page);
   await page.getByRole('button', { name: 'Pemasukan', exact: true }).last().click();
   await page.getByLabel('Nama transaksi').fill('Komisi desain');
   await page.getByLabel('Nominal (Rp)', { exact: true }).fill('750000');
   await page.getByLabel('Asal pemasukan').fill('Klien tidak tetap');
   await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+  await manualTransaction(page);
   await page.getByLabel('Nama transaksi').fill('Tarik untuk tunai');
   await page.getByLabel('Nominal (Rp)', { exact: true }).fill('200000');
   await page.getByRole('button', { name: 'Pilih kategori', exact: true }).click();
@@ -137,7 +138,7 @@ test('planning persists a 100 percent allocation and protects required obligatio
   await page.getByRole('button', { name: 'Simpan rencana', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Simpan rencana', exact: true })).toBeDisabled();
   await expect(page.getByText('Rp 3.000.000', { exact: true }).first()).toBeVisible();
-  await page.getByLabel('Persentase Untuk future you').fill('60');
+  await page.getByLabel('Persentase Tabungan').fill('60');
   await page.getByRole('button', { name: 'Simpan rencana', exact: true }).click();
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
   expect(state.plan.saving).toBe(60);
@@ -358,7 +359,7 @@ test('quick edit and confirmed delete update balances without duplicating a reco
 test('category bottom sheet preserves its parent form and supports Escape', async ({ page }) => {
   await ownAccount(page);
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
-  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+  await manualTransaction(page);
   await page.getByLabel('Nama transaksi').fill('Belajar online');
   await page.getByRole('button', { name: 'Pilih kategori', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(2);
@@ -410,7 +411,7 @@ test('account sheet preserves the form and spends only from the selected wallet'
 }) => {
   await page.goto('/');
   await navigate(page, 'Transaksi');
-  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+  await manualTransaction(page);
   await page.getByLabel('Nama transaksi').fill('Biaya dari OVO');
   await page.getByLabel('Nominal (Rp)', { exact: true }).fill('500000');
   await page.getByRole('button', { name: 'Dari rekening', exact: true }).click();
@@ -435,11 +436,9 @@ test('account sheet preserves the form and spends only from the selected wallet'
 test('insight preferences change dashboard content and persist after reload', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.figma-insight-card')).toHaveCount(3);
-  await expect(page.locator('.figma-insight-card h3')).toHaveText([
-    'Rencana dana pribadi',
-    'Belanja paling besar',
-    'Saldo akun bersama',
-  ]);
+  for (const name of ['Rencana dana pribadi', 'Belanja paling besar', 'Saldo akun bersama']) {
+    await expect(page.getByRole('article', { name, exact: true })).toBeVisible();
+  }
   await navigate(page, 'Pengaturan');
   await expect(page.locator('.recording-settings, .settings-privacy, .iphone-tip')).toHaveCount(0);
   await expect(page.locator('.settings-content > .settings-section').last()).toHaveClass(
@@ -510,7 +509,7 @@ test('iPhone layouts and nested forms fit narrow, large and landscape screens', 
       ).toBeTruthy();
     }
     await navigate(page, 'Transaksi');
-    await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+    await manualTransaction(page);
     await page.getByLabel('Nama transaksi').fill('Catatan dengan nama yang panjang untuk diuji');
     await page.getByRole('button', { name: 'Dari rekening', exact: true }).click();
     expect(

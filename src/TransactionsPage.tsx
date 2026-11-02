@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Plus,
   Search,
   X,
   SlidersHorizontal,
@@ -10,7 +9,6 @@ import {
   CalendarDays,
   FileChartColumn,
   RotateCcw,
-  Settings,
   ChevronDown,
   Check,
 } from 'lucide-react';
@@ -29,23 +27,19 @@ export default function TransactionsPage({
   search,
   setSearch,
   detail,
-  onAdd,
   onUpload,
   onEdit,
   onDelete,
   onReport,
-  onSettings,
 }: {
   store: Store;
   search: string;
   setSearch: (s: string) => void;
   detail: (t: Transaction) => void;
-  onAdd: () => void;
   onUpload: () => void;
   onEdit: (t: Transaction) => void;
   onDelete: (t: Transaction) => void;
   onReport: () => void;
-  onSettings: () => void;
 }) {
   const [kind, setKind] = useState('all');
   const [month, setMonth] = useState('');
@@ -120,20 +114,16 @@ export default function TransactionsPage({
               </span>
             )}
           </h1>
-          <p>Setiap cerita uangmu, tercatat.</p>
+          <p>Riwayat pemasukan dan pengeluaran.</p>
         </div>
         <div className="heading-actions">
           <button
-            className="btn secondary upload-action"
+            className="btn primary receipt-action"
             aria-label="Unggah bukti"
             onClick={onUpload}
           >
-            <UploadCloud size={18} />
+            <UploadCloud size={21} />
             <span>Unggah bukti</span>
-          </button>
-          <button className="btn primary" aria-label="Catat transaksi" onClick={onAdd}>
-            <Plus size={21} />
-            <span>Catat transaksi</span>
           </button>
         </div>
       </div>
@@ -317,9 +307,6 @@ export default function TransactionsPage({
           >
             <span>{sortOptions.find((option) => option.value === sort)!.label}</span>
             <ChevronDown size={16} />
-          </button>
-          <button className="ledger-settings" aria-label="Buka pengaturan" onClick={onSettings}>
-            <Settings size={18} />
           </button>
         </div>
         <TransactionList

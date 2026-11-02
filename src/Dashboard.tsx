@@ -11,13 +11,11 @@ import {
   Sparkles,
   Heart,
   Wallet,
-  FileChartColumn,
   RefreshCw,
   PiggyBank,
   TriangleAlert,
   Lightbulb,
-  Settings,
-  ScanLine,
+  ChartNoAxesCombined,
 } from 'lucide-react';
 import type { Store, Transaction, Account } from './domain';
 import { money, totals, allocations, spendingByCategory, balances } from './domain';
@@ -31,27 +29,23 @@ type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
 export default function Dashboard({
   store,
   total,
-  onAdd,
   onUpload,
   go,
   detail,
   accountCard,
   onAccount,
   onReport,
-  onSettings,
   onStartOwn,
   preferences,
 }: {
   store: Store;
   total: number;
-  onAdd: () => void;
   onUpload: () => void;
   go: (page: Page) => void;
   detail: (tx: Transaction) => void;
   accountCard: (a: Account) => ReactNode;
   onAccount: () => void;
   onReport: () => void;
-  onSettings: () => void;
   onStartOwn: () => void;
   preferences: InsightPreferences;
 }) {
@@ -75,7 +69,13 @@ export default function Dashboard({
   );
   const recent = [...store.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const insightIcon = (item: MoneyInsight) =>
-    item.tone === 'warning' ? TriangleAlert : item.id === 'together' ? Heart : Lightbulb;
+    item.tone === 'warning'
+      ? TriangleAlert
+      : item.id === 'together'
+        ? Wallet
+        : item.id === 'spending'
+          ? ChartNoAxesCombined
+          : Lightbulb;
   const refreshInsights = () => {
     setRefresh((v) => v + 1);
     setRefreshedAt(
@@ -100,23 +100,12 @@ export default function Dashboard({
       <header className="figma-dashboard-header">
         <div>
           <h1>Dashboard</h1>
-          <p>Ringkasan {days} hari terakhir</p>
+          <p>Your financial overview</p>
         </div>
         <div className="dashboard-header-actions">
-          <button className="btn secondary" aria-label="Unggah bukti" onClick={onUpload}>
-            <UploadCloud size={18} />
+          <button className="btn primary" aria-label="Unggah bukti" onClick={onUpload}>
+            <UploadCloud size={21} />
             <span>Unggah bukti</span>
-          </button>
-          <button className="btn primary" aria-label="Catat transaksi" onClick={onAdd}>
-            <Plus size={20} />
-            <span>Catat transaksi</span>
-          </button>
-          <button
-            className="icon-btn dashboard-settings-mobile"
-            aria-label="Buka pengaturan"
-            onClick={onSettings}
-          >
-            <Settings size={20} />
           </button>
         </div>
         <div className="figma-period-control" role="group" aria-label="Periode dashboard">
@@ -267,25 +256,21 @@ export default function Dashboard({
             {insights.map((item) => {
               const Icon = insightIcon(item);
               return (
-                <article key={item.id} className={`figma-insight-card ${item.tone}`}>
-                  <span className="figma-insight-icon">
-                    <Icon size={21} strokeWidth={1.8} />
+                <article
+                  key={item.id}
+                  className={`figma-insight-card ${item.tone}`}
+                  aria-label={item.title}
+                >
+                  <span className="figma-insight-icon" aria-hidden="true">
+                    <Icon size={20} strokeWidth={1.8} />
                   </span>
                   <div>
-                    <span className="figma-insight-tag">{item.label}</span>
-                    <h3>{item.title}</h3>
+                    <div className="figma-insight-tag">
+                      <span>{item.label}</span>
+                      <i aria-hidden="true">·</i>
+                      <span className="figma-insight-context">{item.context}</span>
+                    </div>
                     <p>{item.body}</p>
-                    {item.destination && (
-                      <button className="figma-insight-link" onClick={() => go(item.destination!)}>
-                        Lihat{' '}
-                        {item.destination === 'plan'
-                          ? 'rencana'
-                          : item.destination === 'together'
-                            ? 'ruang bersama'
-                            : 'transaksi'}
-                        <ArrowRight size={12} />
-                      </button>
-                    )}
                   </div>
                 </article>
               );
@@ -340,16 +325,6 @@ export default function Dashboard({
           </div>
           <TransactionList store={store} transactions={recent} onSelect={detail} compact />
         </section>
-      </div>
-      <div className="figma-bottom-actions">
-        <button className="btn primary" onClick={onUpload}>
-          <ScanLine size={19} />
-          Catat dari bukti
-        </button>
-        <button className="btn secondary" onClick={onReport}>
-          <FileChartColumn size={19} />
-          Laporan keuangan
-        </button>
       </div>
     </div>
   );
