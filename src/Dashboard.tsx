@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import {
-  Plus,
   UploadCloud,
   ArrowUpRight,
   ArrowDownLeft,
@@ -17,12 +15,12 @@ import {
   Lightbulb,
   ChartNoAxesCombined,
 } from 'lucide-react';
-import type { Store, Transaction, Account } from './domain';
+import type { Store } from './domain';
 import { totals, allocations, spendingByCategory, balances } from './domain';
 import { dashboardPeriods, moneyInsights, periodTransactions } from './analytics';
 import type { InsightPreferences } from './preferences';
 import type { MoneyInsight } from './analytics';
-import { BalanceChart, CashflowChart, TransactionList, SpendingDonut, EmptyState } from './ui';
+import { BalanceChart, CashflowChart, SpendingDonut } from './ui';
 import { NetCashflowChart } from './DashboardCharts';
 import { MoneyAmount } from './MoneyAmount';
 
@@ -32,9 +30,6 @@ export default function Dashboard({
   total,
   onUpload,
   go,
-  detail,
-  accountCard,
-  onAccount,
   onReport,
   onStartOwn,
   preferences,
@@ -43,9 +38,6 @@ export default function Dashboard({
   total: number;
   onUpload: () => void;
   go: (page: Page) => void;
-  detail: (tx: Transaction) => void;
-  accountCard: (a: Account) => ReactNode;
-  onAccount: () => void;
   onReport: () => void;
   onStartOwn: () => void;
   preferences: InsightPreferences;
@@ -68,7 +60,6 @@ export default function Dashboard({
     () => moneyInsights(store, days).filter((item) => preferences[item.id]),
     [store, days, refresh, preferences],
   );
-  const recent = [...store.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const insightIcon = (item: MoneyInsight) =>
     item.tone === 'warning'
       ? TriangleAlert
@@ -276,11 +267,7 @@ export default function Dashboard({
                     <Icon size={20} strokeWidth={1.8} />
                   </span>
                   <div>
-                    <div className="figma-insight-tag">
-                      <span>{item.label}</span>
-                      <i aria-hidden="true">·</i>
-                      <span className="figma-insight-context">{item.context}</span>
-                    </div>
+                    <h3>{item.title}</h3>
                     <p>{item.body}</p>
                   </div>
                 </article>
@@ -292,49 +279,6 @@ export default function Dashboard({
               Insight diperbarui pukul {refreshedAt} dari {tx.length} transaksi pada periode ini.
             </p>
           )}
-        </section>
-        <section className="panel figma-wallets">
-          <div className="panel-heading">
-            <h2>
-              Dompet saya<span className="count-badge">{store.accounts.length}</span>
-            </h2>
-            <button className="icon-btn" aria-label="Tambah dompet" onClick={onAccount}>
-              <Plus size={20} />
-            </button>
-          </div>
-          {store.accounts.length ? (
-            <>
-              <div className="wallet-strip">
-                {store.accounts.slice(0, 4).map((a) => accountCard(a))}
-              </div>
-              <button className="all-wallets" onClick={() => go('accounts')}>
-                Semua dompet
-                <ArrowRight size={14} />
-              </button>
-            </>
-          ) : (
-            <EmptyState
-              icon={<Wallet size={26} />}
-              title="Mulai dari dompet pertama"
-              text="Tambahkan rekening atau e-wallet beserta saldo awalnya."
-              action={
-                <button className="btn primary" onClick={onAccount}>
-                  Tambah dompet
-                  <Plus size={17} />
-                </button>
-              }
-            />
-          )}
-        </section>
-        <section className="panel figma-recent">
-          <div className="panel-heading">
-            <h2>Transaksi terbaru</h2>
-            <button className="text-btn" onClick={() => go('transactions')}>
-              Lihat semua
-              <ArrowRight size={14} />
-            </button>
-          </div>
-          <TransactionList store={store} transactions={recent} onSelect={detail} compact />
         </section>
       </div>
     </div>

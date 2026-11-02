@@ -1,21 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode, FormEvent } from 'react';
 import {
-  LayoutDashboard,
   ArrowLeftRight,
-  Wallet,
+  UploadCloud,
   Sparkles,
   Heart,
   Plus,
   ArrowUpRight,
-  ChevronDown,
   ChevronRight,
-  Search,
   Bell,
-  Settings,
-  ShieldCheck,
   ArrowRight,
-  Leaf,
   Download,
   X,
   Check,
@@ -24,14 +18,12 @@ import {
   TrendingUp,
   Coffee,
   PiggyBank,
-  FileChartColumn,
   Sun,
   Moon,
   Monitor,
   RefreshCw,
   Trash2,
   LoaderCircle,
-  HardDrive,
 } from 'lucide-react';
 import type { Store, Transaction, Account, Goal, Plan } from './domain';
 import {
@@ -49,13 +41,14 @@ import { TransactionForm, AccountForm, GoalForm, TransactionDetail } from './for
 import TransactionsPage from './TransactionsPage';
 import Overview from './Dashboard';
 import Reports from './Reports';
-import WalletPage, { WalletExample, WalletNavigation, WalletStatusBar } from './WalletPage';
+import WalletPage from './WalletPage';
+import AppNavigation, { pageFromLocation, pagePaths } from './AppNavigation';
+import type { Page } from './AppNavigation';
 import { MoneyAmount } from './MoneyAmount';
 import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
 import type { InsightPreferences } from './preferences';
 import { clearReceipts, deleteReceipt, readReceipt, saveReceipt } from './receipts';
 
-type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together' | 'reports' | 'settings';
 type Dialog =
   | {
       type: 'transaction';
@@ -65,23 +58,9 @@ type Dialog =
     }
   | { type: 'account'; shared?: boolean }
   | { type: 'goal' }
-  | { type: 'wallet-example' }
   | { type: 'detail'; tx: Transaction }
   | { type: 'confirm'; title: string; text: string; action: () => void }
-  | { type: 'notifications' }
   | null;
-const primaryNavItems = [
-  { id: 'overview' as const, label: 'Ringkasan', short: 'Beranda', icon: LayoutDashboard },
-  { id: 'accounts' as const, label: 'Dompet saya', short: 'Dompet', icon: Wallet },
-  { id: 'transactions' as const, label: 'Transaksi', short: 'Transaksi', icon: ArrowLeftRight },
-  { id: 'reports' as const, label: 'Laporan', short: 'Laporan', icon: FileChartColumn },
-  { id: 'settings' as const, label: 'Pengaturan', short: 'Setelan', icon: Settings },
-];
-const navItems = [
-  ...primaryNavItems,
-  { id: 'plan' as const, label: 'Rencana uang', short: 'Rencana', icon: Sparkles },
-  { id: 'together' as const, label: 'Ruang bersama', short: 'Bersama', icon: Heart },
-];
 function loadStore(): { data: Store; error: string } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -109,7 +88,19 @@ export default function App() {
   const [initial] = useState(loadStore);
   const [store, setStore] = useState(initial.data);
   const [recoveryError, setRecoveryError] = useState(initial.error);
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setCurrentPage] = useState<Page>(pageFromLocation);
+  function setPage(next: Page) {
+    if (next !== page) history.pushState(null, '', pagePaths[next]);
+    setCurrentPage(next);
+  }
+  useEffect(() => {
+    const back = () => {
+      setCurrentPage(pageFromLocation());
+      setDialog(null);
+    };
+    window.addEventListener('popstate', back);
+    return () => window.removeEventListener('popstate', back);
+  }, []);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
@@ -309,125 +300,9 @@ export default function App() {
   );
   return (
     <div className="app-shell" data-page={page}>
-      <aside className="sidebar">
-        <a
-          href="#"
-          className="brand-link"
-          aria-label="SkyWallet beranda"
-          onClick={(e) => {
-            e.preventDefault();
-            setPage('overview');
-          }}
-        >
-          <Logo />
-        </a>
-        <div className="workspace-label">YOUR PERSONAL SPACE</div>
-        <nav aria-label="Navigasi utama">
-          {navItems.map((n) => (
-            <button
-              key={n.id}
-              aria-label={n.label}
-              className={`nav-item ${page === n.id ? 'active' : ''}`}
-              onClick={() => {
-                setPage(n.id);
-                setSearch('');
-              }}
-            >
-              <n.icon size={19} strokeWidth={1.7} />
-              <span>{n.label}</span>
-              {page === n.id && <span className="nav-active-dot" />}
-              {n.id === 'together' && <span className="new-label">FOR TWO</span>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <span className="note-illustration">
-              <Leaf size={27} strokeWidth={1.3} />
-              <span>✦</span>
-            </span>
-            <h3>
-              Small steps.
-              <br />
-              Brighter future.
-            </h3>
-            <p>
-              Mulai dari sedikit,
-              <br />
-              tumbuh jadi berarti.
-            </p>
-            <button onClick={() => setPage('plan')}>
-              Buat rencanamu
-              <ArrowUpRight size={15} />
-            </button>
-          </div>
-          <button className="nav-item settings-nav" onClick={() => setPage('settings')}>
-            <Settings size={19} strokeWidth={1.7} />
-            Pengaturan
-          </button>
-          <button className="profile" onClick={() => setPage('settings')}>
-            <span className="avatar">
-              S<span />
-            </span>
-            <span>
-              <strong>Ruang pribadimu</strong>
-              <small>
-                <span className="status-dot" />
-                Tersimpan di perangkat
-              </small>
-            </span>
-            <ChevronDown size={14} />
-          </button>
-        </div>
-      </aside>
       <div className="main-shell">
-        {page === 'accounts' && <WalletStatusBar />}
-        <header className="topbar">
-          <div className="topbar-breadcrumb">
-            <span className="breadcrumb-mark">
-              <LayoutDashboard size={14} />
-            </span>
-            Ruang pribadi<span>/</span>
-            <strong>{navItems.find((n) => n.id === page)?.label}</strong>
-          </div>
-          <div className="topbar-actions">
-            <button className="local-badge" onClick={() => setPage('settings')}>
-              <ShieldCheck size={13} />
-              <span>Private by design</span>
-            </button>
-            <button
-              className="icon-btn search-top"
-              aria-label="Cari transaksi"
-              onClick={() => {
-                setPage('transactions');
-                setSearch('');
-                setTimeout(() => document.getElementById('transaction-search')?.focus(), 80);
-              }}
-            >
-              <Search size={19} />
-            </button>
-            <button
-              className="icon-btn notification-btn"
-              aria-label="Lihat insight keuangan"
-              onClick={() => setDialog({ type: 'notifications' })}
-            >
-              <Bell size={19} />
-              <i />
-            </button>
-            <button
-              className="top-avatar"
-              aria-label="Buka pengaturan"
-              onClick={() => setPage('settings')}
-            >
-              S
-            </button>
-          </div>
-          <div className="mobile-brand">
-            <Logo />
-          </div>
-        </header>
         <main>
-          {store.demo && (
+          {store.demo && page !== 'overview' && (
             <div className="demo-banner">
               <span>
                 <span className="demo-dot" />
@@ -460,9 +335,6 @@ export default function App() {
               total={total}
               onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
               go={setPage}
-              detail={(t) => setDialog({ type: 'detail', tx: t })}
-              accountCard={accountCard}
-              onAccount={() => setDialog({ type: 'account' })}
               onReport={() => setPage('reports')}
               onStartOwn={startOwn}
               preferences={preferences}
@@ -474,21 +346,55 @@ export default function App() {
               onAdd={(shared) => setDialog({ type: 'account', shared })}
               onPlan={() => setPage('plan')}
               onTogether={() => setPage('together')}
-              onExample={() => setDialog({ type: 'wallet-example' })}
               accountCard={accountCard}
             />
           )}
-          {page === 'transactions' && (
-            <TransactionsPage
-              store={store}
-              search={search}
-              setSearch={setSearch}
-              detail={(t) => setDialog({ type: 'detail', tx: t })}
-              onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
-              onEdit={(tx) => setDialog({ type: 'transaction', defaults: tx, editingId: tx.id })}
-              onDelete={askDelete}
-              onReport={() => setPage('reports')}
-            />
+          {(page === 'transactions' || page === 'reports') && (
+            <section className="activity-page">
+              <PageHeading
+                eyebrow=""
+                title="Transaksi"
+                description="Riwayat dan laporan keuanganmu."
+                action={
+                  <button
+                    className="icon-btn upload-action"
+                    aria-label="Unggah bukti"
+                    onClick={() => setDialog({ type: 'transaction', mode: 'receipt' })}
+                  >
+                    <UploadCloud size={22} />
+                  </button>
+                }
+              />
+              <div className="activity-tabs" role="group" aria-label="Tampilan transaksi">
+                <button
+                  aria-pressed={page === 'transactions'}
+                  onClick={() => setPage('transactions')}
+                >
+                  Riwayat
+                </button>
+                <button aria-pressed={page === 'reports'} onClick={() => setPage('reports')}>
+                  Laporan
+                </button>
+              </div>
+              {page === 'transactions' ? (
+                <TransactionsPage
+                  store={store}
+                  search={search}
+                  setSearch={setSearch}
+                  detail={(t) => setDialog({ type: 'detail', tx: t })}
+                  onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
+                  onEdit={(tx) =>
+                    setDialog({ type: 'transaction', defaults: tx, editingId: tx.id })
+                  }
+                  onDelete={askDelete}
+                />
+              ) : (
+                <section className="reports-page">
+                  <h2 className="report-title">Laporan</h2>
+                  <Reports store={store} />
+                </section>
+              )}
+            </section>
           )}
           {page === 'plan' && (
             <Planning
@@ -504,7 +410,7 @@ export default function App() {
               <PageHeading
                 eyebrow="BETTER, TOGETHER"
                 title="Ruang bersama"
-                description="Saldo dan tujuan akun bersama."
+                description="Dana bersama, terpisah dari dana pribadi."
                 action={
                   <button
                     className="btn primary"
@@ -601,16 +507,6 @@ export default function App() {
               </section>
             </>
           )}
-          {page === 'reports' && (
-            <section className="reports-page">
-              <PageHeading
-                eyebrow=""
-                title="Laporan"
-                description="Ringkasan keuangan yang bisa kamu simpan."
-              />
-              <Reports store={store} />
-            </section>
-          )}
           {page === 'settings' && (
             <section className="settings-page">
               <PageHeading
@@ -629,44 +525,16 @@ export default function App() {
               />
             </section>
           )}
-          <footer className="page-footer">
-            <span>
-              <Logo small />
-              Made for a little more peace of mind.
-            </span>
-            <span>
-              <ShieldCheck size={12} />
-              Disimpan lokal · Cadangkan secara berkala
-            </span>
-          </footer>
         </main>
       </div>
-      {page === 'accounts' && (
-        <WalletNavigation
-          go={(next) => {
-            setPage(next);
-            setSearch('');
-          }}
-          onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
-        />
-      )}
-      <nav className="mobile-nav" aria-label="Navigasi mobile">
-        {primaryNavItems.map((n) => (
-          <button
-            key={n.id}
-            aria-label={n.label}
-            aria-current={page === n.id ? 'page' : undefined}
-            className={page === n.id ? 'active' : ''}
-            onClick={() => {
-              setPage(n.id);
-              setSearch('');
-            }}
-          >
-            <n.icon size={20} strokeWidth={page === n.id ? 2.2 : 1.6} />
-            <span>{n.short}</span>
-          </button>
-        ))}
-      </nav>
+      <AppNavigation
+        page={page}
+        go={(next) => {
+          setPage(next);
+          setSearch('');
+        }}
+        onCapture={() => setDialog({ type: 'transaction', mode: 'receipt' })}
+      />
       {toast && (
         <div className="toast" role="status">
           <Check size={17} />
@@ -675,11 +543,6 @@ export default function App() {
             <X size={15} />
           </button>
         </div>
-      )}
-      {dialog?.type === 'wallet-example' && (
-        <Modal title="Contoh detail dompet" onClose={close}>
-          <WalletExample />
-        </Modal>
       )}
       {dialog?.type === 'transaction' && (
         <Modal title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'} wide onClose={close}>
@@ -751,67 +614,6 @@ export default function App() {
           </div>
         </Modal>
       )}
-      {dialog?.type === 'notifications' && (
-        <Modal
-          title="Ringkasan keuangan"
-          subtitle="Insight dari catatanmu, tanpa menebak penghasilan berikutnya."
-          onClose={close}
-        >
-          <div className="insight-list">
-            <div>
-              <span className="insight-icon">
-                <Sparkles size={20} />
-              </span>
-              <section>
-                <h3>
-                  {allocations(store).shortfall
-                    ? 'Dahulukan kebutuhan wajib'
-                    : 'Ada ruang untuk masa depan'}
-                </h3>
-                <p>
-                  {allocations(store).shortfall
-                    ? `Dana pribadi kurang ${money(allocations(store).shortfall)} dari cadangan kebutuhan yang kamu atur.`
-                    : `${money(allocations(store).available)} dana pribadi tersisa setelah cadangan kebutuhan wajib. Atur alokasinya di Rencana uang.`}
-                </p>
-              </section>
-            </div>
-            <div>
-              <span className="insight-icon">
-                <ShieldCheck size={20} />
-              </span>
-              <section>
-                <h3>Uangmu tetap dalam kendalimu</h3>
-                <p>
-                  Tidak ada koneksi ke bank. Periksa kecocokan saldo dengan rekening asli secara
-                  berkala dan catat biaya admin atau bunga yang belum masuk.
-                </p>
-              </section>
-            </div>
-            <div>
-              <span className="insight-icon">
-                <HardDrive size={20} />
-              </span>
-              <section>
-                <h3>Jangan lupa cadangan</h3>
-                <p>
-                  Data tersimpan pada browser ini. Unduh cadangan lewat Pengaturan sebelum berganti
-                  perangkat atau membersihkan browser.
-                </p>
-              </section>
-            </div>
-          </div>
-          <button
-            className="btn primary full-width"
-            onClick={() => {
-              close();
-              setPage('plan');
-            }}
-          >
-            Lihat rencana uang
-            <ArrowRight size={16} />
-          </button>
-        </Modal>
-      )}
     </div>
   );
 }
@@ -830,7 +632,7 @@ function PageHeading({
   return (
     <div className="page-heading">
       <div>
-        <span className="eyebrow">{eyebrow}</span>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -909,7 +711,7 @@ function Planning({
       <PageHeading
         eyebrow="MAKE ROOM FOR WHAT MATTERS"
         title="Rencana uang"
-        description="Rencana fleksibel dari uang yang sudah ada, bukan penghasilan yang belum pasti."
+        description="Bagi dana pribadi setelah kebutuhan wajib."
         action={
           <button className="btn secondary" onClick={onGoal}>
             <Target size={17} />
@@ -953,6 +755,12 @@ function Planning({
               <MoneyAmount value={preview.available} />
             </strong>
           </div>
+          {preview.shortfall > 0 && (
+            <div className="form-error">
+              Dana belum cukup untuk cadangan wajib. Kekurangan {money(preview.shortfall)}.
+              Dahulukan kebutuhan ini sebelum belanja opsional.
+            </div>
+          )}
           {rows.map((row) => (
             <div className="allocation-row" key={row.key}>
               <div className="allocation-heading">
@@ -1028,56 +836,45 @@ function Planning({
             </button>
           </div>
         </form>
-        <aside className="plan-explanation">
-          <div className="panel calculation-card">
-            <span className="soft-icon">
-              <TrendingUp size={23} />
-            </span>
-            <h2>Kenali ruang gerakmu.</h2>
-            <p>Uang bersama sudah dipisahkan, supaya rencana pribadi tetap realistis.</p>
-            <dl>
-              <div>
-                <dt>Saldo pribadi</dt>
-                <dd>
-                  <MoneyAmount value={preview.personal} />
-                </dd>
-              </div>
-              <div>
-                <dt>Cadangan wajib</dt>
-                <dd>
-                  <MoneyAmount value={-(Number(reserve) || 0)} />
-                </dd>
-              </div>
-              <div className="calc-total">
-                <dt>Siap dialokasikan</dt>
-                <dd>
-                  <MoneyAmount value={preview.available} />
-                </dd>
-              </div>
-            </dl>
-            {preview.shortfall > 0 && (
-              <div className="form-error">
-                Dana belum cukup untuk cadangan wajib. Kekurangan {money(preview.shortfall)}.
-                Dahulukan kebutuhan ini sebelum belanja opsional.
-              </div>
-            )}
-            <div className="info-note">
-              <Info size={16} />
-              <span>
-                Persentase dihitung dari dana yang tersisa setelah cadangan wajib. Ini rencana atas
-                saldo saat ini, bukan proyeksi pemasukan bulanan.
+        <details className="calculation-details">
+          <summary>Rincian perhitungan</summary>
+          <aside className="plan-explanation">
+            <div className="panel calculation-card">
+              <span className="soft-icon">
+                <TrendingUp size={23} />
               </span>
+              <h2>Kenali ruang gerakmu.</h2>
+              <p>Uang bersama sudah dipisahkan, supaya rencana pribadi tetap realistis.</p>
+              <dl>
+                <div>
+                  <dt>Saldo pribadi</dt>
+                  <dd>
+                    <MoneyAmount value={preview.personal} />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Cadangan wajib</dt>
+                  <dd>
+                    <MoneyAmount value={-(Number(reserve) || 0)} />
+                  </dd>
+                </div>
+                <div className="calc-total">
+                  <dt>Siap dialokasikan</dt>
+                  <dd>
+                    <MoneyAmount value={preview.available} />
+                  </dd>
+                </div>
+              </dl>
+              <div className="info-note">
+                <Info size={16} />
+                <span>
+                  Persentase dihitung dari dana yang tersisa setelah cadangan wajib. Ini rencana
+                  atas saldo saat ini, bukan proyeksi pemasukan bulanan.
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="gentle-card">
-            <Leaf size={25} strokeWidth={1.4} />
-            <h3>Kamu yang pegang kendali.</h3>
-            <p>
-              Saran penempatan memakai dompet milikmu, tanpa menjanjikan bunga atau hasil. Rencana
-              tidak mengunci atau memindahkan uang. Transfer nyata tetap kamu lakukan sendiri.
-            </p>
-          </div>
-        </aside>
+          </aside>
+        </details>
       </div>
       <div className="section-title spaced">
         <h2>Tujuan tabungan</h2>

@@ -1,63 +1,47 @@
-# SkyWallet — adaptasi UI iPhone
+# SkyWallet — seluruh aplikasi dari referensi Framer
 
-Implementasi mengikuti delapan ekspor React dan gambar referensi yang diberikan pengguna: dashboard, daftar transaksi, filter, pemilih kategori, tambah transaksi, pemilih rekening, laporan, dan pengaturan. Ekspor tersebut menjadi acuan visual; komponen prototipe yang berulang disusun ulang agar dapat dipakai dengan data SkyWallet. Ini bukan hasil pengambilan langsung dari Figma API.
+Implementasi mengikuti seluruh versi publik [Miracle Startup](https://miracle-startup-935285.framer.app), sesuai konfirmasi pengguna. Tautan editor proyek memerlukan login dan tool Framer tidak tersedia pada sesi pengerjaan, sehingga pengukuran berasal dari halaman publik yang dirender di browser. Desain diterapkan pada aplikasi React SkyWallet, bukan pada proyek editor Framer.
 
-Tujuh SVG tambahan untuk Home, Transaksi, pemilih kategori/rekening, formulir, filter, serta Laporan menjadi acuan proporsi kartu. Panduan warna dan tipografi terbaru menetapkan Noto Sans dengan bobot 400, 500, dan 600.
+[Galeri 17 layar iPhone](ui-preview.html) berisi screenshot implementasi dengan data contoh pada viewport 393 × 852.
 
-## Tampilan
+## Cakupan lengkap
 
-- Noto Sans lokal yang disertakan di repositori (`src/assets/fonts`, tanpa impor paket npm saat runtime): isi regular 400, label medium 500, nominal semibold 600; latar `#f9f8f6`, navy `#1d2949`, kartu putih, kontrol abu netral, aksen turquoise, hijau, coral, dan amber sesuai referensi.
-- Nominal di kartu diringkas mulai jutaan (contoh Rp 14,54 jt), dengan Rp dan satuan lebih kecil. Nilai lengkap tetap dibaca pembaca layar, tersedia pada tooltip/detail transaksi, serta dipakai pada cetak dan ekspor. Data rupiah asli tidak diubah.
-- Lebar acuan 393 px, jarak tepi 24 px, kartu membulat, grafik pada kartu terpisah, lembar pilihan dari bawah, dan lima tab navigasi.
-- Navigasi: Beranda, Dompet, Transaksi, Laporan, Setelan. Rencana uang dan ruang bersama tersedia dari Dompet dan kartu ringkasan.
-- Dashboard mobile berisi saldo, empat ringkasan, tiga grafik, diagram kategori, dan tiga insight penting: rencana dana pribadi, belanja paling besar, serta saldo akun bersama. Rincian dompet dan transaksi berada pada tab masing-masing.
-- Kartu Sky Insights mengikuti contoh terbaru: ikon pastel kecil, label dan konteks satu baris, lalu satu paragraf data. Tanpa judul besar atau tombol tambahan di setiap kartu.
-- Header Dashboard memakai subjudul “Your financial overview” dan satu aksi unggah dengan ikon awan/panah. Aksi yang sama dipakai pada header Transaksi; input manual tetap tersedia melalui tab formulir.
-- Urutan transaksi memakai tombol dan lembar pilihan SkyWallet: terbaru, terlama, atau nominal terbesar, dengan penanda pilihan aktif.
-- Safe area iPhone, tinggi layar dinamis, konten formulir yang bisa digulir dengan judul/X dan tombol simpan tetap terlihat, serta fokus dan penutupan dialog bertingkat. Tampilan menggunakan status bar dan indikator Home milik perangkat.
-- Ikon SVG yang hanya disebut dalam ekspor tanpa berkas aslinya digantikan ikon lokal Lucide atau emoji kategori. Tidak memerlukan pemuatan aset Figma.
+| Halaman / alur      | Implementasi                                                                                              |
+| ------------------- | --------------------------------------------------------------------------------------------------------- |
+| Beranda             | Kartu saldo navy, empat ringkasan, periode, tiga grafik, kategori, dan tiga Sky Insights                  |
+| Dompet              | Total dan pembagian saldo, daftar dompet pribadi/bersama, keadaan kosong, akses rencana dan ruang bersama |
+| Transaksi           | Pencarian, jenis, filter kategori/rekening/bulan/nominal, urutan, daftar, edit/hapus, CSV                 |
+| Laporan             | Tab dalam halaman Transaksi, periode dan jenis, enam nilai aktual, cetak/PDF dan CSV                      |
+| Rencana uang        | Cadangan wajib, dana tersedia, alokasi 100%, rincian perhitungan yang dapat dibuka, tujuan tabungan       |
+| Ruang bersama       | Saldo terpisah, dompet bersama, pencatatan transfer, tujuan, riwayat                                      |
+| Setelan             | Profil lokal, terang/gelap/sistem, cadangan dan pemulihan, reset, preferensi insight pada bagian terakhir |
+| Catat               | Tombol awan di seluruh navigasi, unggah bukti dan input manual dalam satu lembar                          |
+| Formulir            | Tambah dompet, tujuan, transaksi baru/edit, biaya dan detail tambahan                                     |
+| Pemilih             | Kategori, bank/e-wallet, rekening, serta urutan transaksi dalam lembar bertingkat                         |
+| Detail & konfirmasi | Detail transaksi, bukti asli, edit, hapus dengan konfirmasi, reset dan pemulihan                          |
 
-## Penyesuaian isi
+## Sistem tampilan
 
-| Bagian referensi               | Isi SkyWallet                                                                               |
-| ------------------------------ | ------------------------------------------------------------------------------------------- |
-| Saldo dan empat ringkasan      | Saldo semua akun, pemasukan, pengeluaran, alokasi tabungan, dana bersama                    |
-| Income/expense, tren, kategori | Data transaksi nyata, pilihan 7/30/365 hari, transfer pokok tidak masuk arus bersih         |
-| Paid/unpaid dan cash/card      | Jenis transaksi dan rekening bank/e-wallet, kategori, sumber pemasukan, biaya, bukti        |
-| Pemilih metode pembayaran      | Pilihan rekening milik pengguna beserta saldo tercatat dan penanda bersama                  |
-| Upah per jam dan jam kerja     | Pemasukan tidak tetap, cadangan wajib, alokasi dana tersedia                                |
-| Report content                 | Semua/pemasukan/pengeluaran/transfer, tanggal valid, enam ringkasan dan ekspor terfilter    |
-| Profil contoh dan notifikasi   | Profil lokal; tema dan cadangan tetap tersedia; tiga sakelar insight di bagian paling bawah |
-| Delete account                 | Reset catatan lokal dengan konfirmasi; fitur cadangan tetap tersedia                        |
+`src/app.css` menjadi satu stylesheet aplikasi. Enam stylesheet lama diganti agar komponen memiliki ukuran dan perilaku yang sama di setiap halaman. `AppNavigation.tsx` menyediakan navigasi bersama, URL halaman, dan pemetaan tautan langsung. Tidak ada kerangka halaman Dompet yang terpisah.
 
-Perhitungan insight bersifat lokal dan dijelaskan dari catatan. Tidak memprediksi penghasilan tidak tetap, tidak menjanjikan hasil tabungan atau bunga bank, dan tidak memindahkan uang. Saldo bersama tetap terpisah dari alokasi pribadi. Penarikan tunai adalah pengeluaran.
+Warna mengikuti Framer: latar hangat `#f9f8f6`, kartu putih, navy `#1d2949`, abu `#697087`, turquoise `#3ed0c2`, hijau, coral, dan amber. Noto Sans 400/500/600 tetap dibundel lokal. Judul 24 px, label 11–13 px, nominal kartu 23–32 px. Rp dan satuan memakai ukuran lebih kecil; nilai jutaan diringkas, sedangkan pembaca layar, detail dan ekspor tetap memakai nilai rupiah utuh.
 
-## Verifikasi dan batasnya
+Lebar mengikuti layar iPhone dengan margin konten 24 px; desktop memakai bingkai aplikasi maksimal 480 px. Kartu menggunakan radius 24 px dan tombol 13–16 px. Semua halaman menggunakan tab Beranda, Dompet, Catat, Transaksi, Setelan. Riwayat dan Laporan menjadi dua tab dalam tujuan Transaksi.
 
-Pengujian otomatis mencakup perhitungan keuangan, kalender laporan, unggah gambar/PDF dengan OCR lokal, pemilihan rekening, edit/hapus, cadangan berisi bukti asli, pemulihan, pembukaan offline, tema, preferensi insight, serta tata letak 375/393/430 px dan lanskap 852 px. Browser yang digunakan: Chromium desktop, Chromium ukuran iPhone, dan WebKit dengan emulasi sentuh iPhone.
+## Adaptasi untuk iPhone
 
-Pengujian WebKit mengungkap kegagalan serialisasi Blob/File ke IndexedDB. Bukti sekarang disimpan sebagai byte asli dan tipe berkas; pembacaan Blob dari versi sebelumnya tetap didukung. Uji cadangan membandingkan kembali seluruh byte gambar asli setelah ekspor, kemudian memulihkan dan membuka buktinya.
+Navigasi tetap di bawah saat konten digulir. Padding konten dan lembar mengikuti safe area. Status bar 9:41 serta indikator Home buatan dari prototipe dihapus; perangkat menampilkan miliknya sendiri. Badge/editor Framer tidak disalin.
 
-Verifikasi pada 2 November 2026: build produksi berhasil; 27 tes logika lulus; 42 skenario browser telah diverifikasi pada ketiga proyek. Pemeriksaan mencakup tiga kartu insight dan preferensinya, pilihan bank dan urutan transaksi, pemulihan cadangan lama, serta posisi judul/X dan tombol simpan yang tetap saat isi formulir digulir. Pemeriksaan tambahan berhasil membuat tujuan tabungan melalui pemilih rekening, memfilter akun OVO, dan mengembalikan filter ke semua rekening.
+Formulir memakai lembar dari bawah pada layar kecil, judul dan tombol tutup tetap terlihat, isi dapat digulir, serta tombol simpan berada di bagian bawah. Dialog bertingkat mempertahankan formulir induk dan fokus. Input memakai 16 px untuk menghindari zoom otomatis Safari. Animasi menghormati preferensi reduced motion. Grafik saldo menerima penunjuk mouse maupun sentuhan.
 
-Setelan menampilkan profil lokal, tema, data/cadangan, reset, lalu informasi di aplikasi pada bagian terakhir. Kartu informasi pencatatan, penyimpanan lokal, dan panduan iPhone disembunyikan dari UI; fungsi penyimpanan, pencadangan, serta PWA tetap tersedia. Nama aplikasi, logo teks, manifest, judul halaman, dan berkas ekspor memakai SkyWallet. Kunci penyimpanan lama dipertahankan; pemulihan menerima cadangan SkyWallet serta skySave.
+URL `/dompet`, `/expenses`, `/expenses#laporan`, `/rencana-uang`, `/ruang-bersama`, dan `/settings` membuka halaman yang sesuai. Refresh mempertahankan halaman; tombol kembali browser mengikuti navigasi. Ruang bersama dan rencana memberi akses kembali ke Dompet.
 
-WebKit Linux bukan perangkat iPhone fisik. Keyboard iOS, pemilih foto/file, Share, perilaku penyimpanan Safari/PWA, dan pemasangan ke layar utama masih perlu diperiksa di iPhone yang akan dipakai. Data dan bukti tetap lokal di browser; sinkronisasi antarperangkat dan login keluarga belum tersedia.
+## Data dan validasi
 
-Perubahan ini tidak menerbitkan ulang environment atau melakukan deployment.
+Saldo, catatan, rencana, bukti OCR/PDF, dan cadangan tetap memakai model lokal SkyWallet. Proses redesain tidak mengosongkan data untuk meniru keadaan kosong Framer. Mode demo selalu diberi penanda. Tidak ada koneksi bank, login keluarga, atau sinkronisasi antarperangkat yang disimulasikan.
 
-## Halaman Dompet dari Framer
+Perhitungan transfer pokok, biaya admin, cadangan wajib, dan alokasi diuji terpisah dari tampilan. Bukti asli tetap disimpan sebagai byte pada IndexedDB; cadangan lengkap dapat memulihkan bukti. Berkas cadangan lama skySave tetap diterima.
 
-Referensi terbaru: [halaman Dompet milik pengguna](https://miracle-startup-935285.framer.app/dompet), diperiksa pada 2 November 2026. Implementasi ada pada `src/WalletPage.tsx` dan `src/framer-wallet.css`. Tahap ini menyalin halaman Dompet, termasuk navigasi bawah pada halaman tersebut; halaman lain masih memakai tampilan sebelumnya.
+Screenshot galeri memakai Chromium. Pengujian WebKit Linux mengemulasikan ukuran dan sentuhan iPhone; ini bukan pengujian pada iPhone fisik. Keyboard, pemilih foto, dan pemasangan PWA pada perangkat nyata masih bergantung pada Safari/iOS pengguna. Perubahan ini tidak melakukan deployment server atau mengubah proyek Framer.
 
-Pengukuran diambil dari DOM dan screenshot yang sudah selesai memuat font, bukan perkiraan dari gambar. Lebar layar acuan 393 px dan tetap berada di tengah pada desktop. Konten memakai padding horizontal 24 px, gap 14 px, kartu radius 24 px, tombol radius 16 px, serta ukuran dan tinggi baris Noto Sans persis dari referensi. Kartu saldo berwarna putih dengan total abu-abu, tombol tambah memakai ikon dompet, dan tombol Catat memakai ikon awan/panah. Status bar 9:41 dan indikator Home ditampilkan sebagai dekorasi prototipe sesuai permintaan salinan awal. Badge dan tombol editor Framer tidak disalin.
-
-Semua komponen utama pada keadaan kosong memiliki koordinat dan ukuran yang sama dengan referensi pada viewport 393 × 852 dan 1440 × 1000. Navigasi mengikuti aliran dokumen seperti di Framer: jika isi lebih panjang dari viewport, pengguna menggulir untuk mencapai navigasi. Ini sengaja belum diganti menjadi tab bar tetap.
-
-Saldo dan daftar dompet tetap berasal dari catatan pengguna. Data tidak direset untuk membuat saldo nol. Penanda Data contoh tetap terlihat ketika memakai demo. Tombol tambah dan Catat terhubung ke formulir yang sudah ada; Rencana uang, Ruang bersama, Transaksi, dan Setelan tetap dapat dibuka. Lihat contoh detail dompet membuka contoh lokal yang tidak menambah rekening atau mengubah saldo; tautan contoh pada referensi Framer sendiri belum menampilkan isi saat diperiksa.
-
-Nominal pada kartu saldo halaman Dompet mengikuti teks penuh di referensi untuk tahap penyalinan ini. Pemadatan nominal pada halaman lain, penyimpanan lokal, bukti asli, dan perhitungan keuangan tetap tersedia.
-
-[Preview halaman Dompet pada data kosong](screenshots/dompet.png).
-
-Verifikasi tahap Framer: build produksi dan pemeriksaan format berhasil, 27 tes logika serta 42 skenario browser lulus. Pemeriksaan tambahan pada Chromium desktop, Chromium ukuran iPhone, dan WebKit berhasil membuka contoh tanpa mengubah data, menambah dompet dari tombol keadaan kosong, serta membuka unggah dan input manual dari tombol awan.
+Verifikasi akhir 2 November 2026: build produksi berhasil; 27 tes logika dan 45 skenario browser lulus pada Chromium desktop, Chromium ukuran iPhone, serta WebKit. Pemeriksaan mencakup seluruh halaman, layar 375/393/430 px dan lanskap, formulir bertingkat, OCR gambar/PDF, saldo, cadangan/pemulihan, pembukaan offline, ekspor, tema, preferensi insight, tautan langsung, refresh, dan tombol kembali. Galeri memperlihatkan 17 halaman/keadaan antarmuka yang sudah dirender.

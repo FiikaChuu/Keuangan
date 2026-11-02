@@ -2,12 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './fonts.css';
 import App from './App';
-import './styles.css';
-import './figma-dashboard.css';
-import './mobile-ui.css';
-import './native-ui.css';
-import './typography.css';
-import './framer-wallet.css';
+import './app.css';
 
 try {
   const theme = localStorage.getItem('skysave.theme');

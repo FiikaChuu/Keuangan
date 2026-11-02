@@ -357,6 +357,7 @@ export function TransactionList({
   compact: isCompact = false,
   onEdit,
   onDelete,
+  emptyAction,
 }: {
   store: Store;
   transactions: Transaction[];
@@ -364,10 +365,12 @@ export function TransactionList({
   compact?: boolean;
   onEdit?: (t: Transaction) => void;
   onDelete?: (t: Transaction) => void;
+  emptyAction?: ReactNode;
 }) {
   if (!transactions.length)
     return (
       <EmptyState
+        action={emptyAction}
         title="Belum ada transaksi di sini"
         text="Coba ubah filter, atau catat transaksi pertamamu. Setiap langkah kecil berarti."
       />
@@ -520,6 +523,7 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
             height="175"
             fill="transparent"
             onMouseEnter={() => setHover(i)}
+            onPointerDown={() => setHover(i)}
           />
         ))}
         <circle

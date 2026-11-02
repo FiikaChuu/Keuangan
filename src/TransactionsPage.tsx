@@ -7,7 +7,6 @@ import {
   UploadCloud,
   ArrowUpRight,
   CalendarDays,
-  FileChartColumn,
   RotateCcw,
   ChevronDown,
   Check,
@@ -31,7 +30,6 @@ export default function TransactionsPage({
   onUpload,
   onEdit,
   onDelete,
-  onReport,
 }: {
   store: Store;
   search: string;
@@ -40,7 +38,6 @@ export default function TransactionsPage({
   onUpload: () => void;
   onEdit: (t: Transaction) => void;
   onDelete: (t: Transaction) => void;
-  onReport: () => void;
 }) {
   const [kind, setKind] = useState('all');
   const [month, setMonth] = useState('');
@@ -105,29 +102,6 @@ export default function TransactionsPage({
   }
   return (
     <>
-      <div className="page-heading transactions-heading">
-        <div>
-          <h1>
-            Transaksi
-            {store.demo && (
-              <span className="ledger-demo" aria-hidden="true">
-                Demo
-              </span>
-            )}
-          </h1>
-          <p>Riwayat pemasukan dan pengeluaran.</p>
-        </div>
-        <div className="heading-actions">
-          <button
-            className="btn primary receipt-action"
-            aria-label="Unggah bukti"
-            onClick={onUpload}
-          >
-            <UploadCloud size={21} />
-            <span>Unggah bukti</span>
-          </button>
-        </div>
-      </div>
       <section className="ledger-panel" aria-label="Riwayat transaksi">
         <div className="ledger-tools">
           <div className="search-field">
@@ -154,10 +128,6 @@ export default function TransactionsPage({
           >
             <SlidersHorizontal size={22} />
             {filterCount > 0 && <span>{filterCount}</span>}
-          </button>
-          <button className="btn secondary ledger-report" onClick={onReport}>
-            <FileChartColumn size={18} />
-            Laporan
           </button>
         </div>
         {advanced && (
@@ -315,6 +285,12 @@ export default function TransactionsPage({
           </button>
         </div>
         <TransactionList
+          emptyAction={
+            <button className="btn primary full-width" onClick={onUpload}>
+              <UploadCloud size={19} />
+              Catat transaksi
+            </button>
+          }
           store={store}
           transactions={filtered}
           onSelect={detail}
@@ -339,10 +315,6 @@ export default function TransactionsPage({
           >
             <Download size={16} />
             Ekspor hasil CSV
-          </button>
-          <button className="text-btn mobile-report" onClick={onReport}>
-            Lihat laporan
-            <FileChartColumn size={16} />
           </button>
         </div>
       </section>

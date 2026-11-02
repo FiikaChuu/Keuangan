@@ -3,7 +3,6 @@ import type { Page } from '@playwright/test';
 import { today, demoStore } from '../../src/domain';
 
 async function navigate(page: Page, name: string) {
-  const mobile = page.viewportSize()!.width <= 800;
   const aliases: Record<string, string> = {
     Riwayat: 'Transaksi',
     Dompet: 'Dompet saya',
@@ -13,15 +12,16 @@ async function navigate(page: Page, name: string) {
     Setelan: 'Pengaturan',
   };
   name = aliases[name] ?? name;
-  const nav = page.locator(
-    'nav[aria-label="Navigasi utama"]:visible, nav[aria-label="Navigasi mobile"]:visible',
-  );
-  if (
-    ['Rencana uang', 'Ruang bersama'].includes(name) &&
-    (mobile || (await nav.getByRole('button', { name, exact: true }).count()) === 0)
-  ) {
+  const nav = page.getByRole('navigation', { name: 'Navigasi utama' });
+  if (['Rencana uang', 'Ruang bersama'].includes(name)) {
     await nav.getByRole('button', { name: 'Dompet saya', exact: true }).click();
     await page.locator('.wallet-tools').getByRole('button', { name, exact: true }).click();
+  } else if (name === 'Laporan') {
+    await nav.getByRole('button', { name: 'Transaksi', exact: true }).click();
+    await page
+      .getByRole('group', { name: 'Tampilan transaksi' })
+      .getByRole('button', { name: 'Laporan', exact: true })
+      .click();
   } else {
     await nav.getByRole('button', { name, exact: true }).click();
   }
@@ -356,6 +356,8 @@ test('quick edit and confirmed delete update balances without duplicating a reco
   state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
   expect(state.transactions).toHaveLength(13);
   await page.reload();
+  await expect(page.getByRole('heading', { name: 'Transaksi', exact: true })).toBeVisible();
+  await navigate(page, 'Ringkasan');
   await expect(page.getByTitle('Rp 14.585.010', { exact: true }).first()).toBeVisible();
 });
 
@@ -406,7 +408,7 @@ test('reports export actual transactions and appearance survives reload', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pengaturan' })).toBeVisible();
 });
 
 test('account sheet preserves the form and spends only from the selected wallet', async ({
@@ -522,4 +524,35 @@ test('iPhone layouts and nested forms fit narrow, large and landscape screens', 
     await page.getByRole('button', { name: 'Tutup dialog', exact: true }).last().click();
     await page.getByRole('button', { name: 'Tutup dialog', exact: true }).click();
   }
+});
+
+test('deep links, browser back and the shared capture navigation work across pages', async ({
+  page,
+}) => {
+  await page.goto('/expenses#laporan');
+  await expect(page.getByRole('heading', { name: 'Laporan', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(
+    page
+      .getByRole('group', { name: 'Tampilan transaksi' })
+      .getByRole('button', { name: 'Laporan' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await navigate(page, 'Pengaturan');
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'Laporan', exact: true })).toBeVisible();
+  const nav = page.getByRole('navigation', { name: 'Navigasi utama' });
+  await expect(nav.getByRole('button', { name: 'Transaksi', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const bounds = await nav.boundingBox();
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
+  await nav.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Dari bukti transaksi', exact: true })).toHaveClass(
+    /active/,
+  );
+  await page.getByRole('button', { name: 'Tutup dialog', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Laporan', exact: true })).toBeVisible();
 });
