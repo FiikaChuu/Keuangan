@@ -13,10 +13,13 @@ async function navigate(page: Page, name: string) {
     Setelan: 'Pengaturan',
   };
   name = aliases[name] ?? name;
-  const nav = page.getByRole('navigation', {
-    name: mobile ? 'Navigasi mobile' : 'Navigasi utama',
-  });
-  if (mobile && ['Rencana uang', 'Ruang bersama'].includes(name)) {
+  const nav = page.locator(
+    'nav[aria-label="Navigasi utama"]:visible, nav[aria-label="Navigasi mobile"]:visible',
+  );
+  if (
+    ['Rencana uang', 'Ruang bersama'].includes(name) &&
+    (mobile || (await nav.getByRole('button', { name, exact: true }).count()) === 0)
+  ) {
     await nav.getByRole('button', { name: 'Dompet saya', exact: true }).click();
     await page.locator('.wallet-tools').getByRole('button', { name, exact: true }).click();
   } else {

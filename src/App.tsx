@@ -49,6 +49,7 @@ import { TransactionForm, AccountForm, GoalForm, TransactionDetail } from './for
 import TransactionsPage from './TransactionsPage';
 import Overview from './Dashboard';
 import Reports from './Reports';
+import WalletPage, { WalletExample, WalletNavigation, WalletStatusBar } from './WalletPage';
 import { MoneyAmount } from './MoneyAmount';
 import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
 import type { InsightPreferences } from './preferences';
@@ -64,6 +65,7 @@ type Dialog =
     }
   | { type: 'account'; shared?: boolean }
   | { type: 'goal' }
+  | { type: 'wallet-example' }
   | { type: 'detail'; tx: Transaction }
   | { type: 'confirm'; title: string; text: string; action: () => void }
   | { type: 'notifications' }
@@ -379,6 +381,7 @@ export default function App() {
         </div>
       </aside>
       <div className="main-shell">
+        {page === 'accounts' && <WalletStatusBar />}
         <header className="topbar">
           <div className="topbar-breadcrumb">
             <span className="breadcrumb-mark">
@@ -466,117 +469,14 @@ export default function App() {
             />
           )}
           {page === 'accounts' && (
-            <>
-              <PageHeading
-                eyebrow="A PLACE FOR EVERY RUPIAH"
-                title="Dompet"
-                description="Saldo rekening dan e-walletmu."
-                action={
-                  <button className="btn primary" onClick={() => setDialog({ type: 'account' })}>
-                    <Plus size={17} />
-                    Tambah dompet
-                  </button>
-                }
-              />
-              <div className="account-summary">
-                <div>
-                  <span>Total seluruh dompet</span>
-                  <strong>
-                    <MoneyAmount value={total} />
-                  </strong>
-                </div>
-                <div>
-                  <span>Pribadi</span>
-                  <strong>
-                    <MoneyAmount
-                      value={store.accounts
-                        .filter((a) => !a.shared)
-                        .reduce((s, a) => s + b[a.id], 0)}
-                    />
-                  </strong>
-                </div>
-                <div>
-                  <span>Bersama</span>
-                  <strong>
-                    <MoneyAmount
-                      value={store.accounts
-                        .filter((a) => a.shared)
-                        .reduce((s, a) => s + b[a.id], 0)}
-                    />
-                  </strong>
-                </div>
-              </div>
-              <div className="wallet-tools">
-                <button onClick={() => setPage('plan')}>
-                  <PiggyBank size={19} />
-                  <span>Rencana uang</span>
-                  <ChevronRight size={16} />
-                </button>
-                <button onClick={() => setPage('together')}>
-                  <Heart size={19} />
-                  <span>Ruang bersama</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              <div className="section-title">
-                <h2>
-                  Dompet pribadi
-                  <span className="count-badge">
-                    {store.accounts.filter((a) => !a.shared).length}
-                  </span>
-                </h2>
-                <span className="muted-label">Bank & e-wallet</span>
-              </div>
-              {store.accounts.some((a) => !a.shared) ? (
-                <div className="wallet-grid">
-                  {store.accounts.filter((a) => !a.shared).map((a) => accountCard(a, true))}
-                  <button className="add-wallet" onClick={() => setDialog({ type: 'account' })}>
-                    <span>
-                      <Plus size={22} />
-                    </span>
-                    Dompet baru
-                  </button>
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<Wallet size={28} />}
-                  title="Beri setiap rupiah tempatnya"
-                  text="Mulai dengan rekening yang paling sering kamu gunakan dan masukkan saldo awalnya."
-                  action={
-                    <button className="btn primary" onClick={() => setDialog({ type: 'account' })}>
-                      <Plus size={16} />
-                      Tambah dompet pertama
-                    </button>
-                  }
-                />
-              )}
-              <div className="section-title spaced">
-                <h2>
-                  Dompet bersama
-                  <Heart size={17} />
-                </h2>
-                <button
-                  className="text-btn"
-                  onClick={() => setDialog({ type: 'account', shared: true })}
-                >
-                  Tambah akun bersama
-                  <Plus size={14} />
-                </button>
-              </div>
-              <div className="wallet-grid">
-                {store.accounts.filter((a) => a.shared).map((a) => accountCard(a, true))}
-              </div>
-              <div className="privacy-strip">
-                <ShieldCheck size={20} />
-                <div>
-                  <strong>Catatanmu. Kendalimu.</strong>
-                  <p>
-                    Saldo mengikuti transaksi yang kamu catat, bukan saldo langsung dari bank. Tidak
-                    ada akun bank yang dihubungkan. Penarikan tunai dicatat sebagai pengeluaran.
-                  </p>
-                </div>
-              </div>
-            </>
+            <WalletPage
+              store={store}
+              onAdd={(shared) => setDialog({ type: 'account', shared })}
+              onPlan={() => setPage('plan')}
+              onTogether={() => setPage('together')}
+              onExample={() => setDialog({ type: 'wallet-example' })}
+              accountCard={accountCard}
+            />
           )}
           {page === 'transactions' && (
             <TransactionsPage
@@ -741,6 +641,15 @@ export default function App() {
           </footer>
         </main>
       </div>
+      {page === 'accounts' && (
+        <WalletNavigation
+          go={(next) => {
+            setPage(next);
+            setSearch('');
+          }}
+          onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
+        />
+      )}
       <nav className="mobile-nav" aria-label="Navigasi mobile">
         {primaryNavItems.map((n) => (
           <button
@@ -766,6 +675,11 @@ export default function App() {
             <X size={15} />
           </button>
         </div>
+      )}
+      {dialog?.type === 'wallet-example' && (
+        <Modal title="Contoh detail dompet" onClose={close}>
+          <WalletExample />
+        </Modal>
       )}
       {dialog?.type === 'transaction' && (
         <Modal title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'} wide onClose={close}>

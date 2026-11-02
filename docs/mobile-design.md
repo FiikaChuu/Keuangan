@@ -45,3 +45,19 @@ Setelan menampilkan profil lokal, tema, data/cadangan, reset, lalu informasi di 
 WebKit Linux bukan perangkat iPhone fisik. Keyboard iOS, pemilih foto/file, Share, perilaku penyimpanan Safari/PWA, dan pemasangan ke layar utama masih perlu diperiksa di iPhone yang akan dipakai. Data dan bukti tetap lokal di browser; sinkronisasi antarperangkat dan login keluarga belum tersedia.
 
 Perubahan ini tidak menerbitkan ulang environment atau melakukan deployment.
+
+## Halaman Dompet dari Framer
+
+Referensi terbaru: [halaman Dompet milik pengguna](https://miracle-startup-935285.framer.app/dompet), diperiksa pada 2 November 2026. Implementasi ada pada `src/WalletPage.tsx` dan `src/framer-wallet.css`. Tahap ini menyalin halaman Dompet, termasuk navigasi bawah pada halaman tersebut; halaman lain masih memakai tampilan sebelumnya.
+
+Pengukuran diambil dari DOM dan screenshot yang sudah selesai memuat font, bukan perkiraan dari gambar. Lebar layar acuan 393 px dan tetap berada di tengah pada desktop. Konten memakai padding horizontal 24 px, gap 14 px, kartu radius 24 px, tombol radius 16 px, serta ukuran dan tinggi baris Noto Sans persis dari referensi. Kartu saldo berwarna putih dengan total abu-abu, tombol tambah memakai ikon dompet, dan tombol Catat memakai ikon awan/panah. Status bar 9:41 dan indikator Home ditampilkan sebagai dekorasi prototipe sesuai permintaan salinan awal. Badge dan tombol editor Framer tidak disalin.
+
+Semua komponen utama pada keadaan kosong memiliki koordinat dan ukuran yang sama dengan referensi pada viewport 393 × 852 dan 1440 × 1000. Navigasi mengikuti aliran dokumen seperti di Framer: jika isi lebih panjang dari viewport, pengguna menggulir untuk mencapai navigasi. Ini sengaja belum diganti menjadi tab bar tetap.
+
+Saldo dan daftar dompet tetap berasal dari catatan pengguna. Data tidak direset untuk membuat saldo nol. Penanda Data contoh tetap terlihat ketika memakai demo. Tombol tambah dan Catat terhubung ke formulir yang sudah ada; Rencana uang, Ruang bersama, Transaksi, dan Setelan tetap dapat dibuka. Lihat contoh detail dompet membuka contoh lokal yang tidak menambah rekening atau mengubah saldo; tautan contoh pada referensi Framer sendiri belum menampilkan isi saat diperiksa.
+
+Nominal pada kartu saldo halaman Dompet mengikuti teks penuh di referensi untuk tahap penyalinan ini. Pemadatan nominal pada halaman lain, penyimpanan lokal, bukti asli, dan perhitungan keuangan tetap tersedia.
+
+[Preview halaman Dompet pada data kosong](screenshots/dompet.png).
+
+Verifikasi tahap Framer: build produksi dan pemeriksaan format berhasil, 27 tes logika serta 42 skenario browser lulus. Pemeriksaan tambahan pada Chromium desktop, Chromium ukuran iPhone, dan WebKit berhasil membuka contoh tanpa mengubah data, menambah dompet dari tombol keadaan kosong, serta membuka unggah dan input manual dari tombol awan.

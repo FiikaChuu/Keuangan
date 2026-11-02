@@ -7,6 +7,7 @@ import './figma-dashboard.css';
 import './mobile-ui.css';
 import './native-ui.css';
 import './typography.css';
+import './framer-wallet.css';
 
 try {
   const theme = localStorage.getItem('skysave.theme');
