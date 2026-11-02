@@ -2,9 +2,12 @@
 
 Implementasi mengikuti delapan ekspor React dan gambar referensi yang diberikan pengguna: dashboard, daftar transaksi, filter, pemilih kategori, tambah transaksi, pemilih rekening, laporan, dan pengaturan. Ekspor tersebut menjadi acuan visual; komponen prototipe yang berulang disusun ulang agar dapat dipakai dengan data SkyWallet. Ini bukan hasil pengambilan langsung dari Figma API.
 
+Tujuh SVG tambahan untuk Home, Transaksi, pemilih kategori/rekening, formulir, filter, serta Laporan menjadi acuan proporsi kartu. Panduan warna dan tipografi terbaru menetapkan Noto Sans dengan bobot 400, 500, dan 600.
+
 ## Tampilan
 
-- Tipografi sistem iPhone (SF pada Safari iOS), latar netral `#f5f5f7`, navy `#1d2949`, kartu putih, kontrol abu netral, aksen turquoise, hijau, coral, dan amber sesuai referensi.
+- Noto Sans lokal: isi regular 400, label medium 500, nominal semibold 600; latar `#f9f8f6`, navy `#1d2949`, kartu putih, kontrol abu netral, aksen turquoise, hijau, coral, dan amber sesuai referensi.
+- Nominal di kartu diringkas mulai jutaan (contoh Rp 14,54 jt), dengan Rp dan satuan lebih kecil. Nilai lengkap tetap dibaca pembaca layar, tersedia pada tooltip/detail transaksi, serta dipakai pada cetak dan ekspor. Data rupiah asli tidak diubah.
 - Lebar acuan 393 px, jarak tepi 24 px, kartu membulat, grafik pada kartu terpisah, lembar pilihan dari bawah, dan lima tab navigasi.
 - Navigasi: Beranda, Dompet, Transaksi, Laporan, Setelan. Rencana uang dan ruang bersama tersedia dari Dompet dan kartu ringkasan.
 - Dashboard mobile berisi saldo, empat ringkasan, tiga grafik, diagram kategori, dan tiga insight penting: rencana dana pribadi, belanja paling besar, serta saldo akun bersama. Rincian dompet dan transaksi berada pada tab masing-masing.
@@ -35,7 +38,7 @@ Pengujian otomatis mencakup perhitungan keuangan, kalender laporan, unggah gamba
 
 Pengujian WebKit mengungkap kegagalan serialisasi Blob/File ke IndexedDB. Bukti sekarang disimpan sebagai byte asli dan tipe berkas; pembacaan Blob dari versi sebelumnya tetap didukung. Uji cadangan membandingkan kembali seluruh byte gambar asli setelah ekspor, kemudian memulihkan dan membuka buktinya.
 
-Verifikasi pada 2 November 2026: build produksi berhasil; 26 tes logika lulus; 42 skenario browser telah diverifikasi pada ketiga proyek. Pemeriksaan mencakup tiga kartu insight dan preferensinya, pilihan bank dan urutan transaksi, pemulihan cadangan lama, serta posisi judul/X dan tombol simpan yang tetap saat isi formulir digulir. Pemeriksaan tambahan berhasil membuat tujuan tabungan melalui pemilih rekening, memfilter akun OVO, dan mengembalikan filter ke semua rekening.
+Verifikasi pada 2 November 2026: build produksi berhasil; 27 tes logika lulus; 42 skenario browser telah diverifikasi pada ketiga proyek. Pemeriksaan mencakup tiga kartu insight dan preferensinya, pilihan bank dan urutan transaksi, pemulihan cadangan lama, serta posisi judul/X dan tombol simpan yang tetap saat isi formulir digulir. Pemeriksaan tambahan berhasil membuat tujuan tabungan melalui pemilih rekening, memfilter akun OVO, dan mengembalikan filter ke semua rekening.
 
 Setelan menampilkan profil lokal, tema, data/cadangan, reset, lalu informasi di aplikasi pada bagian terakhir. Kartu informasi pencatatan, penyimpanan lokal, dan panduan iPhone disembunyikan dari UI; fungsi penyimpanan, pencadangan, serta PWA tetap tersedia. Nama aplikasi, logo teks, manifest, judul halaman, dan berkas ekspor memakai SkyWallet. Kunci penyimpanan lama dipertahankan; pemulihan menerima cadangan SkyWallet serta skySave.
 

@@ -13,7 +13,8 @@ import {
   Check,
 } from 'lucide-react';
 import type { Store, Transaction } from './domain';
-import { money, today, totals, csv, balances } from './domain';
+import { MoneyAmount } from './MoneyAmount';
+import { today, totals, csv, balances } from './domain';
 import { CategoryPicker, TransactionList, downloadFile, Modal, AccountPicker } from './ui';
 
 const sortOptions = [
@@ -279,16 +280,20 @@ export default function TransactionsPage({
         <div className="transaction-summary">
           <div className="summary-income">
             <span>Pemasukan</span>
-            <strong className="positive">{money(sum.income)}</strong>
+            <strong className="positive">
+              <MoneyAmount value={sum.income} />
+            </strong>
           </div>
           <div className="summary-expense">
             <span>Pengeluaran</span>
-            <strong>{money(sum.expense)}</strong>
+            <strong>
+              <MoneyAmount value={sum.expense} />
+            </strong>
           </div>
           <div>
             <span>Selisih dana</span>
             <strong className={sum.income >= sum.expense ? 'positive' : 'negative'}>
-              {money(sum.income - sum.expense)}
+              <MoneyAmount value={sum.income - sum.expense} />
             </strong>
           </div>
         </div>

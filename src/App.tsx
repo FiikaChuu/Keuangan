@@ -49,6 +49,7 @@ import { TransactionForm, AccountForm, GoalForm, TransactionDetail } from './for
 import TransactionsPage from './TransactionsPage';
 import Overview from './Dashboard';
 import Reports from './Reports';
+import { MoneyAmount } from './MoneyAmount';
 import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
 import type { InsightPreferences } from './preferences';
 import { clearReceipts, deleteReceipt, readReceipt, saveReceipt } from './receipts';
@@ -242,8 +243,12 @@ export default function App() {
           {account.provider} · {account.name}
         </p>
         <div className="goal-amount">
-          <strong>{money(current)}</strong>
-          <span>dari {money(g.target)}</span>
+          <strong>
+            <MoneyAmount value={current} />
+          </strong>
+          <span>
+            dari <MoneyAmount value={g.target} />
+          </span>
         </div>
         <div className="progress-track">
           <span style={{ width: `${progress}%` }} />
@@ -284,7 +289,9 @@ export default function App() {
         <span>{a.name}</span>
       </div>
       <div className="wallet-balance">
-        <strong>{money(b[a.id])}</strong>
+        <strong>
+          <MoneyAmount value={b[a.id]} />
+        </strong>
         <ArrowUpRight size={15} />
       </div>
       {full && (
@@ -474,20 +481,28 @@ export default function App() {
               <div className="account-summary">
                 <div>
                   <span>Total seluruh dompet</span>
-                  <strong>{money(total)}</strong>
+                  <strong>
+                    <MoneyAmount value={total} />
+                  </strong>
                 </div>
                 <div>
                   <span>Pribadi</span>
                   <strong>
-                    {money(
-                      store.accounts.filter((a) => !a.shared).reduce((s, a) => s + b[a.id], 0),
-                    )}
+                    <MoneyAmount
+                      value={store.accounts
+                        .filter((a) => !a.shared)
+                        .reduce((s, a) => s + b[a.id], 0)}
+                    />
                   </strong>
                 </div>
                 <div>
                   <span>Bersama</span>
                   <strong>
-                    {money(store.accounts.filter((a) => a.shared).reduce((s, a) => s + b[a.id], 0))}
+                    <MoneyAmount
+                      value={store.accounts
+                        .filter((a) => a.shared)
+                        .reduce((s, a) => s + b[a.id], 0)}
+                    />
                   </strong>
                 </div>
               </div>
@@ -604,9 +619,11 @@ export default function App() {
                 <div className="together-total">
                   <small>Total dana bersama</small>
                   <strong>
-                    {money(
-                      store.accounts.filter((a) => a.shared).reduce((sum, a) => sum + b[a.id], 0),
-                    )}
+                    <MoneyAmount
+                      value={store.accounts
+                        .filter((a) => a.shared)
+                        .reduce((sum, a) => sum + b[a.id], 0)}
+                    />
                   </strong>
                 </div>
               </div>
@@ -1018,7 +1035,9 @@ function Planning({
           </div>
           <div className="available-strip">
             <span>Dana pribadi yang bisa dialokasikan</span>
-            <strong>{money(preview.available)}</strong>
+            <strong>
+              <MoneyAmount value={preview.available} />
+            </strong>
           </div>
           {rows.map((row) => (
             <div className="allocation-row" key={row.key}>
@@ -1057,7 +1076,9 @@ function Planning({
                       ? 'Batas rencana, bukan pengeluaran otomatis'
                       : 'Pilih dompet khusus sesuai tujuanmu'}
                 </span>
-                <strong>{money(row.amount)}</strong>
+                <strong>
+                  <MoneyAmount value={row.amount} />
+                </strong>
               </div>
               {row.account && row.amount > 0 && (
                 <button
@@ -1103,15 +1124,21 @@ function Planning({
             <dl>
               <div>
                 <dt>Saldo pribadi</dt>
-                <dd>{money(preview.personal)}</dd>
+                <dd>
+                  <MoneyAmount value={preview.personal} />
+                </dd>
               </div>
               <div>
                 <dt>Cadangan wajib</dt>
-                <dd>−{money(Number(reserve) || 0)}</dd>
+                <dd>
+                  <MoneyAmount value={-(Number(reserve) || 0)} />
+                </dd>
               </div>
               <div className="calc-total">
                 <dt>Siap dialokasikan</dt>
-                <dd>{money(preview.available)}</dd>
+                <dd>
+                  <MoneyAmount value={preview.available} />
+                </dd>
               </div>
             </dl>
             {preview.shortfall > 0 && (

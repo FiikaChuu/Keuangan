@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useId } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { MoneyAmount } from './MoneyAmount';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -200,7 +201,7 @@ export function AccountPicker({
                     {a.provider} · {a.name}
                   </strong>
                   <small>
-                    {money(values[a.id])}
+                    <MoneyAmount value={values[a.id]} />
                     {a.shared ? ' · Bersama' : ''}
                     {a.suffix ? ` · ••${a.suffix}` : ''}
                   </small>
@@ -410,8 +411,10 @@ export function TransactionList({
               </span>
               <span className={`transaction-amount ${t.kind}`}>
                 <strong>
-                  {t.kind === 'income' ? '+' : t.kind === 'expense' ? '−' : ''}
-                  {money(t.amount)}
+                  <MoneyAmount
+                    value={t.kind === 'expense' ? -t.amount : t.amount}
+                    positiveSign={t.kind === 'income'}
+                  />
                 </strong>
                 {isCompact ? (
                   <small>{category}</small>
@@ -475,7 +478,9 @@ export function BalanceChart({ store, days }: { store: Store; days: number }) {
         <span>
           {hover !== null ? displayDate(points[hoverIndex].date) : 'Total saldo saat ini'}
         </span>
-        <strong>{money(points[hoverIndex].value)}</strong>
+        <strong>
+          <MoneyAmount value={points[hoverIndex].value} />
+        </strong>
       </div>
       <svg
         viewBox="0 0 720 216"
@@ -589,10 +594,8 @@ export function SpendingDonut({
         </svg>
         <span>
           <small>Total pengeluaran</small>
-          <strong title={money(total)}>
-            {compactCenter && total >= 1e6
-              ? `Rp ${new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 2 }).format(total)}`
-              : money(total)}
+          <strong>
+            <MoneyAmount value={total} compact={compactCenter} />
           </strong>
         </span>
       </div>

@@ -1662,7 +1662,7 @@ main {
   border: 0;
   padding: 0;
 }
-.account-summary span {
+.account-summary > div > span {
   font-size: 12px;
   color: var(--muted);
 }
@@ -2414,7 +2414,7 @@ main {
   border: 1px solid var(--line);
   padding: 23px 18px;
 }
-.transaction-summary span {
+.transaction-summary > div > span {
   font-size: 12px;
   color: var(--muted);
 }
@@ -3344,7 +3344,7 @@ main {
   padding: 21px;
   min-width: 0;
 }
-.report-summary span {
+.report-summary > div > span {
   font-size: 11px;
   color: var(--muted);
 }
@@ -4098,7 +4098,7 @@ main {
     padding-left: 22px;
     border-left: 1px solid var(--line);
   }
-  .account-summary span {
+  .account-summary > div > span {
     font-size: 11px;
   }
   .account-summary strong {
@@ -4361,7 +4361,7 @@ main {
     padding: 22px 14px;
     border-radius: 23px;
   }
-  .transaction-summary span {
+  .transaction-summary > div > span {
     font-size: 11px;
   }
   .transaction-summary strong {
@@ -5016,7 +5016,7 @@ main {
     border-radius: 22px;
     gap: 12px;
   }
-  .transaction-summary span {
+  .transaction-summary > div > span {
     font-size: 10px;
   }
   .transaction-summary strong {
@@ -5339,7 +5339,7 @@ main {
     font-size: 20px;
     letter-spacing: -0.8px;
   }
-  .report-summary span {
+  .report-summary > div > span {
     font-size: 10px;
   }
   .report-period > h3 {
@@ -5534,7 +5534,7 @@ main {
     padding-left: 7px;
     padding-right: 7px;
   }
-  .transaction-summary span {
+  .transaction-summary > div > span {
     font-size: 9px;
   }
   .filter-tabs > button {

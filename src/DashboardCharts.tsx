@@ -2,6 +2,7 @@ import { useId } from 'react';
 import type { Transaction } from './domain';
 import { money, compact, displayDate } from './domain';
 import { cashflowBuckets } from './analytics';
+import { MoneyAmount } from './MoneyAmount';
 
 export function NetCashflowChart({
   transactions,
@@ -35,7 +36,7 @@ export function NetCashflowChart({
       <div className="chart-current">
         <span>Selisih dalam periode</span>
         <strong className={points.at(-1)!.cumulative >= 0 ? 'positive' : 'negative'}>
-          {money(points.at(-1)!.cumulative)}
+          <MoneyAmount value={points.at(-1)!.cumulative} />
         </strong>
       </div>
       <svg

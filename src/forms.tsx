@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { MoneyAmount } from './MoneyAmount';
 import type { FormEvent } from 'react';
 import {
   UploadCloud,
@@ -769,8 +770,11 @@ export function TransactionDetail({
           {{ income: 'Pemasukan', expense: 'Pengeluaran', transfer: 'Perpindahan dana' }[t.kind]}
         </small>
         <strong>
-          {t.kind === 'income' ? '+' : t.kind === 'expense' ? '−' : ''}
-          {money(t.amount)}
+          <MoneyAmount
+            value={t.kind === 'expense' ? -t.amount : t.amount}
+            positiveSign={t.kind === 'income'}
+            compact={false}
+          />
         </strong>
       </div>
       <dl className="detail-list">

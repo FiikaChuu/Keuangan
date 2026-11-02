@@ -131,7 +131,7 @@ textarea {
     font-size: 14px;
     line-height: 1.5;
   }
-  .transaction-summary span,
+  .transaction-summary > div > span,
   .ledger-context {
     font-size: 11px;
   }

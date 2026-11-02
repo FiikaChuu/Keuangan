@@ -11,10 +11,10 @@ npm ci --cache /tmp/skysave-npm-cache
 npm run dev -- --port 5173
 ```
 
-The postinstall script copies OCR language data, WASM, and PDF workers from the integrity-checked npm dependencies into ignored public asset directories. No API key, database service, or bank credentials are needed. Typography uses the device’s system font; document-processing assets are served locally.
+The postinstall script copies OCR language data, WASM, and PDF workers from the integrity-checked npm dependencies into ignored public asset directories. No API key, database service, or bank credentials are needed. Noto Sans fonts and document-processing assets are served locally.
 
 ```sh
-npm test                 # 26 financial, analytics, calendar and document-parsing tests
+npm test                 # 27 financial, analytics, calendar, currency and document-parsing tests
 npm run build            # strict TypeScript check + production build
 npm run preview -- --port 4173
 npm run test:e2e         # desktop + iPhone-size Chromium + iPhone WebKit; run build first
@@ -36,7 +36,7 @@ Browser tests use `/usr/bin/chromium` plus Playwright WebKit. Set `CHROMIUM_PATH
 - Goals tied to dedicated wallets, one goal per wallet, with progress from recorded balances. Recording a proposed transfer still requires explicit confirmation.
 - Shared-account balances, goals, and transfer history. This release is a single-device record, not shared login or collaborative editing.
 - JSON backup and confirmed restore of accounts, transactions, goals, planning, and available original proofs. Backups contain sensitive financial information and should be kept private.
-- iPhone-first layout adapted from the supplied design exports: iPhone system typography, navy, neutral grouped surfaces, rounded cards, five-tab navigation, category/account bottom sheets, and light/dark/system appearance. Dashboard period controls update three charts and a five-category breakdown. Sky Insights shows only the personal-fund plan, largest spending category, and shared-account balance. Preferences for these three cards persist across reloads. See [the mobile design notes](docs/mobile-design.md).
+- iPhone-first layout adapted from the supplied design exports: reference-based Noto Sans typography, navy, warm neutral grouped surfaces, rounded cards, five-tab navigation, category/account bottom sheets, and light/dark/system appearance. Dashboard period controls update three charts and a five-category breakdown. Sky Insights shows only the personal-fund plan, largest spending category, and shared-account balance. Preferences for these three cards persist across reloads. See [the mobile design notes](docs/mobile-design.md).
 - Full-page reports with weekly/monthly/yearly periods, a validated end date, transaction-kind filters, six actual summary values, CSV export, and browser printing / Save as PDF. The print layout includes filtered transaction details and income sources.
 - Installable PWA manifest and production service worker. The application shell is precached. OCR/PDF supporting public assets are cached on use; first-time OCR requires the app server to be reachable.
 
@@ -72,7 +72,10 @@ src/ui.tsx          Accessible dialogs, charts, account marks and ledger compone
 src/styles.css     Base responsive styles and reduced-motion support
 src/figma-dashboard.css Supplied design tokens and dashboard composition
 src/mobile-ui.css  iPhone screens, forms, sheets and report print layout
-src/native-ui.css  System typography, consistent controls and restrained motion
+src/native-ui.css  Consistent iPhone controls and restrained motion
+src/typography.css Reference weights, smaller currency labels and card proportions
+src/MoneyAmount.tsx Compact visible values with exact accessible/print amounts
+src/money.ts       Display-only currency scale and rounding
 scripts/           Reproducible local assets and service-worker template
 tests/             Financial/parsing tests and production browser tests
 ```

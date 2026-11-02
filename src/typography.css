@@ -1,0 +1,227 @@
+/* Reference typography: regular copy, medium labels, semibold amounts. */
+:root {
+  font-family:
+    'Noto Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  --bg: #f9f8f6;
+  --soft: #f0eeeb;
+  --ink: #1e263e;
+  --muted: #676d7e;
+  --line: #e4e2dd;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+}
+:root[data-theme='dark'] {
+  --bg: #101012;
+  --surface: #1c1c1e;
+  --soft: #2c2c2e;
+  --ink: #f5f5f7;
+  --muted: #a1a1a6;
+  --line: #38383a;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='system'] {
+    --bg: #101012;
+    --surface: #1c1c1e;
+    --soft: #2c2c2e;
+    --ink: #f5f5f7;
+    --muted: #a1a1a6;
+    --line: #38383a;
+  }
+}
+body {
+  font-weight: var(--weight-regular);
+  letter-spacing: 0;
+}
+h1,
+h2,
+h3,
+strong,
+b {
+  font-weight: var(--weight-semibold);
+}
+.btn,
+.field-label,
+.form-stack label,
+.filter-field {
+  font-weight: var(--weight-medium);
+}
+.money-amount {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums lining-nums;
+  vertical-align: baseline;
+}
+.money-visual {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2em;
+  white-space: nowrap;
+  line-height: inherit;
+}
+.money-number {
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.025em;
+}
+.money-currency {
+  font-size: 0.6em;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+}
+.money-sign,
+.money-unit {
+  font-size: 0.65em;
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+}
+.money-readable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.page-heading h1,
+.figma-dashboard-header h1,
+.transactions-heading h1 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.4px;
+}
+.figma-balance-amount {
+  font-size: 28px;
+  line-height: 1.35;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.5px;
+}
+.figma-balance-amount .money-currency,
+.account-summary > div:first-child .money-currency,
+.together-total .money-currency {
+  font-size: 0.5em;
+}
+.figma-balance-breakdown dd {
+  font-size: 11px;
+  font-weight: var(--weight-regular);
+}
+.figma-balance-breakdown .money-currency {
+  font-size: 0.85em;
+}
+.figma-summary-grid {
+  gap: 12px;
+}
+.figma-stat {
+  padding: 14px;
+  border-radius: 20px;
+}
+.figma-stat > div {
+  margin-bottom: 10px;
+}
+.figma-stat h2 {
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: var(--weight-medium);
+}
+.figma-stat > strong {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.35px;
+}
+.figma-stat p,
+.figma-stat > button {
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: var(--weight-regular);
+  margin-top: 3px;
+}
+.account-summary > div:first-child > strong,
+.together-total > strong {
+  font-size: 28px;
+  line-height: 36px;
+}
+.account-summary strong,
+.wallet-balance > strong,
+.wallet-full .wallet-balance > strong,
+.goal-amount > strong {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: var(--weight-semibold);
+}
+.account-summary > div:first-child > strong {
+  font-size: 28px;
+}
+.wallet-name > strong,
+.card-list .transaction-title > strong {
+  font-weight: var(--weight-medium);
+}
+.transaction-summary strong {
+  font-size: clamp(13px, 4vw, 16px);
+  line-height: 24px;
+  letter-spacing: -0.2px;
+}
+.card-list .transaction-amount > strong {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: var(--weight-semibold);
+}
+.report-summary strong,
+.allocation-footer > strong,
+.available-strip strong {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: var(--weight-semibold);
+}
+.report-summary > div > span,
+.transaction-summary > div > span {
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: var(--weight-medium);
+}
+.detail-amount > strong {
+  font-size: 24px;
+  line-height: 34px;
+  font-weight: var(--weight-semibold);
+}
+.modal-heading h2 {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: var(--weight-semibold);
+}
+.panel-heading h2,
+.section-title h2,
+.figma-insights-header > h2 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: var(--weight-semibold);
+}
+.form-stack input,
+.form-stack textarea,
+.account-picker-trigger,
+.category-picker-trigger {
+  font-weight: var(--weight-regular);
+}
+@media print {
+  .money-visual {
+    display: none;
+  }
+  .money-readable {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+  }
+}

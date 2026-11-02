@@ -122,7 +122,7 @@ test('real-data flow: irregular income, expense, shared transfer and persistence
   expect(state.accounts).toHaveLength(2);
   expect(state.transactions).toHaveLength(3);
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Riwayat' : 'Transaksi');
-  await expect(page.getByText('Rp 202.500', { exact: true })).toBeVisible();
+  await expect(page.getByTitle('Rp 202.500', { exact: true })).toBeVisible();
   await page.getByLabel('Cari nama, kategori, atau sumber transaksi').fill('Klien tidak tetap');
   await expect(page.getByRole('button', { name: /^Lihat transaksi Komisi desain/ })).toBeVisible();
   await expect(
@@ -137,7 +137,7 @@ test('planning persists a 100 percent allocation and protects required obligatio
   await page.getByLabel('Kebutuhan wajib yang belum dibayar').fill('2000000');
   await page.getByRole('button', { name: 'Simpan rencana', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Simpan rencana', exact: true })).toBeDisabled();
-  await expect(page.getByText('Rp 3.000.000', { exact: true }).first()).toBeVisible();
+  await expect(page.getByTitle('Rp 3.000.000', { exact: true }).first()).toBeVisible();
   await page.getByLabel('Persentase Tabungan').fill('60');
   await page.getByRole('button', { name: 'Simpan rencana', exact: true }).click();
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
@@ -273,7 +273,7 @@ test('complete backup, restore confirmation, and offline launch', async ({ page,
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-  await expect(page.getByText('Rp 5.000.000', { exact: true }).first()).toBeVisible();
+  await expect(page.getByTitle('Rp 5.000.000', { exact: true }).first()).toBeVisible();
   await context.setOffline(false);
 });
 
@@ -353,7 +353,7 @@ test('quick edit and confirmed delete update balances without duplicating a reco
   state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
   expect(state.transactions).toHaveLength(13);
   await page.reload();
-  await expect(page.getByText('Rp 14.585.010', { exact: true }).first()).toBeVisible();
+  await expect(page.getByTitle('Rp 14.585.010', { exact: true }).first()).toBeVisible();
 });
 
 test('category bottom sheet preserves its parent form and supports Escape', async ({ page }) => {
@@ -381,7 +381,7 @@ test('reports export actual transactions and appearance survives reload', async 
   await expect(page.getByRole('heading', { name: 'Laporan', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
   await expect(
-    page.locator('.report-summary').getByText('Rp 5.200.000', { exact: true }),
+    page.locator('.report-summary').getByTitle('Rp 5.200.000', { exact: true }),
   ).toBeVisible();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Ekspor CSV', exact: true }).click();
@@ -430,7 +430,7 @@ test('account sheet preserves the form and spends only from the selected wallet'
     state.accounts.find((a: { provider: string }) => a.provider === 'OVO').id,
   );
   await navigate(page, 'Dompet saya');
-  await expect(page.getByText('Rp 302.000', { exact: true }).first()).toBeVisible();
+  await expect(page.getByTitle('Rp 302.000', { exact: true }).first()).toBeVisible();
 });
 
 test('insight preferences change dashboard content and persist after reload', async ({ page }) => {
@@ -472,8 +472,8 @@ test('report filters exclude transfer principal and reject a future reporting da
   await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
   await page.getByRole('button', { name: 'Transfer', exact: true }).click();
   const summary = page.locator('.report-summary');
-  await expect(summary.getByText('Rp 0', { exact: true })).toHaveCount(4);
-  await expect(summary.getByText('Rp 1.450.000', { exact: true })).toBeVisible();
+  await expect(summary.getByTitle('Rp 0', { exact: true })).toHaveCount(4);
+  await expect(summary.getByTitle('Rp 1.450.000', { exact: true })).toBeVisible();
   await expect(summary.getByText('2', { exact: true })).toBeVisible();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Ekspor CSV', exact: true }).click();
