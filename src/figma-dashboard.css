@@ -553,12 +553,6 @@ h3 {
 .figma-insights-header > button:hover {
   filter: brightness(0.96);
 }
-.insight-method {
-  font-size: 10px;
-  color: var(--muted);
-  line-height: 1.7;
-  margin: 0 0 14px;
-}
 .figma-insight-cards {
   display: grid;
   gap: 14px;
@@ -1292,11 +1286,6 @@ h3 {
     min-height: 33px;
     font-size: 10px;
     padding: 7px 10px;
-  }
-  .insight-method {
-    font-size: 9px;
-    line-height: 1.8;
-    margin-bottom: 12px;
   }
   .figma-insight-cards {
     gap: 14px;

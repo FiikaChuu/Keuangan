@@ -330,28 +330,15 @@ test('report dates use real calendar boundaries and reject missing or future dat
     assert.equal(result.start, '');
   }
 });
-test('insights work with no history and never forecast irregular income', () => {
+test('essential insights work with no history and stay limited to three summaries', () => {
   const s = fixture();
-  const empty = moneyInsights(s, 30);
-  assert.equal(empty.length, 6);
-  assert.equal(empty.find((i) => i.id === 'anomaly')!.tone, 'accent');
-  s.transactions.push(transaction({ kind: 'income', source: 'Komisi klien', amount: 150000 }));
-  const income = moneyInsights(s, 30).find((i) => i.id === 'income')!;
-  assert.match(income.body, /150\.000/);
-  assert.doesNotMatch(income.body, /diprediksi|diproyeksikan|bulan depan/);
-  assert.ok(moneyInsights(emptyStore(), 7).every((i) => !/NaN|Infinity/.test(i.body)));
-});
-test('large spending warning requires enough history and compares against the other transactions', () => {
-  const s = fixture();
-  s.transactions = Array.from({ length: 5 }, (_, i) =>
-    transaction({ id: `small-${i}`, amount: 10000 }),
+  assert.deepEqual(
+    moneyInsights(s, 30).map((i) => i.id),
+    ['allocation', 'spending', 'together'],
   );
-  s.transactions[0].amount = 100000;
-  assert.equal(moneyInsights(s, 7).find((i) => i.id === 'anomaly')!.tone, 'accent');
-  s.transactions.push(transaction({ id: 'sixth', amount: 10000 }));
-  const warning = moneyInsights(s, 7).find((i) => i.id === 'anomaly')!;
-  assert.equal(warning.tone, 'warning');
-  assert.match(warning.body, /10×/);
-  s.transactions[0].amount = 30000;
-  assert.equal(moneyInsights(s, 7).find((i) => i.id === 'anomaly')!.tone, 'accent');
+  s.transactions.push(transaction({ kind: 'income', source: 'Komisi klien', amount: 150000 }));
+  const insights = moneyInsights(s, 30);
+  assert.equal(insights.length, 3);
+  assert.ok(insights.every((i) => !/diprediksi|diproyeksikan|bulan depan/.test(i.body)));
+  assert.ok(moneyInsights(emptyStore(), 7).every((i) => !/NaN|Infinity/.test(i.body)));
 });

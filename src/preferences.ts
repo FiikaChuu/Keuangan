@@ -1,13 +1,11 @@
 export type InsightPreferences = {
   allocation: boolean;
   spending: boolean;
-  anomaly: boolean;
   together: boolean;
 };
 export const defaultInsightPreferences: InsightPreferences = {
   allocation: true,
   spending: true,
-  anomaly: true,
   together: true,
 };
 export const PREFERENCES_KEY = 'skysave.insight-preferences';
@@ -18,7 +16,6 @@ export function readInsightPreferences(): InsightPreferences {
       return {
         allocation: value.allocation,
         spending: value.spending,
-        anomaly: value.anomaly,
         together: value.together,
       };
   } catch {

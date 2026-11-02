@@ -31,6 +31,30 @@
 .wallet-tools > button > svg {
   color: var(--muted);
 }
+.ledger-sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  min-height: 44px;
+  min-width: 140px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 9px 12px;
+  border: 0.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.ledger-sort:hover,
+.ledger-sort[aria-expanded='true'] {
+  background: var(--soft);
+  color: var(--ink);
+}
 .settings-page,
 .reports-page {
   max-width: 760px;
@@ -429,6 +453,75 @@
   color: var(--muted);
   line-height: 1.7;
 }
+.provider-picker-trigger > span:not(.provider-mark) {
+  flex: 1;
+}
+.provider-picker-trigger .provider-mark {
+  flex-shrink: 0;
+}
+.account-option-check {
+  margin-left: auto;
+}
+.modal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.modal-heading {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 28px 28px 20px;
+  background: var(--surface);
+}
+.modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 28px 28px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.modal-body:has(> .modal-form) {
+  display: flex;
+  overflow: hidden;
+  padding: 0;
+}
+.modal-form.form-stack {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  gap: 0;
+}
+.modal-form-content {
+  display: grid;
+  gap: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  padding: 20px 28px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.modal-form-actions,
+.modal-form-actions.form-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex-shrink: 0;
+  gap: 12px;
+  padding: 16px 28px 28px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.modal-form-actions > .btn {
+  width: 100%;
+}
+.modal-form-actions.form-footer > p {
+  justify-content: center;
+}
 .optional-fields > summary {
   list-style: none;
   position: relative;
@@ -476,7 +569,6 @@
 }
 @media (max-width: 800px) {
   .filter-field > select,
-  .ledger-context > select,
   .form-stack select {
     appearance: none;
     -webkit-appearance: none;
@@ -670,8 +762,9 @@
     gap: 10px;
     font-size: 10px;
   }
-  .ledger-context > select {
-    font-size: 10px;
+  .ledger-sort {
+    min-width: 132px;
+    font-size: 11px;
   }
   .ledger-settings {
     display: none;
@@ -990,18 +1083,30 @@
   }
   .modal {
     border-radius: 28px 28px 0 0;
-    padding: 38px 18px calc(22px + env(safe-area-inset-bottom));
+    padding: 0;
     max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
   }
   .sheet-handle {
     width: 64px;
     height: 5px;
     top: 9px;
+    z-index: 1;
   }
   .modal-heading {
-    padding: 0 0 17px;
-    margin-bottom: 19px;
+    padding: 38px 18px 17px;
+    margin: 0;
     align-items: center;
+  }
+  .modal-body {
+    padding: 18px 18px calc(22px + env(safe-area-inset-bottom));
+  }
+  .modal-form-content {
+    gap: 18px;
+    padding: 18px;
+  }
+  .modal-form-actions,
+  .modal-form-actions.form-footer {
+    padding: 16px 18px calc(22px + env(safe-area-inset-bottom));
   }
   .modal-heading h2 {
     font-size: 18px;

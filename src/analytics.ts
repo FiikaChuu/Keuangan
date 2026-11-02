@@ -52,8 +52,8 @@ export function cashflowBuckets(transactions: Transaction[], days: number) {
 }
 
 export type MoneyInsight = {
-  id: string;
-  tone: 'accent' | 'success' | 'warning' | 'coral';
+  id: 'allocation' | 'spending' | 'together';
+  tone: 'accent' | 'warning' | 'coral';
   label: string;
   title: string;
   body: string;
@@ -66,20 +66,6 @@ export function moneyInsights(store: Store, days: number): MoneyInsight[] {
   const plan = allocations(store);
   const spending = spendingByCategory(tx, '');
   const top = spending[0];
-  const income = tx.filter((t) => t.kind === 'income');
-  const sources = new Set(income.map((t) => t.source.trim().toLowerCase()));
-  const expenses = tx.filter((t) => t.kind === 'expense');
-  const largest = [...expenses].sort((a, b) => b.amount - a.amount)[0];
-  const peers = expenses
-    .filter((t) => t.id !== largest?.id)
-    .map((t) => t.amount)
-    .sort((a, b) => a - b);
-  const median = peers.length
-    ? peers.length % 2
-      ? peers[Math.floor(peers.length / 2)]
-      : (peers[peers.length / 2 - 1] + peers[peers.length / 2]) / 2
-    : 0;
-  const unusual = expenses.length >= 6 && median > 0 && largest.amount > 3 * median;
   const accountBalances = balances(store);
   const shared = store.accounts
     .filter((a) => a.shared)
@@ -88,62 +74,27 @@ export function moneyInsights(store: Store, days: number): MoneyInsight[] {
     {
       id: 'allocation',
       tone: plan.shortfall ? 'warning' : 'accent',
-      label: 'Rencana · Dana pribadi',
-      title: plan.shortfall ? 'Cadangan belum terpenuhi' : 'Alokasi tabungan',
+      label: 'Rencana',
+      title: 'Rencana dana pribadi',
       body: plan.shortfall
         ? `Dana pribadi kurang ${money(plan.shortfall)} dari cadangan wajibmu. Penuhi cadangan sebelum menambah belanja opsional.`
         : `${money(plan.available)} tersedia setelah cadangan wajib. Alokasi tabungan ${store.plan.saving}%: ${money(plan.saving)}.`,
       destination: 'plan',
     },
     {
-      id: 'pattern',
+      id: 'spending',
       tone: 'accent',
-      label: 'Pola · Pengeluaran',
-      title: top ? `${top[0]} paling besar` : 'Belum ada pengeluaran',
+      label: 'Pengeluaran',
+      title: 'Belanja paling besar',
       body: top
-        ? `${money(top[1])}, atau ${Math.round((top[1] / sum.expense) * 100)}% dari pengeluaran ${days} hari terakhir.`
+        ? `${top[0]}: ${money(top[1])}, atau ${Math.round((top[1] / sum.expense) * 100)}% dari pengeluaran ${days} hari terakhir.`
         : 'Catat transaksi atau unggah bukti untuk melihat pengeluaran per kategori.',
-      destination: 'transactions',
-    },
-    {
-      id: 'income',
-      tone: 'success',
-      label: 'Ringkasan · Pemasukan',
-      title: income.length ? `${income.length} pemasukan diterima` : 'Belum ada pemasukan',
-      body: income.length
-        ? `${money(sum.income)} masuk dari ${sources.size} sumber selama ${days} hari. Rencana memakai dana yang sudah diterima.`
-        : 'Catat komisi, freelance, atau pemasukan lain setelah uang masuk ke rekening.',
-    },
-    {
-      id: 'saving',
-      tone: 'success',
-      label: 'Saran · Tabungan',
-      title: top ? 'Skenario penghematan' : 'Atur rencana tabungan',
-      body: top
-        ? `Mengurangi ${top[0].toLowerCase()} 10% pada periode sebanding berpotensi menyisakan ${money(Math.floor(top[1] * 0.1))}. Sesuaikan dengan kebutuhanmu.`
-        : 'Sisihkan cadangan wajib, lalu atur persentase tabungan, kebutuhan pribadi, dan pasangan.',
-      destination: 'plan',
-    },
-    {
-      id: 'anomaly',
-      tone: unusual ? 'warning' : 'accent',
-      label: 'Pemeriksaan · Pengeluaran',
-      title: unusual
-        ? 'Pengeluaran besar terdeteksi'
-        : expenses.length < 6
-          ? 'Riwayat belum cukup'
-          : 'Belum ada lonjakan menonjol',
-      body: unusual
-        ? `“${largest.title}” ${money(largest.amount)}: ${(largest.amount / median).toLocaleString('id-ID', { maximumFractionDigits: 1 })}× nilai tengah transaksi lainnya. Cocokkan dengan bukti aslinya.`
-        : expenses.length < 6
-          ? 'Perlu minimal 6 pengeluaran dalam periode ini untuk membandingkan transaksi besar.'
-          : 'Belum ada pengeluaran di atas 3× nilai tengah transaksi lainnya dalam periode ini.',
       destination: 'transactions',
     },
     {
       id: 'together',
       tone: 'coral',
-      label: 'Bersama · Masa depan',
+      label: 'Bersama',
       title: 'Saldo akun bersama',
       body: `${money(shared)} tersimpan di catatan akun bersama, terpisah dari alokasi pribadi. Perpindahannya dihitung sebagai transfer.`,
       destination: 'together',

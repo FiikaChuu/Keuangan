@@ -83,8 +83,31 @@ test('real-data flow: irregular income, expense, shared transfer and persistence
   await page.getByRole('button', { name: 'Simpan transaksi', exact: true }).click();
   await navigate(page, page.viewportSize()!.width <= 800 ? 'Bersama' : 'Ruang bersama');
   await page.getByRole('button', { name: 'Akun bersama', exact: true }).click();
-  await page.getByLabel('Bank atau e-wallet').selectOption('Bank Jago');
+  const initialViewport = page.viewportSize()!;
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: initialViewport.width, height: 560 });
+  const closeButton = page.getByRole('button', { name: 'Tutup dialog', exact: true });
+  const saveWallet = page.getByRole('button', { name: 'Tambahkan dompet', exact: true });
+  await saveWallet.click({ trial: true });
+  const beforeScroll = {
+    close: await closeButton.boundingBox(),
+    save: await saveWallet.boundingBox(),
+  };
+  const fields = page.getByRole('dialog').locator('.modal-form-content');
+  await fields.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  expect(await fields.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect(closeButton).toBeInViewport();
+  await expect(saveWallet).toBeInViewport();
+  expect(await closeButton.boundingBox()).toEqual(beforeScroll.close);
+  expect(await saveWallet.boundingBox()).toEqual(beforeScroll.save);
+  await page.setViewportSize(initialViewport);
   await page.getByLabel('Nama dompet').fill('Tabungan kita');
+  await page.getByRole('button', { name: 'Bank atau e-wallet', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(2);
+  await page.getByRole('option', { name: 'Bank Jago', exact: true }).click();
+  await expect(page.getByLabel('Nama dompet')).toHaveValue('Tabungan kita');
   await page.getByLabel('Saldo awal').fill('0');
   await page.getByRole('button', { name: 'Tambahkan dompet', exact: true }).click();
   await page.getByRole('button', { name: 'Catat penambahan dana' }).click();
@@ -176,6 +199,7 @@ test('local OCR reads an actual image, stores proof and blocks duplicate upload'
   const backupPath = await (await downloadPromise).path();
   const { readFile } = await import('node:fs/promises');
   const backup = JSON.parse(await readFile(backupPath!, 'utf8'));
+  expect(backup.format).toBe('skywallet-backup');
   expect(backup.receipts).toHaveLength(1);
   expect(backup.receipts[0].data).toBe(data);
   expect(backup.receipts[0].type).toBe('image/png');
@@ -229,7 +253,14 @@ test('complete backup, restore confirmation, and offline launch', async ({ page,
   const backup = await downloadPromise;
   const path = await backup.path();
   expect(path).toBeTruthy();
-  await page.locator('.file-action input').setInputFiles(path!);
+  const { readFile } = await import('node:fs/promises');
+  const legacyBackup = JSON.parse(await readFile(path!, 'utf8'));
+  legacyBackup.format = 'skysave-backup';
+  await page.locator('.file-action input').setInputFiles({
+    name: 'skysave-legacy.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(legacyBackup)),
+  });
   await expect(page.getByText('Pulihkan 0 transaksi dan 1 rekening?')).toBeVisible();
   await page.getByRole('button', { name: 'Ganti & pulihkan' }).click();
   await expect(page.getByText('Pulihkan 0 transaksi dan 1 rekening?')).toHaveCount(0);
@@ -271,6 +302,29 @@ test('advanced category and amount filters combine and reset correctly', async (
   await expect(page.locator('.card-list .transaction-card')).toHaveCount(0);
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await expect(page.locator('.card-list .transaction-card')).toHaveCount(14);
+  const sorter = page.getByRole('button', { name: 'Urutan transaksi', exact: true });
+  await sorter.click();
+  await expect(page.getByRole('dialog', { name: 'Urutkan transaksi' })).toBeVisible();
+  await expect(page.getByRole('option', { name: 'Terbaru dulu', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await page.getByRole('option', { name: 'Terlama dulu', exact: true }).click();
+  await expect(sorter).toContainText('Terlama dulu');
+  await expect(page.getByRole('button', { name: /^Lihat transaksi/ }).first()).toHaveAccessibleName(
+    /Brand identity project/,
+  );
+  await sorter.click();
+  await page.getByRole('option', { name: 'Nominal terbesar', exact: true }).click();
+  await expect(sorter).toContainText('Nominal terbesar');
+  await expect(page.getByRole('button', { name: /^Lihat transaksi/ }).nth(1)).toHaveAccessibleName(
+    /Website landing page/,
+  );
+  await sorter.click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(sorter).toBeFocused();
+  await expect(sorter).toContainText('Nominal terbesar');
 });
 
 test('quick edit and confirmed delete update balances without duplicating a record', async ({
@@ -331,7 +385,7 @@ test('reports export actual transactions and appearance survives reload', async 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Ekspor CSV', exact: true }).click();
   const downloaded = await downloadPromise;
-  expect(downloaded.suggestedFilename()).toMatch(/^skysave-laporan-/);
+  expect(downloaded.suggestedFilename()).toMatch(/^skywallet-laporan-/);
   await page.evaluate(() => {
     window.print = () => {
       document.body.dataset.printCalled = 'true';
@@ -380,15 +434,27 @@ test('account sheet preserves the form and spends only from the selected wallet'
 
 test('insight preferences change dashboard content and persist after reload', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.figma-insight-card')).toHaveCount(6);
+  await expect(page.locator('.figma-insight-card')).toHaveCount(3);
+  await expect(page.locator('.figma-insight-card h3')).toHaveText([
+    'Rencana dana pribadi',
+    'Belanja paling besar',
+    'Saldo akun bersama',
+  ]);
   await navigate(page, 'Pengaturan');
-  const toggle = page.getByRole('switch', { name: 'Saran alokasi dan tabungan' });
+  await expect(page.locator('.recording-settings, .settings-privacy, .iphone-tip')).toHaveCount(0);
+  await expect(page.locator('.settings-content > .settings-section').last()).toHaveClass(
+    /insight-preferences/,
+  );
+  await expect(page.getByRole('button', { name: /^Unduh cadangan lengkap/ })).toBeVisible();
+  await expect(page).toHaveTitle(/SkyWallet/);
+  await expect(page.locator('.insight-preferences').getByRole('switch')).toHaveCount(3);
+  const toggle = page.getByRole('switch', { name: 'Rencana dana pribadi' });
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await navigate(page, 'Ringkasan');
-  await expect(page.locator('.figma-insight-card')).toHaveCount(4);
+  await expect(page.locator('.figma-insight-card')).toHaveCount(2);
   await page.reload();
-  await expect(page.locator('.figma-insight-card')).toHaveCount(4);
+  await expect(page.locator('.figma-insight-card')).toHaveCount(2);
   await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
   await page
     .getByRole('img', { name: /Grafik total saldo/ })

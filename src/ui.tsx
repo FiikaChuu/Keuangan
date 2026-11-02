@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useId } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -43,7 +44,7 @@ export function Logo({ small = false }: { small?: boolean }) {
       </span>
       {!small && (
         <span>
-          sky<span className="logo-save">Save</span>
+          Sky<span className="logo-save">Wallet</span>
           <span className="logo-dot">.</span>
         </span>
       )}
@@ -68,18 +69,75 @@ export function ProviderMark({
   );
 }
 
+export function ProviderPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (provider: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = providers.find((provider) => provider.name === value);
+  return (
+    <div className="provider-picker">
+      <button
+        type="button"
+        className="account-picker-trigger provider-picker-trigger"
+        aria-label="Bank atau e-wallet"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+      >
+        {selected && <ProviderMark account={{ provider: selected.name, color: selected.color }} />}
+        <span>{value || 'Pilih bank atau e-wallet'}</span>
+        <ChevronDown size={18} />
+      </button>
+      {open && (
+        <Modal title="Pilih bank atau e-wallet" onClose={() => setOpen(false)}>
+          <div
+            className="category-options provider-options"
+            role="listbox"
+            aria-label="Bank atau e-wallet"
+          >
+            {providers.map((provider) => (
+              <button
+                type="button"
+                key={provider.name}
+                role="option"
+                aria-label={provider.name}
+                aria-selected={provider.name === value}
+                className={provider.name === value ? 'selected' : ''}
+                onClick={() => {
+                  onChange(provider.name);
+                  setOpen(false);
+                }}
+              >
+                <ProviderMark account={{ provider: provider.name, color: provider.color }} />
+                <span>{provider.name}</span>
+                {provider.name === value && <Check size={21} />}
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 export function AccountPicker({
   accounts,
   values,
   value,
   onChange,
   label,
+  allowAll = false,
 }: {
   accounts: Account[];
   values: Record<string, number>;
   value: string;
   onChange: (id: string) => void;
   label: string;
+  allowAll?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = accounts.find((a) => a.id === value);
@@ -90,9 +148,16 @@ export function AccountPicker({
         className="account-picker-trigger"
         aria-label={label}
         aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        <span>{selected ? `${selected.provider} · ${selected.name}` : 'Pilih rekening'}</span>
+        <span>
+          {selected
+            ? `${selected.provider} · ${selected.name}`
+            : allowAll
+              ? 'Semua rekening'
+              : 'Pilih rekening'}
+        </span>
         <ChevronDown size={18} />
       </button>
       {open && (
@@ -102,6 +167,21 @@ export function AccountPicker({
           onClose={() => setOpen(false)}
         >
           <div className="account-options" role="listbox" aria-label={label}>
+            {allowAll && (
+              <button
+                type="button"
+                role="option"
+                aria-selected={!value}
+                className={!value ? 'selected' : ''}
+                onClick={() => {
+                  onChange('');
+                  setOpen(false);
+                }}
+              >
+                <span>Semua rekening</span>
+                {!value && <Check size={21} className="account-option-check" />}
+              </button>
+            )}
             {accounts.map((a) => (
               <button
                 key={a.id}
@@ -219,7 +299,7 @@ export function Modal({
       before?.focus();
     };
   }, []);
-  return (
+  return createPortal(
     <div
       className="modal-overlay"
       onMouseDown={(e) => {
@@ -243,9 +323,10 @@ export function Modal({
             <X size={20} />
           </button>
         </div>
-        {children}
+        <div className="modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export function EmptyState({

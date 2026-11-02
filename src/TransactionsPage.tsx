@@ -11,10 +11,18 @@ import {
   FileChartColumn,
   RotateCcw,
   Settings,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import type { Store, Transaction } from './domain';
-import { money, today, totals, csv } from './domain';
-import { CategoryPicker, TransactionList, downloadFile } from './ui';
+import { money, today, totals, csv, balances } from './domain';
+import { CategoryPicker, TransactionList, downloadFile, Modal, AccountPicker } from './ui';
+
+const sortOptions = [
+  { value: 'newest', label: 'Terbaru dulu' },
+  { value: 'oldest', label: 'Terlama dulu' },
+  { value: 'largest', label: 'Nominal terbesar' },
+] as const;
 
 export default function TransactionsPage({
   store,
@@ -46,7 +54,8 @@ export default function TransactionsPage({
   const [minimum, setMinimum] = useState('');
   const [maximum, setMaximum] = useState('');
   const [advanced, setAdvanced] = useState(false);
-  const [sort, setSort] = useState('newest');
+  const [sort, setSort] = useState<(typeof sortOptions)[number]['value']>('newest');
+  const [sortOpen, setSortOpen] = useState(false);
   const isAccountSearch = store.accounts.some((a) => a.id === search);
   const validAmount = (s: string) =>
     s === '' || (Number.isSafeInteger(Number(s)) && Number(s) >= 0 && Number(s) <= 1e12);
@@ -177,24 +186,20 @@ export default function TransactionsPage({
                 <span>Kategori</span>
                 <CategoryPicker value={category} onChange={setCategory} allowAll />
               </div>
-              <label className="filter-field">
-                Rekening
-                <select
-                  aria-label="Filter rekening"
+              <div className="filter-field">
+                <span>Rekening</span>
+                <AccountPicker
+                  label="Filter rekening"
+                  accounts={store.accounts}
+                  values={balances(store)}
+                  allowAll
                   value={isAccountSearch ? search : account}
-                  onChange={(e) => {
-                    setAccount(e.target.value);
+                  onChange={(value) => {
+                    setAccount(value);
                     if (isAccountSearch) setSearch('');
                   }}
-                >
-                  <option value="">Semua rekening</option>
-                  {store.accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.provider} · {a.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                />
+              </div>
               <label className="filter-field">
                 Nominal minimum (Rp)
                 <input
@@ -302,15 +307,17 @@ export default function TransactionsPage({
             <strong>{filtered.length}</strong> transaksi
             {filterCount || search || kind !== 'all' ? ' ditemukan' : ' tercatat'}
           </span>
-          <select
+          <button
+            type="button"
+            className="ledger-sort"
             aria-label="Urutan transaksi"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            aria-haspopup="dialog"
+            aria-expanded={sortOpen}
+            onClick={() => setSortOpen(true)}
           >
-            <option value="newest">Terbaru dulu</option>
-            <option value="oldest">Terlama dulu</option>
-            <option value="largest">Nominal terbesar</option>
-          </select>
+            <span>{sortOptions.find((option) => option.value === sort)!.label}</span>
+            <ChevronDown size={16} />
+          </button>
           <button className="ledger-settings" aria-label="Buka pengaturan" onClick={onSettings}>
             <Settings size={18} />
           </button>
@@ -334,7 +341,7 @@ export default function TransactionsPage({
               downloadFile(
                 csv(filtered, store.accounts),
                 'text/csv;charset=utf-8',
-                `skysave-transaksi-${today()}.csv`,
+                `skywallet-transaksi-${today()}.csv`,
               )
             }
           >
@@ -347,6 +354,28 @@ export default function TransactionsPage({
           </button>
         </div>
       </section>
+      {sortOpen && (
+        <Modal title="Urutkan transaksi" onClose={() => setSortOpen(false)}>
+          <div className="category-options" role="listbox" aria-label="Urutan transaksi">
+            {sortOptions.map((option) => (
+              <button
+                type="button"
+                role="option"
+                key={option.value}
+                aria-selected={sort === option.value}
+                className={sort === option.value ? 'selected' : ''}
+                onClick={() => {
+                  setSort(option.value);
+                  setSortOpen(false);
+                }}
+              >
+                <span>{option.label}</span>
+                {sort === option.value && <Check size={21} />}
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

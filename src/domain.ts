@@ -33,6 +33,7 @@ export type Store = {
   goals: Goal[];
   plan: Plan;
 };
+// Preserve the original storage key so SkyWallet keeps existing financial records.
 export const STORAGE_KEY = 'skysave.v1';
 export const categories = [
   'Makanan & minuman',

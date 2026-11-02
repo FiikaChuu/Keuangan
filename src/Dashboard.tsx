@@ -12,14 +12,12 @@ import {
   Heart,
   Wallet,
   FileChartColumn,
-  Leaf,
   RefreshCw,
   PiggyBank,
   TriangleAlert,
   Lightbulb,
   Settings,
   ScanLine,
-  TrendingUp,
 } from 'lucide-react';
 import type { Store, Transaction, Account } from './domain';
 import { money, totals, allocations, spendingByCategory, balances } from './domain';
@@ -72,31 +70,12 @@ export default function Dashboard({
   const sharedAccounts = store.accounts.filter((a) => a.shared);
   const shared = sharedAccounts.reduce((s, a) => s + accountBalances[a.id], 0);
   const insights = useMemo(
-    () =>
-      moneyInsights(store, days).filter((item) =>
-        item.id === 'allocation' || item.id === 'saving'
-          ? preferences.allocation
-          : item.id === 'pattern'
-            ? preferences.spending
-            : item.id === 'anomaly'
-              ? preferences.anomaly
-              : item.id === 'together'
-                ? preferences.together
-                : true,
-      ),
+    () => moneyInsights(store, days).filter((item) => preferences[item.id]),
     [store, days, refresh, preferences],
   );
   const recent = [...store.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const insightIcon = (item: MoneyInsight) =>
-    item.id === 'anomaly'
-      ? TriangleAlert
-      : item.id === 'income'
-        ? TrendingUp
-        : item.id === 'together'
-          ? Heart
-          : item.id === 'saving'
-            ? Leaf
-            : Lightbulb;
+    item.tone === 'warning' ? TriangleAlert : item.id === 'together' ? Heart : Lightbulb;
   const refreshInsights = () => {
     setRefresh((v) => v + 1);
     setRefreshedAt(
@@ -284,9 +263,6 @@ export default function Dashboard({
               Perbarui
             </button>
           </div>
-          <p className="insight-method">
-            Analisis lokal dari catatanmu. Rencana mengikuti uang yang sudah diterima.
-          </p>
           <div className="figma-insight-cards">
             {insights.map((item) => {
               const Icon = insightIcon(item);

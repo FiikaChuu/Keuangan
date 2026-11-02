@@ -28,7 +28,6 @@ import {
   Sun,
   Moon,
   Monitor,
-  Smartphone,
   RefreshCw,
   Trash2,
   LoaderCircle,
@@ -157,7 +156,7 @@ export default function App() {
       title: store.demo ? 'Mulai cerita uangmu?' : 'Hapus data dan mulai ulang?',
       text: store.demo
         ? 'Data contoh akan diganti dengan ruang kosong untuk rekening dan transaksi milikmu. Tidak ada rekening bank yang dihubungkan.'
-        : 'Semua catatan, rencana, tujuan, dan bukti tersimpan akan dihapus dari skySave pada browser ini. Unduh cadangan lengkap terlebih dahulu. Tindakan ini tidak bisa dibatalkan.',
+        : 'Semua catatan, rencana, tujuan, dan bukti tersimpan akan dihapus dari SkyWallet pada browser ini. Unduh cadangan lengkap terlebih dahulu. Tindakan ini tidak bisa dibatalkan.',
       action: () => {
         if (save(emptyStore(), true)) {
           void clearReceipts().catch(() =>
@@ -207,7 +206,7 @@ export default function App() {
     setDialog({
       type: 'confirm',
       title: 'Hapus catatan transaksi?',
-      text: 'Transaksi dan bukti terkait akan dihapus dari skySave. Saldo tercatat akan dihitung ulang. Tindakan ini tidak memengaruhi rekening bank.',
+      text: 'Transaksi dan bukti terkait akan dihapus dari SkyWallet. Saldo tercatat akan dihitung ulang. Tindakan ini tidak memengaruhi rekening bank.',
       action: () => {
         void removeTransaction(t);
       },
@@ -305,7 +304,7 @@ export default function App() {
         <a
           href="#"
           className="brand-link"
-          aria-label="skySave beranda"
+          aria-label="SkyWallet beranda"
           onClick={(e) => {
             e.preventDefault();
             setPage('overview');
@@ -735,7 +734,7 @@ export default function App() {
               <PageHeading
                 eyebrow=""
                 title="Pengaturan"
-                description="Atur pengalaman skySave sesuai kebutuhanmu."
+                description="Atur pengalaman SkyWallet sesuai kebutuhanmu."
               />
               <SettingsPanel
                 store={store}
@@ -836,7 +835,7 @@ export default function App() {
               setDialog({
                 type: 'confirm',
                 title: 'Hapus catatan transaksi?',
-                text: 'Transaksi dan bukti terkait akan dihapus dari skySave. Saldo tercatat akan dihitung ulang. Tindakan ini tidak memengaruhi rekening bank.',
+                text: 'Transaksi dan bukti terkait akan dihapus dari SkyWallet. Saldo tercatat akan dihitung ulang. Tindakan ini tidak memengaruhi rekening bank.',
                 action: () => {
                   void removeTransaction(t);
                 },
@@ -1245,7 +1244,7 @@ function SettingsPanel({
         download(
           localStorage.getItem(STORAGE_KEY) ?? '',
           'application/json',
-          `skysave-pemulihan-${today()}.json`,
+          `skywallet-pemulihan-${today()}.json`,
         );
         return;
       }
@@ -1267,7 +1266,7 @@ function SettingsPanel({
       download(
         JSON.stringify(
           {
-            format: 'skysave-backup',
+            format: 'skywallet-backup',
             version: 1,
             exportedAt: new Date().toISOString(),
             data: store,
@@ -1277,7 +1276,7 @@ function SettingsPanel({
           2,
         ),
         'application/json',
-        `skysave-cadangan-${today()}.json`,
+        `skywallet-cadangan-${today()}.json`,
       );
       notify(
         absent
@@ -1297,12 +1296,12 @@ function SettingsPanel({
       if (file.size > 70 * 1024 * 1024) throw Error('Maksimal ukuran cadangan 70 MB.');
       const archive = JSON.parse(await file.text());
       if (
-        archive.format !== 'skysave-backup' ||
+        !['skywallet-backup', 'skysave-backup'].includes(archive.format) ||
         archive.version !== 1 ||
         !isStore(archive.data) ||
         !Array.isArray(archive.receipts)
       )
-        throw Error('Berkas bukan cadangan skySave yang valid.');
+        throw Error('Berkas bukan cadangan SkyWallet yang valid.');
       const receiptIds = new Set(
         archive.data.transactions.map((t: Transaction) => t.receiptId).filter(Boolean),
       );
@@ -1378,58 +1377,9 @@ function SettingsPanel({
           <p>Tersimpan di perangkat ini</p>
         </div>
       </section>
-      <section className="settings-section recording-settings">
-        <h3>
-          <Wallet size={18} />
-          PENCATATAN
-        </h3>
-        <dl>
-          <div>
-            <dt>Mata uang</dt>
-            <dd>Rp · Rupiah Indonesia</dd>
-          </div>
-          <div>
-            <dt>Pemasukan</dt>
-            <dd>Tidak tetap</dd>
-          </div>
-          <div>
-            <dt>Penarikan tunai</dt>
-            <dd>Dicatat sebagai pengeluaran</dd>
-          </div>
-        </dl>
-      </section>
-      <section className="settings-section insight-preferences">
-        <h3>
-          <Bell size={18} />
-          INFORMASI DI APLIKASI
-        </h3>
-        <p>Atur informasi yang ditampilkan di dashboard saat skySave dibuka.</p>
-        {(
-          [
-            { id: 'allocation', label: 'Saran alokasi dan tabungan' },
-            { id: 'spending', label: 'Pola pengeluaran' },
-            { id: 'anomaly', label: 'Pemeriksaan transaksi besar' },
-            { id: 'together', label: 'Ringkasan dana bersama' },
-          ] as const
-        ).map((item) => (
-          <div key={item.id}>
-            <span>{item.label}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-label={item.label}
-              aria-checked={preferences[item.id]}
-              onClick={() => onPreferences({ ...preferences, [item.id]: !preferences[item.id] })}
-            >
-              <i />
-            </button>
-          </div>
-        ))}
-      </section>
-
       <section className="appearance-settings">
         <h3>Tampilan yang nyaman untukmu</h3>
-        <p>Pilih suasana skySave sesuai harimu.</p>
+        <p>Pilih suasana SkyWallet sesuai harimu.</p>
         <div className="theme-options">
           {[
             { id: 'light', label: 'Terang', icon: Sun },
@@ -1449,16 +1399,6 @@ function SettingsPanel({
           ))}
         </div>
       </section>
-      <div className="settings-privacy">
-        <ShieldCheck size={25} />
-        <div>
-          <h3>Penyimpanan lokal</h3>
-          <p>
-            Tanpa koneksi bank dan tanpa server penyimpan data. Catatan serta bukti berada pada
-            browser ini. Belum ada sinkronisasi antarperangkat atau login keluarga.
-          </p>
-        </div>
-      </div>
       <div className="settings-section">
         <h3>Data & cadangan</h3>
         <p>
@@ -1493,7 +1433,7 @@ function SettingsPanel({
           <RefreshCw size={19} />
           <span>
             <strong>Pulihkan dari cadangan</strong>
-            <small>Pilih berkas JSON ekspor skySave</small>
+            <small>Pilih berkas JSON ekspor SkyWallet</small>
           </span>
           <ChevronRight size={16} />
         </label>
@@ -1533,17 +1473,6 @@ function SettingsPanel({
           </p>
         )}
       </div>
-      <div className="settings-section">
-        <h3>skySave di iPhone</h3>
-        <div className="iphone-tip">
-          <Smartphone size={30} strokeWidth={1.5} />
-          <p>
-            Buka melalui Safari pada alamat HTTPS aplikasi yang sudah diterbitkan. Pilih{' '}
-            <strong>Bagikan → Tambah ke Layar Utama</strong>. Membuka aplikasi di perangkat lain
-            belum menyinkronkan data.
-          </p>
-        </div>
-      </div>
       <div className="settings-section settings-danger">
         <h3>HAPUS DATA</h3>
         <button className="settings-action reset-action" disabled={busy} onClick={startOwn}>
@@ -1557,6 +1486,34 @@ function SettingsPanel({
           <ChevronRight size={16} />
         </button>
       </div>
+      <section className="settings-section insight-preferences">
+        <h3>
+          <Bell size={18} />
+          INFORMASI DI APLIKASI
+        </h3>
+        <p>Atur informasi yang ditampilkan di dashboard saat SkyWallet dibuka.</p>
+        {(
+          [
+            { id: 'allocation', label: 'Rencana dana pribadi' },
+            { id: 'spending', label: 'Belanja paling besar' },
+            { id: 'together', label: 'Saldo akun bersama' },
+          ] as const
+        ).map((item) => (
+          <div key={item.id}>
+            <span>{item.label}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-label={item.label}
+              aria-checked={preferences[item.id]}
+              onClick={() => onPreferences({ ...preferences, [item.id]: !preferences[item.id] })}
+            >
+              <i />
+            </button>
+          </div>
+        ))}
+      </section>
+
       <div className="settings-version">
         <Logo />
         <span>v0.1 · Data pada perangkat ini</span>

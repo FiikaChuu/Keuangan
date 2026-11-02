@@ -136,7 +136,7 @@ export default function Reports({ store }: { store: Store }) {
             downloadFile(
               csv(tx, store.accounts),
               'text/csv;charset=utf-8',
-              `skysave-laporan-${range.start}-${range.end}.csv`,
+              `skywallet-laporan-${range.start}-${range.end}.csv`,
             )
           }
         >
@@ -180,7 +180,7 @@ export default function Reports({ store }: { store: Store }) {
             ))}
           </tbody>
         </table>
-        <p>Dibuat dengan skySave · {displayDate(today())}</p>
+        <p>Dibuat dengan SkyWallet · {displayDate(today())}</p>
       </div>
     </div>
   );
