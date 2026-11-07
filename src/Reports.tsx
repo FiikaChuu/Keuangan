@@ -1,10 +1,10 @@
+import { MoneyAmount } from './MoneyAmount';
 import { useState } from 'react';
-import { CalendarDays, Download, FileChartColumn, Printer } from 'lucide-react';
+import { DesignIcon } from './design';
 import type { Store, Transaction } from './domain';
 import { today, totals, displayDate, money, csv } from './domain';
 import { reportRange } from './analytics';
 import { downloadFile } from './ui';
-import { MoneyAmount } from './MoneyAmount';
 
 export default function Reports({ store }: { store: Store }) {
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
@@ -24,23 +24,22 @@ export default function Reports({ store }: { store: Store }) {
   const fees = tx.reduce((s, t) => s + t.fee, 0);
   const moved = tx.filter((t) => t.kind === 'transfer').reduce((s, t) => s + t.amount, 0);
   const summary = [
-    { label: 'Pemasukan', value: sum.income, currency: true, tone: 'positive' },
-    { label: 'Pengeluaran', value: sum.expense, currency: true, tone: 'negative' },
+    { label: 'Pemasukan', value: <MoneyAmount value={sum.income} />, tone: 'positive' },
+    { label: 'Pengeluaran', value: <MoneyAmount value={sum.expense} />, tone: 'negative' },
     {
       label: 'Selisih periode',
-      value: sum.income - sum.expense,
-      currency: true,
+      value: money(sum.income - sum.expense),
       tone: sum.income >= sum.expense ? 'positive' : 'negative',
     },
-    { label: 'Transaksi', value: tx.length, currency: false, tone: '' },
-    { label: 'Biaya admin', value: fees, currency: true, tone: 'warning-value' },
-    { label: 'Dana dipindahkan', value: moved, currency: true, tone: '' },
+    { label: 'Transaksi', value: String(tx.length), tone: '' },
+    { label: 'Biaya admin', value: money(fees), tone: 'warning-value' },
+    { label: 'Dana dipindahkan', value: money(moved), tone: '' },
   ];
   return (
     <div className="reports-content">
       <section className="report-filters">
         <h2>
-          <CalendarDays size={18} />
+          <DesignIcon name="calendar" size={18} />
           PERIODE LAPORAN
         </h2>
         <div className="filter-tabs" role="group" aria-label="Periode laporan">
@@ -62,7 +61,7 @@ export default function Reports({ store }: { store: Store }) {
           ))}
         </div>
         <label className="filter-field">
-          Sampai tanggal
+          <span className="sr-only">Sampai tanggal</span>
           <input
             aria-label="Tanggal laporan"
             type="date"
@@ -103,7 +102,7 @@ export default function Reports({ store }: { store: Store }) {
       <section className="report-summary-section">
         <div className="report-period">
           <h2>
-            <FileChartColumn size={17} />
+            <DesignIcon name="nav-reports-active" size={18} />
             RINGKASAN {period === 'week' ? 'MINGGUAN' : period === 'month' ? 'BULANAN' : 'TAHUNAN'}
           </h2>
           <p>
@@ -117,15 +116,7 @@ export default function Reports({ store }: { store: Store }) {
           {summary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
-              <strong className={item.tone}>
-                {range.error ? (
-                  '—'
-                ) : item.currency ? (
-                  <MoneyAmount value={item.value} />
-                ) : (
-                  item.value
-                )}
-              </strong>
+              <strong className={item.tone}>{range.error ? '—' : item.value}</strong>
             </div>
           ))}
         </div>
@@ -136,7 +127,7 @@ export default function Reports({ store }: { store: Store }) {
       </p>
       <div className="report-actions">
         <button disabled={!!range.error} className="btn primary" onClick={() => window.print()}>
-          <Printer size={19} />
+          <DesignIcon name="report-light" />
           Cetak / simpan PDF
         </button>
         <button
@@ -150,7 +141,7 @@ export default function Reports({ store }: { store: Store }) {
             )
           }
         >
-          <Download size={19} />
+          <DesignIcon name="report-dark" />
           Ekspor CSV
         </button>
       </div>

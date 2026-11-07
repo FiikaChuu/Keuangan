@@ -1,0 +1,74 @@
+/* Motion owns sheet transforms; avoid competing CSS animations. */
+.modal,
+.modal-overlay {
+  animation: none;
+}
+.modal-form-content {
+  align-content: start;
+  grid-auto-rows: max-content;
+  overflow-x: hidden;
+  overflow-anchor: none;
+}
+.animated-reveal {
+  min-width: 0;
+  border: 0;
+  overflow: hidden;
+  /* Leave space for focus rings inside the animated clipping boundary. */
+  margin: -3px;
+  padding: 3px;
+}
+.reveal-content {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.transfer-fields {
+  display: grid;
+  gap: 12px;
+}
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.optional-fields {
+  min-width: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--bg);
+}
+.optional-fields-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.optional-fields-toggle > span:first-child {
+  min-width: 0;
+}
+.optional-fields-toggle small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.optional-fields-toggle > span:last-child {
+  display: flex;
+  flex-shrink: 0;
+}
+.optional-fields-content {
+  margin-top: 16px;
+  padding-bottom: 2px;
+  gap: 16px;
+}
+.optional-fields-content textarea {
+  resize: none;
+  min-height: 104px;
+}

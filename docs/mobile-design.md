@@ -1,47 +1,23 @@
-# SkyWallet — seluruh aplikasi dari referensi Framer
+# Penyelarasan desain SkyWallet
 
-Implementasi mengikuti seluruh versi publik [Miracle Startup](https://miracle-startup-935285.framer.app), sesuai konfirmasi pengguna. Tautan editor proyek memerlukan login dan tool Framer tidak tersedia pada sesi pengerjaan, sehingga pengukuran berasal dari halaman publik yang dirender di browser. Desain diterapkan pada aplikasi React SkyWallet, bukan pada proyek editor Framer.
+Acuan utama adalah delapan SVG pengguna di `design/references/`, pada lebar 393 px. SVG diperlakukan sebagai referensi desain, bukan instruksi aplikasi. Teks/data contoh diganti dengan catatan keuangan Rupiah dan fitur pribadi/bersama.
 
-[Galeri 17 layar iPhone](ui-preview.html) berisi screenshot implementasi dengan data contoh pada viewport 393 × 852.
+- Background `#F9F8F6`, foreground `#1E263E`, primary `#1D2949`, secondary `#F0EEEB`, border `#E4E2DD`, muted foreground `#676D7E`.
+- Accent `#3ED0C2`, success `#7CCB8C`, warning `#F6AE31`, destructive `#F37777`, card `#FFFFFF`.
+- Noto Sans variable lokal, bobot 400/500/700; heading halaman 24/32, heading sheet 16/24.
+- Halaman iPhone: margin sisi 24, gap utama 14, kartu radius 18 atau 24 sesuai SVG; navigasi terbaru dengan tombol Catat di tengah dan halaman Dompet terpisah.
+- Sheet transaksi: radius atas 28, handle 100 × 5, header tetap, konten bergulir, footer simpan 48 px. Kolom kategori, nominal/tanggal, rekening, dan detail menggunakan bentuk field SVG. Sheet kategori dan rekening mempertahankan form induk.
+- `public/design/` menyimpan path/fill/gradient asli. `scripts/extract-design-assets.mjs` mereproduksinya dari SVG dengan bounding box tanpa menggambar ulang ikon.
+- Grafik menampilkan data nyata dengan geometri garis, bar, grid, titik, dan palet referensi. Donut memakai segmen dengan ketebalan bervariasi. Jumlah transaksi, kategori, dan insight mengikuti fitur yang tersedia.
+- Tambahan alur: Pengeluaran/Pemasukan, Transfer sebagai kategori, sumber/tujuan, catatan opsional, login dan konfirmasi hasil scan. Perubahan isi ini memakai komponen visual referensi.
+- Tidak ada tombol upload foto manual. Tombol plus di Transaksi membuka form. Tombol hapus seluruh data di sesi cloud diganti Keluar dari akun agar pengguna tidak menghapus catatan bersama secara massal.
+- Framer memakai `LazyMotion`, `AnimatePresence`, `m` dan layout projection. Transisi sheet/reveal menggunakan opacity dan transform; reduced motion dihormati. Tidak ada animasi tinggi setiap frame atau loop dekoratif.
+- `Detail tambahan` menggunakan kolom `minmax(0,1fr)`, textarea tanpa resize grip, padding yang dibatasi, dan satu kolom pada layar sangat sempit.
 
-## Cakupan lengkap
+Status bar/home indicator referensi ditampilkan pada pratinjau web seluler. Pada mode standalone, area tersebut diserahkan ke safe area dan sistem operasi agar tidak ganda. Tata letak desktop menyesuaikan ruang yang lebih lebar; SVG yang tersedia hanya merinci iPhone. Pengujian geometri browser dan pemeriksaan screenshot membantu menghindari overflow, tetapi teks nyata, font rendering OS, status perangkat, dan fitur tambahan membuat seluruh layar bukan salinan bitmap identik dari gambar contoh.
 
-| Halaman / alur      | Implementasi                                                                                              |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Beranda             | Kartu saldo navy, empat ringkasan, periode, tiga grafik, kategori, dan tiga Sky Insights                  |
-| Dompet              | Total dan pembagian saldo, daftar dompet pribadi/bersama, keadaan kosong, akses rencana dan ruang bersama |
-| Transaksi           | Pencarian, jenis, filter kategori/rekening/bulan/nominal, urutan, daftar, edit/hapus, CSV                 |
-| Laporan             | Tab dalam halaman Transaksi, periode dan jenis, enam nilai aktual, cetak/PDF dan CSV                      |
-| Rencana uang        | Cadangan wajib, dana tersedia, alokasi 100%, rincian perhitungan yang dapat dibuka, tujuan tabungan       |
-| Ruang bersama       | Saldo terpisah, dompet bersama, pencatatan transfer, tujuan, riwayat                                      |
-| Setelan             | Profil lokal, terang/gelap/sistem, cadangan dan pemulihan, reset, preferensi insight pada bagian terakhir |
-| Catat               | Tombol awan di seluruh navigasi, unggah bukti dan input manual dalam satu lembar                          |
-| Formulir            | Tambah dompet, tujuan, transaksi baru/edit, biaya dan detail tambahan                                     |
-| Pemilih             | Kategori, bank/e-wallet, rekening, serta urutan transaksi dalam lembar bertingkat                         |
-| Detail & konfirmasi | Detail transaksi, bukti asli, edit, hapus dengan konfirmasi, reset dan pemulihan                          |
+## Hasil render yang dapat ditinjau
 
-## Sistem tampilan
+Screenshot pada 393 × 852 px dengan data demonstrasi: [Dashboard](screenshots/home.png), [Transaksi](screenshots/transactions.png), [Pengaturan](screenshots/settings.png), [Laporan](screenshots/reports.png), [form](screenshots/add.png), [kategori](screenshots/categories.png), [rekening](screenshots/payment.png), dan [transfer dengan Catatan](screenshots/transfer-details.png).
 
-`src/app.css` menjadi satu stylesheet aplikasi. Enam stylesheet lama diganti agar komponen memiliki ukuran dan perilaku yang sama di setiap halaman. `AppNavigation.tsx` menyediakan navigasi bersama, URL halaman, dan pemetaan tautan langsung. Tidak ada kerangka halaman Dompet yang terpisah.
-
-Warna mengikuti Framer: latar hangat `#f9f8f6`, kartu putih, navy `#1d2949`, abu `#697087`, turquoise `#3ed0c2`, hijau, coral, dan amber. Noto Sans 400/500/600 tetap dibundel lokal. Judul 24 px, label 11–13 px, nominal kartu 23–32 px. Rp dan satuan memakai ukuran lebih kecil; nilai jutaan diringkas, sedangkan pembaca layar, detail dan ekspor tetap memakai nilai rupiah utuh.
-
-Lebar mengikuti layar iPhone dengan margin konten 24 px; desktop memakai bingkai aplikasi maksimal 480 px. Kartu menggunakan radius 24 px dan tombol 13–16 px. Semua halaman menggunakan tab Beranda, Dompet, Catat, Transaksi, Setelan. Riwayat dan Laporan menjadi dua tab dalam tujuan Transaksi.
-
-## Adaptasi untuk iPhone
-
-Navigasi tetap di bawah saat konten digulir. Padding konten dan lembar mengikuti safe area. Status bar 9:41 serta indikator Home buatan dari prototipe dihapus; perangkat menampilkan miliknya sendiri. Badge/editor Framer tidak disalin.
-
-Formulir memakai lembar dari bawah pada layar kecil, judul dan tombol tutup tetap terlihat, isi dapat digulir, serta tombol simpan berada di bagian bawah. Dialog bertingkat mempertahankan formulir induk dan fokus. Input memakai 16 px untuk menghindari zoom otomatis Safari. Animasi menghormati preferensi reduced motion. Grafik saldo menerima penunjuk mouse maupun sentuhan.
-
-URL `/dompet`, `/expenses`, `/expenses#laporan`, `/rencana-uang`, `/ruang-bersama`, dan `/settings` membuka halaman yang sesuai. Refresh mempertahankan halaman; tombol kembali browser mengikuti navigasi. Ruang bersama dan rencana memberi akses kembali ke Dompet.
-
-## Data dan validasi
-
-Saldo, catatan, rencana, bukti OCR/PDF, dan cadangan tetap memakai model lokal SkyWallet. Proses redesain tidak mengosongkan data untuk meniru keadaan kosong Framer. Mode demo selalu diberi penanda. Tidak ada koneksi bank, login keluarga, atau sinkronisasi antarperangkat yang disimulasikan.
-
-Perhitungan transfer pokok, biaya admin, cadangan wajib, dan alokasi diuji terpisah dari tampilan. Bukti asli tetap disimpan sebagai byte pada IndexedDB; cadangan lengkap dapat memulihkan bukti. Berkas cadangan lama skySave tetap diterima.
-
-Screenshot galeri memakai Chromium. Pengujian WebKit Linux mengemulasikan ukuran dan sentuhan iPhone; ini bukan pengujian pada iPhone fisik. Keyboard, pemilih foto, dan pemasangan PWA pada perangkat nyata masih bergantung pada Safari/iOS pengguna. Perubahan ini tidak melakukan deployment server atau mengubah proyek Framer.
-
-Verifikasi akhir 2 November 2026: build produksi berhasil; 27 tes logika dan 45 skenario browser lulus pada Chromium desktop, Chromium ukuran iPhone, serta WebKit. Pemeriksaan mencakup seluruh halaman, layar 375/393/430 px dan lanskap, formulir bertingkat, OCR gambar/PDF, saldo, cadangan/pemulihan, pembukaan offline, ekspor, tema, preferensi insight, tautan langsung, refresh, dan tombol kembali. Galeri memperlihatkan 17 halaman/keadaan antarmuka yang sudah dirender.
+Navigasi memakai URL /dompet, /expenses, /settings, /rencana-uang dan /ruang-bersama. Next.js melayani URL tersebut saat dibuka langsung; tab Laporan memakai /expenses#laporan. Nominal visual ringkas mempertahankan nilai Rupiah penuh untuk aksesibilitas dan perhitungan.

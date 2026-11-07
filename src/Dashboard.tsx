@@ -1,43 +1,33 @@
+import { MoneyAmount } from './MoneyAmount';
 import { useMemo, useState } from 'react';
-import {
-  UploadCloud,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Sparkles,
-  Heart,
-  Wallet,
-  RefreshCw,
-  PiggyBank,
-  TriangleAlert,
-  Lightbulb,
-  ChartNoAxesCombined,
-} from 'lucide-react';
-import type { Store } from './domain';
+import type { ReactNode } from 'react';
+import { Plus, ArrowUpRight, Eye, EyeOff, ArrowRight, Wallet } from 'lucide-react';
+import type { Store, Transaction, Account } from './domain';
 import { totals, allocations, spendingByCategory, balances } from './domain';
 import { dashboardPeriods, moneyInsights, periodTransactions } from './analytics';
 import type { InsightPreferences } from './preferences';
-import type { MoneyInsight } from './analytics';
-import { BalanceChart, CashflowChart, SpendingDonut } from './ui';
+import { DesignIcon } from './design';
+import { BalanceChart, CashflowChart, TransactionList, SpendingDonut, EmptyState } from './ui';
 import { NetCashflowChart } from './DashboardCharts';
-import { MoneyAmount } from './MoneyAmount';
 
 type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
 export default function Dashboard({
   store,
   total,
-  onUpload,
   go,
+  detail,
+  accountCard,
+  onAccount,
   onReport,
   onStartOwn,
   preferences,
 }: {
   store: Store;
   total: number;
-  onUpload: () => void;
   go: (page: Page) => void;
+  detail: (tx: Transaction) => void;
+  accountCard: (a: Account) => ReactNode;
+  onAccount: () => void;
   onReport: () => void;
   onStartOwn: () => void;
   preferences: InsightPreferences;
@@ -60,14 +50,7 @@ export default function Dashboard({
     () => moneyInsights(store, days).filter((item) => preferences[item.id]),
     [store, days, refresh, preferences],
   );
-  const insightIcon = (item: MoneyInsight) =>
-    item.tone === 'warning'
-      ? TriangleAlert
-      : item.id === 'together'
-        ? Wallet
-        : item.id === 'spending'
-          ? ChartNoAxesCombined
-          : Lightbulb;
+  const recent = [...store.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const refreshInsights = () => {
     setRefresh((v) => v + 1);
     setRefreshedAt(
@@ -93,12 +76,6 @@ export default function Dashboard({
         <div>
           <h1>Dashboard</h1>
           <p>Your financial overview</p>
-        </div>
-        <div className="dashboard-header-actions">
-          <button className="btn primary" aria-label="Unggah bukti" onClick={onUpload}>
-            <UploadCloud size={21} />
-            <span>Unggah bukti</span>
-          </button>
         </div>
         <div className="figma-period-control" role="group" aria-label="Periode dashboard">
           {dashboardPeriods.map((period) => (
@@ -153,7 +130,7 @@ export default function Dashboard({
             <div>
               <h2>Pemasukan</h2>
               <span>
-                <ArrowDownLeft size={17} />
+                <DesignIcon name="stat-income" size={26} />
               </span>
             </div>
             <strong>
@@ -165,7 +142,7 @@ export default function Dashboard({
             <div>
               <h2>Pengeluaran</h2>
               <span>
-                <ArrowUpRight size={17} />
+                <DesignIcon name="stat-expense" size={26} />
               </span>
             </div>
             <strong>
@@ -177,7 +154,7 @@ export default function Dashboard({
             <div>
               <h2>Bisa ditabung</h2>
               <span>
-                <PiggyBank size={17} />
+                <DesignIcon name="stat-saving" size={26} />
               </span>
             </div>
             <strong>
@@ -191,7 +168,7 @@ export default function Dashboard({
             <div>
               <h2>Dana bersama</h2>
               <span>
-                <Heart size={16} />
+                <DesignIcon name="stat-income" size={26} />
               </span>
             </div>
             <strong>
@@ -227,7 +204,7 @@ export default function Dashboard({
         </section>
         <section className="panel figma-chart-panel figma-net-trend">
           <div className="panel-heading">
-            <h2>Arus dana bersih</h2>
+            <h2>Arus pemasukan & pengeluaran</h2>
             <span className="figma-tiny-legend">
               <i />
               Selisih
@@ -246,17 +223,16 @@ export default function Dashboard({
         <section className="figma-insights" aria-labelledby="sky-insights-title">
           <div className="figma-insights-header">
             <h2 id="sky-insights-title">
-              <Sparkles size={21} />
+              <DesignIcon name="insights" />
               Sky Insights
             </h2>
             <button aria-label="Perbarui insight" onClick={refreshInsights}>
-              <RefreshCw size={14} />
+              <DesignIcon name="refresh" size={14} />
               Perbarui
             </button>
           </div>
           <div className="figma-insight-cards">
             {insights.map((item) => {
-              const Icon = insightIcon(item);
               return (
                 <article
                   key={item.id}
@@ -264,10 +240,25 @@ export default function Dashboard({
                   aria-label={item.title}
                 >
                   <span className="figma-insight-icon" aria-hidden="true">
-                    <Icon size={20} strokeWidth={1.8} />
+                    <DesignIcon
+                      name={
+                        item.tone === 'warning'
+                          ? 'insight-warning'
+                          : item.id === 'spending'
+                            ? 'insight-pattern'
+                            : item.id === 'together'
+                              ? 'insight-growth'
+                              : 'insight-idea'
+                      }
+                      size={33}
+                    />
                   </span>
                   <div>
-                    <h3>{item.title}</h3>
+                    <div className="figma-insight-tag">
+                      <span>{item.label}</span>
+                      <i aria-hidden="true">·</i>
+                      <span className="figma-insight-context">{item.context}</span>
+                    </div>
                     <p>{item.body}</p>
                   </div>
                 </article>
@@ -279,6 +270,49 @@ export default function Dashboard({
               Insight diperbarui pukul {refreshedAt} dari {tx.length} transaksi pada periode ini.
             </p>
           )}
+        </section>
+        <section className="panel figma-wallets">
+          <div className="panel-heading">
+            <h2>
+              Dompet saya<span className="count-badge">{store.accounts.length}</span>
+            </h2>
+            <button className="icon-btn" aria-label="Tambah dompet" onClick={onAccount}>
+              <Plus size={20} />
+            </button>
+          </div>
+          {store.accounts.length ? (
+            <>
+              <div className="wallet-strip">
+                {store.accounts.slice(0, 4).map((a) => accountCard(a))}
+              </div>
+              <button className="all-wallets" onClick={() => go('accounts')}>
+                Semua dompet
+                <ArrowRight size={14} />
+              </button>
+            </>
+          ) : (
+            <EmptyState
+              icon={<Wallet size={26} />}
+              title="Mulai dari dompet pertama"
+              text="Tambahkan rekening atau e-wallet beserta saldo awalnya."
+              action={
+                <button className="btn primary" onClick={onAccount}>
+                  Tambah dompet
+                  <Plus size={17} />
+                </button>
+              }
+            />
+          )}
+        </section>
+        <section className="panel figma-recent">
+          <div className="panel-heading">
+            <h2>Transaksi terbaru</h2>
+            <button className="text-btn" onClick={() => go('transactions')}>
+              Lihat semua
+              <ArrowRight size={14} />
+            </button>
+          </div>
+          <TransactionList store={store} transactions={recent} onSelect={detail} compact />
         </section>
       </div>
     </div>

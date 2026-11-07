@@ -6,3 +6,8 @@ package-lock.json
 test-results/
 playwright-report/
 *.tsbuildinfo
+.next/
+public/sw.js
+public/design/
+design/references/
+next-env.d.ts

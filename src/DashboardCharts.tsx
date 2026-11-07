@@ -1,104 +1,221 @@
-import { useId } from 'react';
-import type { Transaction } from './domain';
-import { money, compact, displayDate } from './domain';
+import { memo, useMemo } from 'react';
+import type { Store, Transaction } from './domain';
+import { money, compact, displayDate, balanceHistory } from './domain';
 import { cashflowBuckets } from './analytics';
-import { MoneyAmount } from './MoneyAmount';
 
-export function NetCashflowChart({
+type Point = [number, number];
+const left = 23,
+  right = 307,
+  top = 4,
+  bottom = 166;
+const curve = (points: Point[]) =>
+  points
+    .map((p, i) =>
+      i
+        ? `C ${points[i - 1][0] + (p[0] - points[i - 1][0]) / 3},${points[i - 1][1]} ${p[0] - (p[0] - points[i - 1][0]) / 3},${p[1]} ${p[0]},${p[1]}`
+        : `M ${p[0]},${p[1]}`,
+    )
+    .join(' ');
+function Grid({ max, min = 0, dates }: { max: number; min?: number; dates: string[] }) {
+  return (
+    <g>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <g key={i}>
+          <line
+            x1={left}
+            x2={right}
+            y1={top + (i * (bottom - top)) / 4}
+            y2={top + (i * (bottom - top)) / 4}
+            stroke="var(--line)"
+            strokeDasharray="1 2"
+            strokeWidth=".5"
+          />
+          <text
+            x={left - 4}
+            y={top + 3 + (i * (bottom - top)) / 4}
+            textAnchor="end"
+            fontSize="9"
+            fill="var(--muted)"
+          >
+            {compact(max - (i * (max - min)) / 4)}
+          </text>
+        </g>
+      ))}
+      {dates.map((date, i) => {
+        const x = left + (i / (dates.length - 1)) * (right - left);
+        return (
+          <g key={i}>
+            <line
+              x1={x}
+              x2={x}
+              y1={top}
+              y2={bottom}
+              stroke="var(--line)"
+              strokeDasharray="1 2"
+              strokeWidth=".5"
+            />
+            <text
+              x={x}
+              y="183"
+              textAnchor={i === 0 ? 'start' : i === dates.length - 1 ? 'end' : 'middle'}
+              fontSize="9"
+              fill="var(--muted)"
+            >
+              {displayDate(date, { day: 'numeric', month: 'short' })}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+function Dots({ points, color }: { points: Point[]; color: string }) {
+  return (
+    <g>
+      {points.map((p, i) => (
+        <g key={i}>
+          <circle cx={p[0]} cy={p[1]} r="5" fill={color} opacity=".25" />
+          <circle cx={p[0]} cy={p[1]} r="2" fill={color} />
+        </g>
+      ))}
+    </g>
+  );
+}
+export const BalanceChart = memo(function BalanceChart({
+  store,
+  days,
+}: {
+  store: Store;
+  days: number;
+}) {
+  const history = useMemo(() => balanceHistory(store, days), [store, days]);
+  const samples = Array.from(
+    { length: 6 },
+    (_, i) => history[Math.round((i * (history.length - 1)) / 5)],
+  );
+  const max = Math.max(...history.map((p) => p.value), 100000) * 1.1;
+  const points: Point[] = samples.map((p, i) => [
+    left + (i * (right - left)) / 5,
+    bottom - (p.value / max) * (bottom - top),
+  ]);
+  return (
+    <div className="reference-chart">
+      <svg
+        viewBox="0 0 309 190"
+        role="img"
+        aria-label={`Grafik total saldo ${days} hari terakhir, saldo saat ini ${money(history.at(-1)!.value)}`}
+      >
+        <Grid max={max} dates={samples.map((p) => p.date)} />
+        <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="#3ED0C2" strokeWidth="1" />
+        <path d={curve(points)} fill="none" stroke="#3ED0C2" strokeWidth="1" />
+        <Dots points={points} color="#3ED0C2" />
+        {points.map((p, i) => (
+          <circle key={i} cx={p[0]} cy={p[1]} r="12" fill="transparent">
+            <title>
+              {displayDate(samples[i].date)}: {money(samples[i].value)}
+            </title>
+          </circle>
+        ))}
+      </svg>
+    </div>
+  );
+});
+export const CashflowChart = memo(function CashflowChart({
   transactions,
   days,
 }: {
   transactions: Transaction[];
   days: number;
 }) {
-  const gradient = useId().replaceAll(':', '');
-  const points = cashflowBuckets(transactions, days);
-  const values = [0, ...points.map((p) => p.cumulative)];
-  const high = Math.max(...values, 100000);
-  const low = Math.min(...values, 0);
-  const padding = (high - low) * 0.13;
-  const max = high + padding,
-    min = low - padding;
-  const y = (value: number) => 180 - ((value - min) / (max - min)) * 155;
-  const coords = [
-    [48, y(0)],
-    ...points.map((p, i) => [48 + ((i + 1) / points.length) * 642, y(p.cumulative)]),
-  ];
-  const path = coords
-    .map((p, i) =>
-      i
-        ? `C ${coords[i - 1][0] + (p[0] - coords[i - 1][0]) / 3},${coords[i - 1][1]} ${p[0] - (p[0] - coords[i - 1][0]) / 3},${p[1]} ${p[0]},${p[1]}`
-        : `M ${p[0]},${p[1]}`,
-    )
-    .join(' ');
+  const buckets = useMemo(() => cashflowBuckets(transactions, days), [transactions, days]);
+  const max = Math.max(...buckets.flatMap((b) => [b.income, b.expense]), 100000) * 1.15;
+  const width = (right - left) / buckets.length;
   return (
-    <div className="net-flow-chart">
-      <div className="chart-current">
-        <span>Selisih dalam periode</span>
-        <strong className={points.at(-1)!.cumulative >= 0 ? 'positive' : 'negative'}>
-          <MoneyAmount value={points.at(-1)!.cumulative} />
-        </strong>
-      </div>
+    <div className="reference-chart">
       <svg
-        viewBox="0 0 720 220"
+        viewBox="0 0 309 190"
         role="img"
-        aria-label={`Grafik arus dana bersih ${days} hari, selisih ${money(points.at(-1)!.cumulative)}`}
+        aria-label={`Grafik pemasukan hijau dan pengeluaran merah ${days} hari terakhir`}
       >
-        <defs>
-          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3ed0c2" stopOpacity=".13" />
-            <stop offset="100%" stopColor="#3ed0c2" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[0, 1, 2, 3].map((i) => (
-          <g key={i}>
-            <line
-              x1="48"
-              x2="690"
-              y1={25 + (i * 155) / 3}
-              y2={25 + (i * 155) / 3}
-              stroke="var(--line)"
-              strokeDasharray="3 5"
-            />
-            <text x="0" y={29 + (i * 155) / 3} fontSize="10" fill="var(--muted)">
-              {compact(max - (i * (max - min)) / 3)}
-            </text>
+        <Grid max={max} dates={buckets.map((b) => b.end)} />
+        {buckets.map((b, i) => (
+          <g key={b.end}>
+            {[
+              ['income', '#7CCB8C'],
+              ['expense', '#F37777'],
+            ].map(([key, color], j) => {
+              const value = b[key as 'income' | 'expense'];
+              const height = (value / max) * (bottom - top);
+              return (
+                <rect
+                  key={key}
+                  x={left + i * width + width / 2 + (j === 0 ? -13 : 1)}
+                  y={bottom - height}
+                  width="12"
+                  height={height}
+                  rx="6"
+                  fill={color}
+                >
+                  <title>
+                    {key === 'income' ? 'Pemasukan' : 'Pengeluaran'} {displayDate(b.end)}:{' '}
+                    {money(value)}
+                  </title>
+                </rect>
+              );
+            })}
           </g>
         ))}
-        <line
-          x1="48"
-          x2="690"
-          y1={y(0)}
-          y2={y(0)}
-          stroke="var(--muted)"
-          strokeOpacity=".3"
-          strokeDasharray="4 5"
-        />
-        <path d={`${path} L 690,180 L 48,180 Z`} fill={`url(#${gradient})`} />
-        <path d={path} stroke="#3ed0c2" strokeWidth="2.5" fill="none" />
-        {coords.slice(1).map((p, i) => (
-          <g key={i}>
-            <circle cx={p[0]} cy={p[1]} r="6" fill="#3ed0c2" opacity=".2" />
-            <circle cx={p[0]} cy={p[1]} r="2.5" fill="#3ed0c2" />
-            <text
-              x={p[0]}
-              y="210"
-              textAnchor={i === points.length - 1 ? 'end' : 'middle'}
-              fontSize="10"
-              fill="var(--muted)"
-            >
-              {displayDate(points[i].end, { day: 'numeric', month: 'short' })}
-            </text>
-            <title>
-              {displayDate(points[i].end)}: {money(points[i].cumulative)}
-            </title>
-          </g>
-        ))}
+        <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="#3ED0C2" strokeWidth="1" />
       </svg>
-      <p className="chart-note">
-        Akumulasi pemasukan dikurangi pengeluaran dan biaya admin. Transfer antar akun tidak
-        menambah selisih.
-      </p>
     </div>
   );
-}
+});
+export const NetCashflowChart = memo(function NetCashflowChart({
+  transactions,
+  days,
+}: {
+  transactions: Transaction[];
+  days: number;
+}) {
+  const buckets = useMemo(() => cashflowBuckets(transactions, days), [transactions, days]);
+  const max = Math.max(...buckets.flatMap((b) => [b.income, b.expense]), 100000) * 1.15;
+  const zero = (top + bottom) / 2;
+  const incoming: Point[] = buckets.map((b, i) => [
+    left + (i * (right - left)) / (buckets.length - 1),
+    zero - ((b.income / max) * (bottom - top)) / 2,
+  ]);
+  const outgoing: Point[] = buckets.map((b, i) => [
+    left + (i * (right - left)) / (buckets.length - 1),
+    zero + ((b.expense / max) * (bottom - top)) / 2,
+  ]);
+  return (
+    <div className="reference-chart">
+      <svg
+        viewBox="0 0 309 190"
+        role="img"
+        aria-label={`Grafik arus dana ${days} hari: pemasukan di atas nol, pengeluaran di bawah nol`}
+      >
+        <Grid max={max} min={-max} dates={buckets.map((b) => b.end)} />
+        <line x1={left} x2={right} y1={zero} y2={zero} stroke="#3ED0C2" strokeWidth="1" />
+        <path d={curve(incoming)} fill="none" stroke="#3ED0C2" strokeWidth="1" />
+        <Dots points={incoming} color="#3ED0C2" />
+        <path d={curve(outgoing)} fill="none" stroke="#F37777" strokeWidth="1" />
+        <Dots points={outgoing} color="#F37777" />
+        {buckets.map((b, i) => (
+          <rect
+            key={b.end}
+            x={left + (i * (right - left)) / (buckets.length - 1) - 12}
+            y={top}
+            width="24"
+            height={bottom - top}
+            fill="transparent"
+          >
+            <title>
+              {displayDate(b.end)}: pemasukan {money(b.income)}, pengeluaran {money(b.expense)}
+            </title>
+          </rect>
+        ))}
+      </svg>
+    </div>
+  );
+});

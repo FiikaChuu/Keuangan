@@ -1,19 +1,21 @@
-import { useState } from 'react';
+import { MoneyAmount } from './MoneyAmount';
+import { useEffect, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import {
-  Search,
   X,
   SlidersHorizontal,
   Download,
-  UploadCloud,
   ArrowUpRight,
   CalendarDays,
+  FileChartColumn,
   RotateCcw,
   ChevronDown,
   Check,
 } from 'lucide-react';
+import { DesignIcon } from './design';
+import { AnimatedReveal } from './motion';
 import type { Store, Transaction } from './domain';
-import { MoneyAmount } from './MoneyAmount';
-import { today, totals, csv, balances } from './domain';
+import { today, totals, csv, balances, normalizeCategory } from './domain';
 import { CategoryPicker, TransactionList, downloadFile, Modal, AccountPicker } from './ui';
 
 const sortOptions = [
@@ -24,20 +26,22 @@ const sortOptions = [
 
 export default function TransactionsPage({
   store,
+  onCreate,
   search,
   setSearch,
   detail,
-  onUpload,
   onEdit,
   onDelete,
+  onReport,
 }: {
   store: Store;
+  onCreate: () => void;
   search: string;
   setSearch: (s: string) => void;
   detail: (t: Transaction) => void;
-  onUpload: () => void;
   onEdit: (t: Transaction) => void;
   onDelete: (t: Transaction) => void;
+  onReport: () => void;
 }) {
   const [kind, setKind] = useState('all');
   const [month, setMonth] = useState('');
@@ -48,6 +52,11 @@ export default function TransactionsPage({
   const [advanced, setAdvanced] = useState(false);
   const [sort, setSort] = useState<(typeof sortOptions)[number]['value']>('newest');
   const [sortOpen, setSortOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(50);
+  useEffect(
+    () => setVisibleCount(50),
+    [search, kind, month, account, category, minimum, maximum, sort],
+  );
   const isAccountSearch = store.accounts.some((a) => a.id === search);
   const validAmount = (s: string) =>
     s === '' || (Number.isSafeInteger(Number(s)) && Number(s) >= 0 && Number(s) <= 1e12);
@@ -70,10 +79,10 @@ export default function TransactionsPage({
       const to = store.accounts.find((a) => a.id === t.toId);
       return (
         !error &&
-        (kind === 'all' || t.kind === kind) &&
+        (kind === 'all' || t.kind === kind || (kind === 'expense' && t.kind === 'transfer')) &&
         (!month || t.date.startsWith(month)) &&
         (!account || t.accountId === account || t.toId === account) &&
-        (!category || t.category === category) &&
+        (!category || normalizeCategory(t.category) === category) &&
         (minimum === '' || t.amount >= Number(minimum)) &&
         (maximum === '' || t.amount <= Number(maximum)) &&
         (isAccountSearch
@@ -102,10 +111,30 @@ export default function TransactionsPage({
   }
   return (
     <>
+      <div className="page-heading transactions-heading">
+        <div>
+          <h1>
+            Transaksi
+            {store.demo && (
+              <span className="ledger-demo" aria-hidden="true">
+                Demo
+              </span>
+            )}
+          </h1>
+          <p>Riwayat pemasukan dan pengeluaran.</p>
+        </div>
+        <button
+          className="btn primary create-transaction"
+          aria-label="Catat transaksi"
+          onClick={onCreate}
+        >
+          <DesignIcon name="plus" />
+        </button>
+      </div>
       <section className="ledger-panel" aria-label="Riwayat transaksi">
         <div className="ledger-tools">
           <div className="search-field">
-            <Search size={21} />
+            <DesignIcon name="search" />
             <input
               id="transaction-search"
               aria-label="Cari nama, kategori, atau sumber transaksi"
@@ -126,11 +155,15 @@ export default function TransactionsPage({
             aria-controls="advanced-filters"
             onClick={() => setAdvanced(!advanced)}
           >
-            <SlidersHorizontal size={22} />
+            <DesignIcon name="filter" />
             {filterCount > 0 && <span>{filterCount}</span>}
           </button>
+          <button className="btn secondary ledger-report" onClick={onReport}>
+            <FileChartColumn size={18} />
+            Laporan
+          </button>
         </div>
-        {advanced && (
+        <AnimatedReveal open={advanced}>
           <section id="advanced-filters" className="advanced-filters">
             <div className="advanced-heading">
               <h2>
@@ -141,6 +174,22 @@ export default function TransactionsPage({
                 <RotateCcw size={13} />
                 Reset
               </button>
+            </div>
+            <div className="filter-tabs" aria-label="Jenis transaksi">
+              {[
+                ['all', 'Semua'],
+                ['expense', 'Pengeluaran'],
+                ['income', 'Pemasukan'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  aria-pressed={kind === value}
+                  className={kind === value ? 'active' : ''}
+                  onClick={() => setKind(value)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             <div className="advanced-grid">
               <div className="filter-field">
@@ -216,25 +265,25 @@ export default function TransactionsPage({
                 {error}
               </p>
             )}
+            <div className="ledger-context">
+              <span>
+                <strong>{filtered.length}</strong> transaksi
+                {filterCount || search || kind !== 'all' ? ' ditemukan' : ' tercatat'}
+              </span>
+              <button
+                type="button"
+                className="ledger-sort"
+                aria-label="Urutan transaksi"
+                aria-haspopup="dialog"
+                aria-expanded={sortOpen}
+                onClick={() => setSortOpen(true)}
+              >
+                <span>{sortOptions.find((option) => option.value === sort)!.label}</span>
+                <ChevronDown size={16} />
+              </button>
+            </div>
           </section>
-        )}
-        <div className="filter-tabs" aria-label="Jenis transaksi">
-          {[
-            ['all', 'Semua'],
-            ['expense', 'Pengeluaran'],
-            ['income', 'Pemasukan'],
-            ['transfer', 'Transfer'],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              aria-pressed={kind === value}
-              className={kind === value ? 'active' : ''}
-              onClick={() => setKind(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        </AnimatedReveal>
         {filterCount > 0 && (
           <div className="active-filter-notice">
             <span>
@@ -267,36 +316,18 @@ export default function TransactionsPage({
             </strong>
           </div>
         </div>
-        <div className="ledger-context">
-          <span>
-            <strong>{filtered.length}</strong> transaksi
-            {filterCount || search || kind !== 'all' ? ' ditemukan' : ' tercatat'}
-          </span>
-          <button
-            type="button"
-            className="ledger-sort"
-            aria-label="Urutan transaksi"
-            aria-haspopup="dialog"
-            aria-expanded={sortOpen}
-            onClick={() => setSortOpen(true)}
-          >
-            <span>{sortOptions.find((option) => option.value === sort)!.label}</span>
-            <ChevronDown size={16} />
-          </button>
-        </div>
         <TransactionList
-          emptyAction={
-            <button className="btn primary full-width" onClick={onUpload}>
-              <UploadCloud size={19} />
-              Catat transaksi
-            </button>
-          }
           store={store}
-          transactions={filtered}
+          transactions={filtered.slice(0, visibleCount)}
           onSelect={detail}
           onEdit={onEdit}
           onDelete={onDelete}
         />
+        {filtered.length > visibleCount && (
+          <button className="btn secondary" onClick={() => setVisibleCount((count) => count + 50)}>
+            Tampilkan 50 berikutnya
+          </button>
+        )}
         <div className="ledger-footer">
           <p>
             <ArrowUpRight size={14} />
@@ -318,28 +349,30 @@ export default function TransactionsPage({
           </button>
         </div>
       </section>
-      {sortOpen && (
-        <Modal title="Urutkan transaksi" onClose={() => setSortOpen(false)}>
-          <div className="category-options" role="listbox" aria-label="Urutan transaksi">
-            {sortOptions.map((option) => (
-              <button
-                type="button"
-                role="option"
-                key={option.value}
-                aria-selected={sort === option.value}
-                className={sort === option.value ? 'selected' : ''}
-                onClick={() => {
-                  setSort(option.value);
-                  setSortOpen(false);
-                }}
-              >
-                <span>{option.label}</span>
-                {sort === option.value && <Check size={21} />}
-              </button>
-            ))}
-          </div>
-        </Modal>
-      )}
+      <AnimatePresence>
+        {sortOpen && (
+          <Modal title="Urutkan transaksi" onClose={() => setSortOpen(false)}>
+            <div className="category-options" role="listbox" aria-label="Urutan transaksi">
+              {sortOptions.map((option) => (
+                <button
+                  type="button"
+                  role="option"
+                  key={option.value}
+                  aria-selected={sort === option.value}
+                  className={sort === option.value ? 'selected' : ''}
+                  onClick={() => {
+                    setSort(option.value);
+                    setSortOpen(false);
+                  }}
+                >
+                  <span>{option.label}</span>
+                  {sort === option.value && <Check size={21} />}
+                </button>
+              ))}
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </>
   );
 }

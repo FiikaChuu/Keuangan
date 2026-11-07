@@ -1,4 +1,5 @@
 export type Account = {
+  version?: number;
   id: string;
   name: string;
   provider: string;
@@ -8,6 +9,8 @@ export type Account = {
   suffix: string;
 };
 export type Transaction = {
+  version?: number;
+  editable?: boolean;
   id: string;
   kind: 'income' | 'expense' | 'transfer';
   title: string;
@@ -23,8 +26,21 @@ export type Transaction = {
   receiptHash?: string;
   reference?: string;
 };
-export type Goal = { id: string; name: string; target: number; accountId: string; emoji: string };
-export type Plan = { reserve: number; saving: number; fun: number; together: number };
+export type Goal = {
+  id: string;
+  name: string;
+  target: number;
+  accountId: string;
+  emoji: string;
+  version?: number;
+};
+export type Plan = {
+  reserve: number;
+  saving: number;
+  fun: number;
+  together: number;
+  version?: number;
+};
 export type Store = {
   version: 1;
   demo: boolean;
@@ -36,6 +52,8 @@ export type Store = {
 // Preserve the original storage key so SkyWallet keeps existing financial records.
 export const STORAGE_KEY = 'skysave.v1';
 export const categories = [
+  'Makan',
+  'Tagihan',
   'Makanan & minuman',
   'Belanja',
   'Transportasi',
@@ -49,7 +67,30 @@ export const categories = [
   'Tarik tunai',
   'Lainnya',
 ];
+// Transfer is an expense-entry choice, but its principal is never spending.
+export const expenseEntryCategories = [
+  'Makan',
+  'Belanja',
+  'Pendidikan',
+  'Transportasi',
+  'Tagihan',
+  'Transfer',
+  'Lainnya',
+];
+export function normalizeCategory(category: string) {
+  if (category === 'Makanan & minuman') return 'Makan';
+  if (['Kuota & internet', 'Rumah & tagihan', 'Langganan'].includes(category)) return 'Tagihan';
+  return expenseEntryCategories.includes(category) || category === 'Pemasukan'
+    ? category
+    : 'Lainnya';
+}
+// Allows an old 100-character title to be preserved with an existing 2,000-character note.
+export const MAX_NOTE_LENGTH = 2200;
 export const categoryColors: Record<string, string> = {
+  Makan: '#F37777',
+  Tagihan: '#3ED0C2',
+  Pendidikan: '#1D2949',
+  Lainnya: '#F6AE31',
   'Makanan & minuman': '#f37777',
   Belanja: '#7ccb8c',
   Transportasi: '#f6ae31',
@@ -106,8 +147,10 @@ export function balances(store: Pick<Store, 'accounts' | 'transactions'>) {
     store.accounts.map((a) => [a.id, a.opening]),
   );
   for (const t of store.transactions) {
-    result[t.accountId] += t.kind === 'income' ? t.amount : -(t.amount + t.fee);
-    if (t.kind === 'transfer' && t.toId) result[t.toId] += t.amount;
+    if (Object.hasOwn(result, t.accountId))
+      result[t.accountId] += t.kind === 'income' ? t.amount : -(t.amount + t.fee);
+    if (t.kind === 'transfer' && t.toId && Object.hasOwn(result, t.toId))
+      result[t.toId] += t.amount;
   }
   return result;
 }
@@ -126,14 +169,15 @@ export function allocations(store: Store) {
   const b = balances(store);
   const personal = store.accounts.filter((a) => !a.shared).reduce((s, a) => s + b[a.id], 0);
   const available = Math.max(0, personal - store.plan.reserve);
-  const saving = Math.floor((available * store.plan.saving) / 100);
-  const fun = Math.floor((available * store.plan.fun) / 100);
+  const saving = Number((BigInt(available) * BigInt(store.plan.saving)) / 100n);
+  const fun = Number((BigInt(available) * BigInt(store.plan.fun)) / 100n);
   return {
     personal,
     available,
     saving,
     fun,
-    together: Math.floor((available * store.plan.together) / 100),
+    // Assign the integer remainder once so rounding never loses a rupiah.
+    together: available - saving - fun,
     shortfall: Math.max(0, store.plan.reserve - personal),
   };
 }
@@ -189,6 +233,8 @@ export function replaceTransaction(
   transaction: Transaction,
   editingId?: string,
 ): { data?: Store; error: string } {
+  if (!editingId && store.transactions.some((t) => t.id === transaction.id))
+    return { error: 'Transaksi ini sudah tersimpan. Tutup formulir dan periksa riwayat.' };
   if (editingId && !store.transactions.some((t) => t.id === editingId))
     return { error: 'Transaksi yang ingin diubah sudah tidak tersedia.' };
   const withoutOriginal = {
@@ -270,7 +316,7 @@ export function isStore(data: unknown): data is Store {
       !ids.has(t.accountId) ||
       !str(t.category) ||
       !str(t.source) ||
-      !str(t.note, 2000)
+      !str(t.note, MAX_NOTE_LENGTH)
     )
       return false;
     if (t.kind === 'income' && (t.fee !== 0 || !t.source.trim())) return false;
@@ -423,12 +469,18 @@ export function demoStore(): Store {
 export function balanceHistory(store: Store, count: number) {
   const b = balances(store);
   let value = Object.values(b).reduce((s, n) => s + n, 0);
+  const deltas = new Map<string, number>();
+  for (const t of store.transactions) {
+    let delta = 0;
+    if (Object.hasOwn(b, t.accountId)) delta += t.kind === 'income' ? t.amount : -t.amount - t.fee;
+    if (t.kind === 'transfer' && t.toId && Object.hasOwn(b, t.toId)) delta += t.amount;
+    deltas.set(t.date, (deltas.get(t.date) ?? 0) + delta);
+  }
   const points: { date: string; value: number }[] = [];
   for (let i = 0; i < count; i++) {
     const date = daysAgo(i);
     points.unshift({ date, value });
-    for (const t of store.transactions.filter((t) => t.date === date))
-      value -= (t.kind === 'income' ? t.amount : t.kind === 'expense' ? -t.amount : 0) - t.fee;
+    value -= deltas.get(date) ?? 0;
   }
   return points;
 }

@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import type { ReactNode, FormEvent } from 'react';
 import {
   ArrowLeftRight,
-  UploadCloud,
   Sparkles,
   Heart,
   Plus,
   ArrowUpRight,
   ChevronRight,
-  Bell,
+  ShieldCheck,
   ArrowRight,
+  Leaf,
   Download,
   X,
   Check,
@@ -24,6 +25,7 @@ import {
   RefreshCw,
   Trash2,
   LoaderCircle,
+  HardDrive,
 } from 'lucide-react';
 import type { Store, Transaction, Account, Goal, Plan } from './domain';
 import {
@@ -47,12 +49,16 @@ import type { Page } from './AppNavigation';
 import { MoneyAmount } from './MoneyAmount';
 import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
 import type { InsightPreferences } from './preferences';
-import { clearReceipts, deleteReceipt, readReceipt, saveReceipt } from './receipts';
+import { DesignIcon, DeviceStatus } from './design';
+import type { RemoteFinance } from './use-finance';
+import type { ScanResult } from './scan-contract';
+import { defaultsFromScan } from './share';
+import { readBackup } from './backup';
 
 type Dialog =
   | {
       type: 'transaction';
-      mode?: 'manual' | 'receipt';
+      amountIncludesFee?: boolean;
       defaults?: Partial<Transaction>;
       editingId?: string;
     }
@@ -60,6 +66,7 @@ type Dialog =
   | { type: 'goal' }
   | { type: 'detail'; tx: Transaction }
   | { type: 'confirm'; title: string; text: string; action: () => void }
+  | { type: 'notifications' }
   | null;
 function loadStore(): { data: Store; error: string } {
   try {
@@ -84,24 +91,48 @@ function download(content: BlobPart, type: string, name: string) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-export default function App() {
-  const [initial] = useState(loadStore);
-  const [store, setStore] = useState(initial.data);
+export default function App({
+  remote,
+  incomingScan,
+  onScanUsed,
+}: {
+  remote?: RemoteFinance;
+  incomingScan?: { result: ScanResult; hash: string };
+  onScanUsed?: () => void;
+}) {
+  const [initial] = useState(() => (remote ? { data: emptyStore(), error: '' } : loadStore()));
+  const [localStore, setStore] = useState(initial.data);
+  const store = remote?.store ?? localStore;
   const [recoveryError, setRecoveryError] = useState(initial.error);
-  const [page, setCurrentPage] = useState<Page>(pageFromLocation);
+  const [page, setPageState] = useState<Page>(pageFromLocation);
   function setPage(next: Page) {
-    if (next !== page) history.pushState(null, '', pagePaths[next]);
-    setCurrentPage(next);
+    history.pushState(null, '', pagePaths[next]);
+    setPageState(next);
   }
   useEffect(() => {
-    const back = () => {
-      setCurrentPage(pageFromLocation());
-      setDialog(null);
+    const sync = () => setPageState(pageFromLocation());
+    window.addEventListener('popstate', sync);
+    window.addEventListener('hashchange', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('hashchange', sync);
     };
-    window.addEventListener('popstate', back);
-    return () => window.removeEventListener('popstate', back);
   }, []);
-  const [dialog, setDialog] = useState<Dialog>(null);
+  const [dialog, setDialogState] = useState<(Exclude<Dialog, null> & { key: string }) | null>(null);
+  function setDialog(next: Dialog) {
+    // A new session must not reuse form state while the previous sheet is still exiting.
+    setDialogState(next ? { ...next, key: crypto.randomUUID() } : null);
+  }
+  useEffect(() => {
+    if (incomingScan) {
+      setDialog({
+        type: 'transaction',
+        amountIncludesFee: true,
+        defaults: defaultsFromScan(incomingScan.result, incomingScan.hash, store.accounts),
+      });
+      onScanUsed?.();
+    }
+  }, [incomingScan]);
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
   const [preferences, setPreferences] = useState(readInsightPreferences);
@@ -123,7 +154,17 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [page]);
-  function save(next: Store, allowRecovery = false) {
+  async function save(next: Store, allowRecovery = false) {
+    if (remote) {
+      try {
+        await remote.save(store, next);
+        notify('Perubahan tersimpan dan tersinkron.');
+        return true;
+      } catch (error) {
+        notify(error instanceof Error ? error.message : 'Penyimpanan belum berhasil.');
+        return false;
+      }
+    }
     if (recoveryError && !allowRecovery) {
       notify('Pulihkan atau mulai ulang data melalui Pengaturan terlebih dahulu.');
       return false;
@@ -150,14 +191,9 @@ export default function App() {
       title: store.demo ? 'Mulai cerita uangmu?' : 'Hapus data dan mulai ulang?',
       text: store.demo
         ? 'Data contoh akan diganti dengan ruang kosong untuk rekening dan transaksi milikmu. Tidak ada rekening bank yang dihubungkan.'
-        : 'Semua catatan, rencana, tujuan, dan bukti tersimpan akan dihapus dari SkyWallet pada browser ini. Unduh cadangan lengkap terlebih dahulu. Tindakan ini tidak bisa dibatalkan.',
-      action: () => {
-        if (save(emptyStore(), true)) {
-          void clearReceipts().catch(() =>
-            notify(
-              'Catatan sudah direset, tetapi bukti lama belum berhasil dihapus dari perangkat.',
-            ),
-          );
+        : 'Catatan yang dapat kamu ubah akan dihapus dan perubahan disinkronkan ke perangkat lain. Unduh cadangan lengkap terlebih dahulu. Tindakan ini tidak bisa dibatalkan.',
+      action: async () => {
+        if (await save(emptyStore(), true)) {
           setPage('accounts');
           setDialog({ type: 'account' });
         }
@@ -174,7 +210,7 @@ export default function App() {
     }
     setDialog({
       type: 'transaction',
-      defaults: { kind: 'transfer', toId, accountId: source.id, amount, title: 'Untuk masa depan' },
+      defaults: { kind: 'transfer', toId, accountId: source.id, amount },
     });
   }
   async function removeTransaction(t: Transaction) {
@@ -186,14 +222,8 @@ export default function App() {
       );
       return;
     }
-    if (save(next)) {
+    if (await save(next)) {
       close();
-      if (t.receiptId)
-        try {
-          await deleteReceipt(t.receiptId);
-        } catch {
-          notify('Transaksi terhapus, tetapi lampiran belum terhapus dari perangkat.');
-        }
     }
   }
   function askDelete(t: Transaction) {
@@ -222,8 +252,9 @@ export default function App() {
                 type: 'confirm',
                 title: 'Hapus tujuan ini?',
                 text: 'Saldo rekening dan riwayat transaksi tetap tersimpan. Hanya target tabungan ini yang dihapus.',
-                action: () => {
-                  if (save({ ...store, goals: store.goals.filter((x) => x.id !== g.id) })) close();
+                action: async () => {
+                  if (await save({ ...store, goals: store.goals.filter((x) => x.id !== g.id) }))
+                    close();
                 },
               })
             }
@@ -299,10 +330,11 @@ export default function App() {
     </button>
   );
   return (
-    <div className="app-shell" data-page={page}>
+    <div className="app-shell" data-demo={store.demo} data-page={page}>
       <div className="main-shell">
+        <DeviceStatus />
         <main>
-          {store.demo && page !== 'overview' && (
+          {store.demo && (
             <div className="demo-banner">
               <span>
                 <span className="demo-dot" />
@@ -333,8 +365,10 @@ export default function App() {
             <Overview
               store={store}
               total={total}
-              onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
               go={setPage}
+              detail={(t) => setDialog({ type: 'detail', tx: t })}
+              accountCard={accountCard}
+              onAccount={() => setDialog({ type: 'account' })}
               onReport={() => setPage('reports')}
               onStartOwn={startOwn}
               preferences={preferences}
@@ -350,51 +384,29 @@ export default function App() {
             />
           )}
           {(page === 'transactions' || page === 'reports') && (
-            <section className="activity-page">
-              <PageHeading
-                eyebrow=""
-                title="Transaksi"
-                description="Riwayat dan laporan keuanganmu."
-                action={
-                  <button
-                    className="icon-btn upload-action"
-                    aria-label="Unggah bukti"
-                    onClick={() => setDialog({ type: 'transaction', mode: 'receipt' })}
-                  >
-                    <UploadCloud size={22} />
-                  </button>
-                }
-              />
-              <div className="activity-tabs" role="group" aria-label="Tampilan transaksi">
-                <button
-                  aria-pressed={page === 'transactions'}
-                  onClick={() => setPage('transactions')}
-                >
-                  Riwayat
-                </button>
-                <button aria-pressed={page === 'reports'} onClick={() => setPage('reports')}>
-                  Laporan
-                </button>
-              </div>
-              {page === 'transactions' ? (
-                <TransactionsPage
-                  store={store}
-                  search={search}
-                  setSearch={setSearch}
-                  detail={(t) => setDialog({ type: 'detail', tx: t })}
-                  onUpload={() => setDialog({ type: 'transaction', mode: 'receipt' })}
-                  onEdit={(tx) =>
-                    setDialog({ type: 'transaction', defaults: tx, editingId: tx.id })
-                  }
-                  onDelete={askDelete}
-                />
-              ) : (
-                <section className="reports-page">
-                  <h2 className="report-title">Laporan</h2>
-                  <Reports store={store} />
-                </section>
-              )}
-            </section>
+            <div className="activity-tabs" role="group" aria-label="Tampilan transaksi">
+              <button
+                aria-pressed={page === 'transactions'}
+                onClick={() => setPage('transactions')}
+              >
+                Riwayat
+              </button>
+              <button aria-pressed={page === 'reports'} onClick={() => setPage('reports')}>
+                Laporan
+              </button>
+            </div>
+          )}
+          {page === 'transactions' && (
+            <TransactionsPage
+              onCreate={() => setDialog({ type: 'transaction' })}
+              store={store}
+              search={search}
+              setSearch={setSearch}
+              detail={(t) => setDialog({ type: 'detail', tx: t })}
+              onEdit={(tx) => setDialog({ type: 'transaction', defaults: tx, editingId: tx.id })}
+              onDelete={askDelete}
+              onReport={() => setPage('reports')}
+            />
           )}
           {page === 'plan' && (
             <Planning
@@ -410,7 +422,7 @@ export default function App() {
               <PageHeading
                 eyebrow="BETTER, TOGETHER"
                 title="Ruang bersama"
-                description="Dana bersama, terpisah dari dana pribadi."
+                description="Saldo dan tujuan akun bersama."
                 action={
                   <button
                     className="btn primary"
@@ -425,11 +437,9 @@ export default function App() {
                 <div className="together-total">
                   <small>Total dana bersama</small>
                   <strong>
-                    <MoneyAmount
-                      value={store.accounts
-                        .filter((a) => a.shared)
-                        .reduce((sum, a) => sum + b[a.id], 0)}
-                    />
+                    {money(
+                      store.accounts.filter((a) => a.shared).reduce((sum, a) => sum + b[a.id], 0),
+                    )}
                   </strong>
                 </div>
               </div>
@@ -507,6 +517,16 @@ export default function App() {
               </section>
             </>
           )}
+          {page === 'reports' && (
+            <section className="reports-page">
+              <PageHeading
+                eyebrow=""
+                title="Laporan"
+                description="Ringkasan keuangan yang bisa kamu simpan."
+              />
+              <Reports store={store} />
+            </section>
+          )}
           {page === 'settings' && (
             <section className="settings-page">
               <PageHeading
@@ -515,6 +535,7 @@ export default function App() {
                 description="Tampilan dan preferensi aplikasi."
               />
               <SettingsPanel
+                remote={remote}
                 store={store}
                 save={(s) => save(s, true)}
                 startOwn={startOwn}
@@ -525,95 +546,171 @@ export default function App() {
               />
             </section>
           )}
+          <footer className="page-footer">
+            <span>
+              <Logo small />
+              Made for a little more peace of mind.
+            </span>
+            <span>
+              <ShieldCheck size={12} />
+              {remote
+                ? 'Data akun · Cadangkan secara berkala'
+                : 'Data demo · Cadangkan secara berkala'}
+            </span>
+          </footer>
         </main>
       </div>
       <AppNavigation
         page={page}
-        go={(next) => {
-          setPage(next);
-          setSearch('');
-        }}
-        onCapture={() => setDialog({ type: 'transaction', mode: 'receipt' })}
+        go={setPage}
+        onCapture={() => setDialog({ type: 'transaction' })}
       />
       {toast && (
         <div className="toast" role="status">
-          <Check size={17} />
-          <span>{toast}</span>
-          <button aria-label="Tutup pesan" onClick={() => setToast('')}>
-            <X size={15} />
-          </button>
+          {toast}
         </div>
       )}
-      {dialog?.type === 'transaction' && (
-        <Modal title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'} wide onClose={close}>
-          <TransactionForm
-            key={dialog.editingId ?? 'new'}
-            editingId={dialog.editingId}
-            store={store}
-            save={save}
-            close={close}
-            mode={dialog.mode}
-            defaults={dialog.defaults}
-            onAccount={() => setDialog({ type: 'account' })}
-          />
-        </Modal>
-      )}
-      {dialog?.type === 'account' && (
-        <Modal
-          title={dialog.shared ? 'Tambah akun bersama' : 'Tambah dompet'}
-          subtitle="Tambahkan catatan rekening, bukan koneksi bank."
-          onClose={close}
-        >
-          <AccountForm store={store} save={save} close={close} shared={dialog.shared} />
-        </Modal>
-      )}
-      {dialog?.type === 'goal' && (
-        <Modal
-          title="Tujuan tabungan"
-          subtitle="Beri nama, tentukan target, dan mulai perlahan."
-          onClose={close}
-        >
-          <GoalForm store={store} save={save} close={close} />
-        </Modal>
-      )}
-      {dialog?.type === 'detail' && (
-        <Modal title={dialog.tx.title} onClose={close}>
-          <TransactionDetail
-            transaction={dialog.tx}
-            store={store}
-            onEdit={() =>
-              setDialog({ type: 'transaction', defaults: dialog.tx, editingId: dialog.tx.id })
-            }
-            onDelete={() => {
-              const t = dialog.tx;
-              setDialog({
-                type: 'confirm',
-                title: 'Hapus catatan transaksi?',
-                text: 'Transaksi dan bukti terkait akan dihapus dari SkyWallet. Saldo tercatat akan dihitung ulang. Tindakan ini tidak memengaruhi rekening bank.',
-                action: () => {
-                  void removeTransaction(t);
-                },
-              });
-            }}
-          />
-        </Modal>
-      )}
-      {dialog?.type === 'confirm' && (
-        <Modal title={dialog.title} onClose={close}>
-          <div className="confirmation">
-            <p>{dialog.text}</p>
-            <div>
-              <button className="btn secondary" onClick={close}>
-                Batal
-              </button>
-              <button className="btn primary" onClick={dialog.action}>
-                Ya, lanjutkan
-                <ArrowRight size={15} />
-              </button>
+      <AnimatePresence mode="wait">
+        {dialog?.type === 'transaction' && (
+          <Modal
+            key={dialog.key}
+            title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'}
+            wide
+            onClose={close}
+          >
+            <TransactionForm
+              key={dialog.editingId ?? 'new'}
+              editingId={dialog.editingId}
+              store={store}
+              save={save}
+              close={close}
+              amountIncludesFee={dialog.amountIncludesFee}
+              defaults={dialog.defaults}
+              onAccount={() => setDialog({ type: 'account' })}
+            />
+          </Modal>
+        )}
+        {dialog?.type === 'account' && (
+          <Modal
+            key={dialog.key}
+            title={dialog.shared ? 'Tambah akun bersama' : 'Tambah dompet'}
+            subtitle="Tambahkan catatan rekening, bukan koneksi bank."
+            onClose={close}
+          >
+            <AccountForm store={store} save={save} close={close} shared={dialog.shared} />
+          </Modal>
+        )}
+        {dialog?.type === 'goal' && (
+          <Modal
+            key={dialog.key}
+            title="Tujuan tabungan"
+            subtitle="Beri nama, tentukan target, dan mulai perlahan."
+            onClose={close}
+          >
+            <GoalForm store={store} save={save} close={close} />
+          </Modal>
+        )}
+        {dialog?.type === 'detail' && (
+          <Modal key={dialog.key} title={dialog.tx.title} onClose={close}>
+            <TransactionDetail
+              transaction={dialog.tx}
+              store={store}
+              onEdit={() =>
+                setDialog({ type: 'transaction', defaults: dialog.tx, editingId: dialog.tx.id })
+              }
+              onDelete={() => {
+                const t = dialog.tx;
+                setDialog({
+                  type: 'confirm',
+                  title: 'Hapus catatan transaksi?',
+                  text: 'Transaksi dan bukti terkait akan dihapus dari SkyWallet. Saldo tercatat akan dihitung ulang. Tindakan ini tidak memengaruhi rekening bank.',
+                  action: () => {
+                    void removeTransaction(t);
+                  },
+                });
+              }}
+            />
+          </Modal>
+        )}
+        {dialog?.type === 'confirm' && (
+          <Modal key={dialog.key} title={dialog.title} onClose={close}>
+            <div className="confirmation">
+              <p>{dialog.text}</p>
+              <div>
+                <button className="btn secondary" onClick={close}>
+                  Batal
+                </button>
+                <button className="btn primary" onClick={dialog.action}>
+                  Ya, lanjutkan
+                  <ArrowRight size={15} />
+                </button>
+              </div>
             </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        )}
+        {dialog?.type === 'notifications' && (
+          <Modal
+            key={dialog.key}
+            title="Ringkasan keuangan"
+            subtitle="Insight dari catatanmu, tanpa menebak penghasilan berikutnya."
+            onClose={close}
+          >
+            <div className="insight-list">
+              <div>
+                <span className="insight-icon">
+                  <Sparkles size={20} />
+                </span>
+                <section>
+                  <h3>
+                    {allocations(store).shortfall
+                      ? 'Dahulukan kebutuhan wajib'
+                      : 'Ada ruang untuk masa depan'}
+                  </h3>
+                  <p>
+                    {allocations(store).shortfall
+                      ? `Dana pribadi kurang ${money(allocations(store).shortfall)} dari cadangan kebutuhan yang kamu atur.`
+                      : `${money(allocations(store).available)} dana pribadi tersisa setelah cadangan kebutuhan wajib. Atur alokasinya di Rencana uang.`}
+                  </p>
+                </section>
+              </div>
+              <div>
+                <span className="insight-icon">
+                  <ShieldCheck size={20} />
+                </span>
+                <section>
+                  <h3>Uangmu tetap dalam kendalimu</h3>
+                  <p>
+                    Tidak ada koneksi ke bank. Periksa kecocokan saldo dengan rekening asli secara
+                    berkala dan catat biaya admin atau bunga yang belum masuk.
+                  </p>
+                </section>
+              </div>
+              <div>
+                <span className="insight-icon">
+                  <HardDrive size={20} />
+                </span>
+                <section>
+                  <h3>Jangan lupa cadangan</h3>
+                  <p>
+                    Data tersimpan pada browser ini. Unduh cadangan lewat Pengaturan sebelum
+                    berganti perangkat atau membersihkan browser.
+                  </p>
+                </section>
+              </div>
+            </div>
+            <button
+              className="btn primary full-width"
+              onClick={() => {
+                close();
+                setPage('plan');
+              }}
+            >
+              Lihat rencana uang
+              <ArrowRight size={16} />
+            </button>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -632,7 +729,7 @@ function PageHeading({
   return (
     <div className="page-heading">
       <div>
-        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+        <span className="eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -649,7 +746,7 @@ function Planning({
   onTransfer,
 }: {
   store: Store;
-  save: (s: Store) => boolean;
+  save: (s: Store) => Promise<boolean>;
   goals: ReactNode[];
   onGoal: () => void;
   onTransfer: (id: string, amount?: number) => void;
@@ -659,7 +756,13 @@ function Planning({
   const [error, setError] = useState('');
   const changed =
     JSON.stringify({ ...plan, reserve: Number(reserve) }) !== JSON.stringify(store.plan);
-  const preview = allocations({ ...store, plan: { ...plan, reserve: Number(reserve) || 0 } });
+  const preview = allocations({
+    ...store,
+    plan: {
+      ...plan,
+      reserve: Number.isSafeInteger(Number(reserve)) ? Math.max(0, Number(reserve)) : 0,
+    },
+  });
   function percent(key: 'saving' | 'fun' | 'together', value: number) {
     const rest = (['saving', 'fun', 'together'] as const).filter((k) => k !== key);
     const prior = plan[rest[0]] + plan[rest[1]];
@@ -673,7 +776,7 @@ function Planning({
       return;
     }
     setError('');
-    save({ ...store, plan: { ...plan, reserve: Number(reserve) } });
+    void save({ ...store, plan: { ...plan, reserve: Number(reserve) } });
   }
   const rows = [
     {
@@ -711,7 +814,7 @@ function Planning({
       <PageHeading
         eyebrow="MAKE ROOM FOR WHAT MATTERS"
         title="Rencana uang"
-        description="Bagi dana pribadi setelah kebutuhan wajib."
+        description="Rencana fleksibel dari uang yang sudah ada, bukan penghasilan yang belum pasti."
         action={
           <button className="btn secondary" onClick={onGoal}>
             <Target size={17} />
@@ -751,16 +854,8 @@ function Planning({
           </div>
           <div className="available-strip">
             <span>Dana pribadi yang bisa dialokasikan</span>
-            <strong>
-              <MoneyAmount value={preview.available} />
-            </strong>
+            <strong>{money(preview.available)}</strong>
           </div>
-          {preview.shortfall > 0 && (
-            <div className="form-error">
-              Dana belum cukup untuk cadangan wajib. Kekurangan {money(preview.shortfall)}.
-              Dahulukan kebutuhan ini sebelum belanja opsional.
-            </div>
-          )}
           {rows.map((row) => (
             <div className="allocation-row" key={row.key}>
               <div className="allocation-heading">
@@ -798,9 +893,7 @@ function Planning({
                       ? 'Batas rencana, bukan pengeluaran otomatis'
                       : 'Pilih dompet khusus sesuai tujuanmu'}
                 </span>
-                <strong>
-                  <MoneyAmount value={row.amount} />
-                </strong>
+                <strong>{money(row.amount)}</strong>
               </div>
               {row.account && row.amount > 0 && (
                 <button
@@ -836,45 +929,50 @@ function Planning({
             </button>
           </div>
         </form>
-        <details className="calculation-details">
-          <summary>Rincian perhitungan</summary>
-          <aside className="plan-explanation">
-            <div className="panel calculation-card">
-              <span className="soft-icon">
-                <TrendingUp size={23} />
-              </span>
-              <h2>Kenali ruang gerakmu.</h2>
-              <p>Uang bersama sudah dipisahkan, supaya rencana pribadi tetap realistis.</p>
-              <dl>
-                <div>
-                  <dt>Saldo pribadi</dt>
-                  <dd>
-                    <MoneyAmount value={preview.personal} />
-                  </dd>
-                </div>
-                <div>
-                  <dt>Cadangan wajib</dt>
-                  <dd>
-                    <MoneyAmount value={-(Number(reserve) || 0)} />
-                  </dd>
-                </div>
-                <div className="calc-total">
-                  <dt>Siap dialokasikan</dt>
-                  <dd>
-                    <MoneyAmount value={preview.available} />
-                  </dd>
-                </div>
-              </dl>
-              <div className="info-note">
-                <Info size={16} />
-                <span>
-                  Persentase dihitung dari dana yang tersisa setelah cadangan wajib. Ini rencana
-                  atas saldo saat ini, bukan proyeksi pemasukan bulanan.
-                </span>
+        <aside className="plan-explanation">
+          <div className="panel calculation-card">
+            <span className="soft-icon">
+              <TrendingUp size={23} />
+            </span>
+            <h2>Kenali ruang gerakmu.</h2>
+            <p>Uang bersama sudah dipisahkan, supaya rencana pribadi tetap realistis.</p>
+            <dl>
+              <div>
+                <dt>Saldo pribadi</dt>
+                <dd>{money(preview.personal)}</dd>
               </div>
+              <div>
+                <dt>Cadangan wajib</dt>
+                <dd>−{money(Number(reserve) || 0)}</dd>
+              </div>
+              <div className="calc-total">
+                <dt>Siap dialokasikan</dt>
+                <dd>{money(preview.available)}</dd>
+              </div>
+            </dl>
+            {preview.shortfall > 0 && (
+              <div className="form-error">
+                Dana belum cukup untuk cadangan wajib. Kekurangan {money(preview.shortfall)}.
+                Dahulukan kebutuhan ini sebelum belanja opsional.
+              </div>
+            )}
+            <div className="info-note">
+              <Info size={16} />
+              <span>
+                Persentase dihitung dari dana yang tersisa setelah cadangan wajib. Ini rencana atas
+                saldo saat ini, bukan proyeksi pemasukan bulanan.
+              </span>
             </div>
-          </aside>
-        </details>
+          </div>
+          <div className="gentle-card">
+            <Leaf size={25} strokeWidth={1.4} />
+            <h3>Kamu yang pegang kendali.</h3>
+            <p>
+              Saran penempatan memakai dompet milikmu, tanpa menjanjikan bunga atau hasil. Rencana
+              tidak mengunci atau memindahkan uang. Transfer nyata tetap kamu lakukan sendiri.
+            </p>
+          </div>
+        </aside>
       </div>
       <div className="section-title spaced">
         <h2>Tujuan tabungan</h2>
@@ -902,8 +1000,8 @@ function Planning({
   );
 }
 
-type ReceiptBackup = { id: string; type: string; data: string };
 function SettingsPanel({
+  remote,
   store,
   save,
   startOwn,
@@ -913,10 +1011,11 @@ function SettingsPanel({
   onPreferences,
 }: {
   store: Store;
-  save: (s: Store) => boolean;
+  save: (s: Store) => Promise<boolean>;
   startOwn: () => void;
   notify: (s: string) => void;
   recovery: boolean;
+  remote?: RemoteFinance;
   preferences: InsightPreferences;
   onPreferences: (value: InsightPreferences) => void;
 }) {
@@ -931,9 +1030,8 @@ function SettingsPanel({
     }
   }
   const [busy, setBusy] = useState(false);
-  const [imported, setImported] = useState<{ data: Store; receipts: ReceiptBackup[] } | null>(null);
+  const [imported, setImported] = useState<Store | null>(null);
   const [error, setError] = useState('');
-  const [missing, setMissing] = useState(0);
   async function backup() {
     setBusy(true);
     setError('');
@@ -946,21 +1044,7 @@ function SettingsPanel({
         );
         return;
       }
-      const receipts: ReceiptBackup[] = [];
-      let absent = 0;
-      for (const t of store.transactions)
-        if (t.receiptId) {
-          const blob = await readReceipt(t.receiptId);
-          if (blob) {
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve((reader.result as string).split(',')[1]);
-              reader.onerror = () => reject(Error('Bukti gagal dicadangkan.'));
-              reader.readAsDataURL(blob);
-            });
-            receipts.push({ id: t.receiptId, type: blob.type, data: base64 });
-          } else absent++;
-        }
+
       download(
         JSON.stringify(
           {
@@ -968,7 +1052,7 @@ function SettingsPanel({
             version: 1,
             exportedAt: new Date().toISOString(),
             data: store,
-            receipts,
+            receipts: [],
           },
           null,
           2,
@@ -976,11 +1060,7 @@ function SettingsPanel({
         'application/json',
         `skywallet-cadangan-${today()}.json`,
       );
-      notify(
-        absent
-          ? `Cadangan diunduh. ${absent} bukti tidak ditemukan pada perangkat ini.`
-          : 'Cadangan lengkap dengan bukti berhasil diunduh. Simpan di tempat yang aman.',
-      );
+      notify('Cadangan catatan diunduh tanpa gambar nota. Simpan di tempat yang aman.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Cadangan belum berhasil dibuat.');
     } finally {
@@ -991,35 +1071,12 @@ function SettingsPanel({
     setError('');
     setImported(null);
     try {
-      if (file.size > 70 * 1024 * 1024) throw Error('Maksimal ukuran cadangan 70 MB.');
-      const archive = JSON.parse(await file.text());
-      if (
-        !['skywallet-backup', 'skysave-backup'].includes(archive.format) ||
-        archive.version !== 1 ||
-        !isStore(archive.data) ||
-        !Array.isArray(archive.receipts)
-      )
-        throw Error('Berkas bukan cadangan SkyWallet yang valid.');
-      const receiptIds = new Set(
-        archive.data.transactions.map((t: Transaction) => t.receiptId).filter(Boolean),
-      );
-      const seen = new Set();
-      for (const r of archive.receipts) {
-        if (
-          !r ||
-          typeof r.id !== 'string' ||
-          !receiptIds.has(r.id) ||
-          seen.has(r.id) ||
-          !['image/png', 'image/jpeg', 'image/webp', 'application/pdf'].includes(r.type) ||
-          typeof r.data !== 'string' ||
-          r.data.length > 14 * 1024 * 1024 ||
-          !/^[A-Za-z0-9+/]*={0,2}$/.test(r.data)
-        )
-          throw Error('Lampiran dalam cadangan tidak valid.');
-        seen.add(r.id);
-      }
-      setMissing(receiptIds.size - seen.size);
-      setImported(archive);
+      if (remote && (store.accounts.length || store.transactions.length || store.goals.length))
+        throw Error(
+          'Pulihkan hanya ke akun kosong agar catatan bersama yang sudah tersimpan tetap aman.',
+        );
+      if (file.size > 2 * 1024 * 1024) throw Error('Maksimal ukuran cadangan teks 2 MB.');
+      setImported(readBackup(JSON.parse(await file.text())));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Cadangan tidak dapat dibaca.');
     }
@@ -1028,55 +1085,33 @@ function SettingsPanel({
     if (!imported) return;
     setBusy(true);
     setError('');
-    const created: string[] = [];
-    let committed = false;
     try {
-      // Use fresh IDs so a failed localStorage write cannot replace an existing receipt.
-      const receiptMap = new Map<string, string>();
-      for (const r of imported.receipts) {
-        const id = crypto.randomUUID();
-        receiptMap.set(r.id, id);
-        const bytes = Uint8Array.from(atob(r.data), (c) => c.charCodeAt(0));
-        await saveReceipt(id, new Blob([bytes], { type: r.type }));
-        created.push(id);
-      }
-      const next = {
-        ...imported.data,
-        transactions: imported.data.transactions.map((t) => ({
-          ...t,
-          receiptId: t.receiptId ? (receiptMap.get(t.receiptId) ?? crypto.randomUUID()) : undefined,
-        })),
-      };
-      if (save(next)) {
-        committed = true;
+      if (remote && (store.accounts.length || store.transactions.length || store.goals.length))
+        throw Error('Data telah berubah. Pemulihan hanya untuk akun kosong.');
+      if (await save({ ...imported, plan: { ...imported.plan, version: store.plan.version } })) {
         setImported(null);
-        notify('Cadangan dipulihkan. Saldo dihitung kembali dari catatanmu.');
-        for (const t of store.transactions) if (t.receiptId) await deleteReceipt(t.receiptId);
+        notify('Cadangan dipulihkan tanpa gambar nota. Saldo dihitung dari catatanmu.');
       }
     } catch (e) {
-      setError(
-        committed
-          ? 'Cadangan sudah dipulihkan, tetapi sebagian bukti lama belum berhasil dibersihkan.'
-          : e instanceof Error
-            ? e.message
-            : 'Cadangan belum berhasil dipulihkan. Data lama tetap tersedia.',
-      );
+      setError(e instanceof Error ? e.message : 'Cadangan belum berhasil dipulihkan.');
     } finally {
-      if (!committed) await Promise.allSettled(created.map((id) => deleteReceipt(id)));
       setBusy(false);
     }
   }
+
   return (
     <div className="settings-content">
       <section className="settings-local-profile">
         <span>S</span>
         <div>
           <h2>Ruang pribadi</h2>
-          <p>Tersimpan di perangkat ini</p>
+          <p>{remote?.email ?? 'Data contoh pada perangkat ini'}</p>
         </div>
       </section>
       <section className="appearance-settings">
-        <h3>Tampilan yang nyaman untukmu</h3>
+        <h3>
+          <DesignIcon name="settings-appearance" size={18} /> TAMPILAN
+        </h3>
         <p>Pilih suasana SkyWallet sesuai harimu.</p>
         <div className="theme-options">
           {[
@@ -1090,7 +1125,7 @@ function SettingsPanel({
               className={theme === t.id ? 'selected' : ''}
               onClick={() => chooseTheme(t.id)}
             >
-              <t.icon size={22} />
+              <DesignIcon name={`theme-${t.id}`} />
               <span>{t.label}</span>
               {theme === t.id && <Check size={14} />}
             </button>
@@ -1098,11 +1133,10 @@ function SettingsPanel({
         </div>
       </section>
       <div className="settings-section">
-        <h3>Data & cadangan</h3>
-        <p>
-          Data bisa hilang jika browser dibersihkan. Cadangan berisi informasi keuangan dan bukti;
-          simpan secara pribadi.
-        </p>
+        <h3>
+          <DesignIcon name="settings-data" size={18} /> DATA & CADANGAN
+        </h3>
+        <p>Cadangan berisi catatan keuangan tanpa gambar nota; simpan secara pribadi.</p>
         <button
           className="settings-action"
           onClick={() => {
@@ -1113,7 +1147,7 @@ function SettingsPanel({
           <Download size={19} />
           <span>
             <strong>{recovery ? 'Unduh data untuk pemulihan' : 'Unduh cadangan lengkap'}</strong>
-            <small>Rekening, transaksi, rencana, tujuan, dan bukti</small>
+            <small>Rekening, transaksi, rencana, dan tujuan</small>
           </span>
           {busy ? <LoaderCircle className="spin" size={16} /> : <ChevronRight size={16} />}
         </button>
@@ -1138,12 +1172,14 @@ function SettingsPanel({
         {imported && (
           <div className="import-confirm">
             <strong>
-              Pulihkan {imported.data.transactions.length} transaksi dan{' '}
-              {imported.data.accounts.length} rekening?
+              Pulihkan {imported.transactions.length} transaksi dan {imported.accounts.length}{' '}
+              rekening?
             </strong>
             <p>
-              Ini mengganti catatan saat ini. Unduh cadangan data sekarang terlebih dahulu.
-              {missing > 0 ? ` ${missing} bukti asli tidak tersedia dalam cadangan ini.` : ''}
+              {remote
+                ? 'Catatan akan dimasukkan ke akun kosong dan disinkronkan.'
+                : 'Data contoh akan diganti dengan catatan dari cadangan.'}{' '}
+              Gambar nota tidak dipulihkan.
             </p>
             <div>
               <button
@@ -1160,7 +1196,7 @@ function SettingsPanel({
                   void restore();
                 }}
               >
-                Ganti & pulihkan
+                Pulihkan catatan
               </button>
             </div>
           </div>
@@ -1172,12 +1208,22 @@ function SettingsPanel({
         )}
       </div>
       <div className="settings-section settings-danger">
-        <h3>HAPUS DATA</h3>
-        <button className="settings-action reset-action" disabled={busy} onClick={startOwn}>
+        <h3>
+          <DesignIcon name="settings-warning" size={18} /> {remote ? 'SESI AKUN' : 'HAPUS DATA'}
+        </h3>
+        <button
+          className="settings-action reset-action"
+          disabled={busy}
+          onClick={remote ? () => void remote.signOut() : startOwn}
+        >
           <Trash2 size={18} />
           <span>
             <strong>
-              {store.demo ? 'Mulai dengan data sendiri' : 'Hapus data dan mulai ulang'}
+              {remote
+                ? 'Keluar dari akun'
+                : store.demo
+                  ? 'Mulai dengan data sendiri'
+                  : 'Hapus data dan mulai ulang'}
             </strong>
             <small>Memerlukan konfirmasi. Cadangkan terlebih dahulu.</small>
           </span>
@@ -1186,7 +1232,7 @@ function SettingsPanel({
       </div>
       <section className="settings-section insight-preferences">
         <h3>
-          <Bell size={18} />
+          <DesignIcon name="settings-notifications" size={18} />
           INFORMASI DI APLIKASI
         </h3>
         <p>Atur informasi yang ditampilkan di dashboard saat SkyWallet dibuka.</p>
@@ -1214,7 +1260,11 @@ function SettingsPanel({
 
       <div className="settings-version">
         <Logo />
-        <span>v0.1 · Data pada perangkat ini</span>
+        <span>
+          {remote
+            ? 'v0.1 · Data tersinkron antar perangkat'
+            : 'v0.1 · Data demo pada perangkat ini'}
+        </span>
       </div>
     </div>
   );

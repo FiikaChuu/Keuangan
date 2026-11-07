@@ -1,4 +1,4 @@
-import { ArrowLeftRight, House, Settings, UploadCloud, Wallet } from 'lucide-react';
+import { ArrowLeftRight, House, Settings, Plus, Wallet } from 'lucide-react';
 export type Page =
   'overview' | 'accounts' | 'transactions' | 'reports' | 'plan' | 'together' | 'settings';
 export const pagePaths: Record<Page, string> = {
@@ -40,7 +40,7 @@ export default function AppNavigation({
           {index === 2 && (
             <button className="capture-button" aria-label="Catat transaksi" onClick={onCapture}>
               <span>
-                <UploadCloud size={27} />
+                <Plus size={27} />
               </span>
               <small>Catat</small>
             </button>
