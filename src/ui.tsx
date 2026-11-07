@@ -1,39 +1,13 @@
 import { useEffect, useRef, useState, useId } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  ArrowLeftRight,
-  Utensils,
-  ShoppingBag,
-  Car,
-  Wifi,
-  Music2,
-  Heart,
-  BookOpen,
-  Home,
-  MoreHorizontal,
-  Banknote,
-  X,
-  Cloud,
-  Paperclip,
-  Pencil,
-  Trash2,
-  ChevronDown,
-  Check,
-} from 'lucide-react';
+import { AnimatePresence, m, useIsPresent, useReducedMotion } from 'framer-motion';
+import { DesignIcon, categoryArtwork } from './design';
+import { sheetSpring } from './motion';
+import { ArrowDownLeft, ArrowUpRight, Cloud, Paperclip, Check } from 'lucide-react';
 import type { Account, Store, Transaction } from './domain';
-import { cashflowBuckets } from './analytics';
-import {
-  providers,
-  money,
-  compact,
-  displayDate,
-  balanceHistory,
-  categoryColors,
-  categories,
-} from './domain';
+export { BalanceChart, CashflowChart } from './DashboardCharts';
+import { providers, money, displayDate, expenseEntryCategories } from './domain';
 
 export function Logo({ small = false }: { small?: boolean }) {
   return (
@@ -90,36 +64,38 @@ export function ProviderPicker({
       >
         {selected && <ProviderMark account={{ provider: selected.name, color: selected.color }} />}
         <span>{value || 'Pilih bank atau e-wallet'}</span>
-        <ChevronDown size={18} />
+        <DesignIcon name="chevron" />
       </button>
-      {open && (
-        <Modal title="Pilih bank atau e-wallet" onClose={() => setOpen(false)}>
-          <div
-            className="category-options provider-options"
-            role="listbox"
-            aria-label="Bank atau e-wallet"
-          >
-            {providers.map((provider) => (
-              <button
-                type="button"
-                key={provider.name}
-                role="option"
-                aria-label={provider.name}
-                aria-selected={provider.name === value}
-                className={provider.name === value ? 'selected' : ''}
-                onClick={() => {
-                  onChange(provider.name);
-                  setOpen(false);
-                }}
-              >
-                <ProviderMark account={{ provider: provider.name, color: provider.color }} />
-                <span>{provider.name}</span>
-                {provider.name === value && <Check size={21} />}
-              </button>
-            ))}
-          </div>
-        </Modal>
-      )}
+      <AnimatePresence>
+        {open && (
+          <Modal title="Pilih bank atau e-wallet" onClose={() => setOpen(false)}>
+            <div
+              className="category-options provider-options"
+              role="listbox"
+              aria-label="Bank atau e-wallet"
+            >
+              {providers.map((provider) => (
+                <button
+                  type="button"
+                  key={provider.name}
+                  role="option"
+                  aria-label={provider.name}
+                  aria-selected={provider.name === value}
+                  className={provider.name === value ? 'selected' : ''}
+                  onClick={() => {
+                    onChange(provider.name);
+                    setOpen(false);
+                  }}
+                >
+                  <ProviderMark account={{ provider: provider.name, color: provider.color }} />
+                  <span>{provider.name}</span>
+                  {provider.name === value && <DesignIcon name="check" />}
+                </button>
+              ))}
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -138,6 +114,7 @@ export function AccountPicker({
   onChange: (id: string) => void;
   label: string;
   allowAll?: boolean;
+  quick?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = accounts.find((a) => a.id === value);
@@ -158,89 +135,85 @@ export function AccountPicker({
               ? 'Semua rekening'
               : 'Pilih rekening'}
         </span>
-        <ChevronDown size={18} />
+        <DesignIcon name="chevron" />
       </button>
-      {open && (
-        <Modal
-          title={label}
-          subtitle="Pilih rekening yang benar untuk transaksi ini."
-          onClose={() => setOpen(false)}
-        >
-          <div className="account-options" role="listbox" aria-label={label}>
-            {allowAll && (
-              <button
-                type="button"
-                role="option"
-                aria-selected={!value}
-                className={!value ? 'selected' : ''}
-                onClick={() => {
-                  onChange('');
-                  setOpen(false);
-                }}
-              >
-                <span>Semua rekening</span>
-                {!value && <Check size={21} className="account-option-check" />}
-              </button>
-            )}
-            {accounts.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                role="option"
-                aria-selected={value === a.id}
-                className={value === a.id ? 'selected' : ''}
-                onClick={() => {
-                  onChange(a.id);
-                  setOpen(false);
-                }}
-              >
-                <ProviderMark account={a} />
-                <span>
-                  <strong>
-                    {a.provider} · {a.name}
-                  </strong>
-                  <small>
-                    {money(values[a.id])}
-                    {a.shared ? ' · Bersama' : ''}
-                    {a.suffix ? ` · ••${a.suffix}` : ''}
-                  </small>
-                </span>
-                {value === a.id && <Check size={21} />}
-              </button>
-            ))}
-            {!accounts.length && (
-              <EmptyState
-                title="Belum ada rekening lain"
-                text="Tambahkan rekening tujuan dari halaman Dompet terlebih dahulu."
-              />
-            )}
-          </div>
-        </Modal>
-      )}
+      <AnimatePresence>
+        {open && (
+          <Modal
+            title={label}
+
+            onClose={() => setOpen(false)}
+          >
+            <div className="account-options" role="listbox" aria-label={label}>
+              {allowAll && (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={!value}
+                  className={!value ? 'selected' : ''}
+                  onClick={() => {
+                    onChange('');
+                    setOpen(false);
+                  }}
+                >
+                  <span>Semua rekening</span>
+                  {!value && <Check size={21} className="account-option-check" />}
+                </button>
+              )}
+              {accounts.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  role="option"
+                  aria-selected={value === a.id}
+                  className={value === a.id ? 'selected' : ''}
+                  onClick={() => {
+                    onChange(a.id);
+                    setOpen(false);
+                  }}
+                >
+                  <ProviderMark account={a} />
+                  <span>
+                    <strong>
+                      {a.provider} · {a.name}
+                    </strong>
+                    <small>
+                      {money(values[a.id])}
+                      {a.shared ? ' · Bersama' : ''}
+                      {a.suffix ? ` · ••${a.suffix}` : ''}
+                    </small>
+                  </span>
+                  {value === a.id && <DesignIcon name="check" />}
+                </button>
+              ))}
+              {!accounts.length && (
+                <EmptyState
+                  title="Belum ada rekening lain"
+                  text="Tambahkan rekening tujuan dari halaman Dompet terlebih dahulu."
+                />
+              )}
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-export function CategoryIcon({ category, size = 19 }: { category: string; size?: number }) {
-  const Icon =
-    (
-      {
-        'Makanan & minuman': Utensils,
-        Belanja: ShoppingBag,
-        Transportasi: Car,
-        'Kuota & internet': Wifi,
-        Hiburan: Music2,
-        Langganan: Music2,
-        Kesehatan: Heart,
-        Pendidikan: BookOpen,
-        'Rumah & tagihan': Home,
-        Pasangan: Heart,
-        'Tarik tunai': Banknote,
-        Transfer: ArrowLeftRight,
-        Pemasukan: ArrowDownLeft,
-      } as Record<string, typeof Utensils>
-    )[category] ?? MoreHorizontal;
-  return <Icon size={size} strokeWidth={1.7} />;
+export function CategoryIcon({ category, size = 24 }: { category: string; size?: number }) {
+  return (
+    <DesignIcon
+      name={
+        category === 'Makan' || category === 'Makanan & minuman'
+          ? 'ledger-food'
+          : (categoryArtwork[category] ?? 'category-other')
+      }
+      size={size}
+    />
+  );
 }
+let openModals = 0;
+let previousBodyOverflow = '';
+
 export function Modal({
   title,
   subtitle,
@@ -255,20 +228,24 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+  const isPresent = useIsPresent();
   const titleId = useId();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
-    const old = document.body.style.overflow;
+    if (openModals++ === 0) previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const timeout = window.setTimeout(
-      () =>
-        ref.current
-          ?.querySelector<HTMLElement>('input, select, button, textarea, [tabindex="0"]')
-          ?.focus(),
-      50,
-    );
+    const timeout = window.setTimeout(() => {
+      const sheet = ref.current;
+      // Do not interrupt a user who already started typing while the sheet opens.
+      // On mobile WebKit moving focus during numeric input can cancel the edit.
+      if (!sheet || sheet.contains(document.activeElement)) return;
+      sheet
+        .querySelector<HTMLElement>('button, input, select, textarea, [tabindex="0"]')
+        ?.focus({ preventScroll: true });
+    }, 50);
     const onKey = (e: KeyboardEvent) => {
       const dialogs = document.querySelectorAll('[aria-modal="true"]');
       if (dialogs[dialogs.length - 1] !== ref.current) return;
@@ -294,23 +271,33 @@ export function Modal({
     document.addEventListener('keydown', onKey);
     return () => {
       clearTimeout(timeout);
-      document.body.style.overflow = old;
+      if (--openModals === 0) document.body.style.overflow = previousBodyOverflow;
       document.removeEventListener('keydown', onKey);
-      before?.focus();
+      if (before?.isConnected) before.focus({ preventScroll: true });
     };
   }, []);
   return createPortal(
-    <div
+    <m.div
       className="modal-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reducedMotion ? 0 : 0.18 }}
+      inert={!isPresent}
+      aria-hidden={!isPresent || undefined}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
+      <m.div
         className={`modal ${wide ? 'wide' : ''}`}
+        initial={{ y: reducedMotion ? 0 : 32 }}
+        animate={{ y: 0 }}
+        exit={{ y: reducedMotion ? 0 : 24 }}
+        transition={reducedMotion ? { duration: 0 } : sheetSpring}
         ref={ref}
         role="dialog"
-        aria-modal="true"
+        aria-modal={isPresent ? true : undefined}
         aria-labelledby={titleId}
       >
         <div className="sheet-handle" aria-hidden="true" />
@@ -320,12 +307,12 @@ export function Modal({
             {subtitle && <p>{subtitle}</p>}
           </div>
           <button className="icon-btn" aria-label="Tutup dialog" onClick={onClose}>
-            <X size={20} />
+            <DesignIcon name="close" />
           </button>
         </div>
         <div className="modal-body">{children}</div>
-      </div>
-    </div>,
+      </m.div>
+    </m.div>,
     document.body,
   );
 }
@@ -374,7 +361,11 @@ export function TransactionList({
   return (
     <div className={`transaction-list ${isCompact ? 'compact' : 'card-list'}`}>
       {transactions.map((t) => {
-        const a = store.accounts.find((a) => a.id === t.accountId)!;
+        const a = store.accounts.find((a) => a.id === t.accountId) ?? {
+          provider: 'Akun pribadi anggota',
+          name: '',
+          color: '#676D7E',
+        };
         const to = store.accounts.find((a) => a.id === t.toId);
         const category =
           t.kind === 'income' ? 'Pemasukan' : t.kind === 'transfer' ? 'Transfer' : t.category;
@@ -400,7 +391,7 @@ export function TransactionList({
                     ? t.source
                     : t.kind === 'transfer'
                       ? `Ke ${to?.name ?? 'rekening lain'}`
-                      : t.category}
+                      : a.provider}
                 </span>
                 <span className="transaction-provider">
                   <span className="account-dot" style={{ background: a.color }} />
@@ -427,11 +418,11 @@ export function TransactionList({
                 {t.fee > 0 && <small>Biaya {money(t.fee)}</small>}
               </span>
             </button>
-            {(onEdit || onDelete) && (
+            {t.editable !== false && (onEdit || onDelete) && (
               <div className="transaction-actions">
                 {onEdit && (
                   <button aria-label={`Edit ${t.title}`} onClick={() => onEdit(t)}>
-                    <Pencil size={17} />
+                    <DesignIcon name="edit" />
                   </button>
                 )}
                 {onDelete && (
@@ -440,7 +431,7 @@ export function TransactionList({
                     className="delete-transaction"
                     onClick={() => onDelete(t)}
                   >
-                    <Trash2 size={17} />
+                    <DesignIcon name="delete" />
                   </button>
                 )}
               </div>
@@ -448,102 +439,6 @@ export function TransactionList({
           </article>
         );
       })}
-    </div>
-  );
-}
-export function BalanceChart({ store, days }: { store: Store; days: number }) {
-  const [hover, setHover] = useState<number | null>(null);
-  const points = balanceHistory(store, days);
-  const max = Math.max(...points.map((p) => p.value), 1000000) * 1.08;
-  const min = Math.max(0, Math.min(...points.map((p) => p.value)) * 0.78);
-  const coords = points.map((p, i) => [
-    48 + (i / (points.length - 1)) * 650,
-    175 - ((p.value - min) / (max - min || 1)) * 145,
-  ]);
-  const path = coords.reduce(
-    (s, p, i) =>
-      i === 0
-        ? `M ${p[0]},${p[1]}`
-        : `${s} C ${coords[i - 1][0] + (p[0] - coords[i - 1][0]) / 3},${coords[i - 1][1]} ${p[0] - (p[0] - coords[i - 1][0]) / 3},${p[1]} ${p[0]},${p[1]}`,
-    '',
-  );
-  const hoverIndex = Math.min(hover ?? points.length - 1, points.length - 1);
-  const hitWidth = 650 / (points.length - 1);
-  return (
-    <div className="chart-container">
-      <div className="chart-current">
-        <span>
-          {hover !== null ? displayDate(points[hoverIndex].date) : 'Total saldo saat ini'}
-        </span>
-        <strong>{money(points[hoverIndex].value)}</strong>
-      </div>
-      <svg
-        viewBox="0 0 720 216"
-        role="img"
-        aria-label={`Grafik total saldo ${days} hari terakhir, dari ${money(points[0].value)} ke ${money(points.at(-1)!.value)}`}
-        onMouseLeave={() => setHover(null)}
-      >
-        <defs>
-          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3ed0c2" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#3ed0c2" stopOpacity="0.005" />
-          </linearGradient>
-        </defs>
-        {[0, 1, 2, 3].map((i) => (
-          <g key={i}>
-            <line
-              x1="48"
-              x2="698"
-              y1={30 + i * 48}
-              y2={30 + i * 48}
-              stroke="var(--line)"
-              strokeDasharray="3 5"
-            />
-            <text x="0" y={34 + i * 48} fill="var(--muted)" fontSize="10">
-              {compact(max - (i * (max - min)) / 3)}
-            </text>
-          </g>
-        ))}
-        <path d={`${path} L 698,178 L 48,178 Z`} fill="url(#chartFill)" />
-        <path d={path} fill="none" stroke="#3ed0c2" strokeWidth="2.8" />
-        {coords.map((p, i) => (
-          <rect
-            key={i}
-            x={p[0] - hitWidth / 2}
-            y="10"
-            width={hitWidth}
-            height="175"
-            fill="transparent"
-            onMouseEnter={() => setHover(i)}
-          />
-        ))}
-        <circle
-          cx={coords[hoverIndex][0]}
-          cy={coords[hoverIndex][1]}
-          r="5"
-          fill="#3ed0c2"
-          stroke="white"
-          strokeWidth="3"
-        />
-        {[
-          0,
-          Math.floor((days - 1) / 4),
-          Math.floor((days - 1) / 2),
-          Math.floor(((days - 1) * 3) / 4),
-          days - 1,
-        ].map((i) => (
-          <text
-            key={i}
-            x={coords[i][0]}
-            y="207"
-            textAnchor={i === days - 1 ? 'end' : i === 0 ? 'start' : 'middle'}
-            fill="var(--muted)"
-            fontSize="10"
-          >
-            {displayDate(points[i].date, { day: 'numeric', month: 'short' })}
-          </text>
-        ))}
-      </svg>
     </div>
   );
 }
@@ -558,7 +453,8 @@ export function SpendingDonut({
   const top = entries.slice(0, entries.length > 5 ? 4 : 5);
   const rest = entries.slice(top.length).reduce((s, [, n]) => s + n, 0);
   if (rest) top.push(['Lainnya', rest]);
-  let accumulated = 0;
+  const colors = ['#1D2949', '#F37777', '#F6AE31', '#7CCB8C', '#3ED0C2'];
+  let accumulated = 135;
   return (
     <>
       <div className="donut">
@@ -567,23 +463,30 @@ export function SpendingDonut({
           role="img"
           aria-label={`Pengeluaran periode ini ${money(total)}`}
         >
-          <circle cx="90" cy="90" r="66" stroke="#edf1ee" strokeWidth="22" fill="none" />
-          {top.map(([name, value]) => {
-            const offset = accumulated;
-            accumulated += (value / total) * 100;
+          {!top.length && (
+            <circle cx="90" cy="90" r="66" stroke="var(--soft)" strokeWidth="22" fill="none" />
+          )}
+          {top.map(([name, value], index) => {
+            const start = accumulated + 1;
+            accumulated += (value / total) * 360;
+            const end = accumulated - 1;
+            const outer = [78, 70, 76, 66, 62][index];
+            const point = (angle: number, radius: number) =>
+              [
+                90 + Math.cos((angle * Math.PI) / 180) * radius,
+                90 + Math.sin((angle * Math.PI) / 180) * radius,
+              ].join(',');
+            const large = end - start > 180 ? 1 : 0;
             return (
-              <circle
+              <path
                 key={name}
-                cx="90"
-                cy="90"
-                r="66"
-                fill="none"
-                stroke={categoryColors[name] ?? '#d9ddd5'}
-                strokeWidth="22"
-                strokeDasharray={`${Math.max(0, (value / total) * 414.69 - 5)} 414.69`}
-                strokeDashoffset={(-offset / 100) * 414.69}
-                transform="rotate(-90 90 90)"
-              />
+                d={`M ${point(start, outer)} A ${outer} ${outer} 0 ${large} 1 ${point(end, outer)} L ${point(end, 44)} A 44 44 0 ${large} 0 ${point(start, 44)} Z`}
+                fill={colors[index]}
+              >
+                <title>
+                  {name}: {money(value)}
+                </title>
+              </path>
             );
           })}
         </svg>
@@ -598,10 +501,10 @@ export function SpendingDonut({
       </div>
       <div className="spending-legend">
         {top.length ? (
-          top.map(([name, value]) => (
+          top.map(([name, value], index) => (
             <div key={name}>
               <span>
-                <i style={{ background: categoryColors[name] ?? '#d9ddd5' }} />
+                <i style={{ background: colors[index] }} />
                 {name}
               </span>
               <strong>{Math.round((value / total) * 100)}%</strong>
@@ -618,20 +521,6 @@ export function TrendIcon({ incoming = false }: { incoming?: boolean }) {
   return incoming ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />;
 }
 
-const categoryEmoji: Record<string, string> = {
-  'Makanan & minuman': '🍜',
-  Belanja: '🛍️',
-  Transportasi: '🚕',
-  'Kuota & internet': '📱',
-  Hiburan: '🎬',
-  Langganan: '🎧',
-  Kesehatan: '💊',
-  Pendidikan: '📚',
-  'Rumah & tagihan': '🏡',
-  Pasangan: '💜',
-  'Tarik tunai': '🏧',
-  Lainnya: '✨',
-};
 export function CategoryPicker({
   value,
   onChange,
@@ -645,10 +534,10 @@ export function CategoryPicker({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="category-picker">
+    <div className={`category-picker ${quick ? 'with-quick' : ''}`}>
       {quick && (
         <div className="quick-categories" aria-label="Kategori cepat">
-          {categories.slice(0, 4).map((c) => (
+          {['Makan', 'Transportasi', 'Tagihan', 'Belanja', 'Transfer'].map((c) => (
             <button
               type="button"
               key={c}
@@ -656,19 +545,8 @@ export function CategoryPicker({
               className={value === c ? 'selected' : ''}
               onClick={() => onChange(c)}
             >
-              <span>{categoryEmoji[c]}</span>
-              <small>
-                {
-                  (
-                    {
-                      'Makanan & minuman': 'Makanan',
-                      Belanja: 'Belanja',
-                      Transportasi: 'Transport',
-                      'Kuota & internet': 'Kuota',
-                    } as Record<string, string>
-                  )[c]
-                }
-              </small>
+              <DesignIcon name={categoryArtwork[c]} />
+              <small>{c}</small>
             </button>
           ))}
         </div>
@@ -678,131 +556,53 @@ export function CategoryPicker({
         type="button"
         aria-label={allowAll ? 'Filter kategori' : 'Pilih kategori'}
         aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => setOpen(true)}
       >
         <span>
           {value ? (
             <>
-              <span>{categoryEmoji[value]}</span>
+              <DesignIcon name={categoryArtwork[value] ?? 'category-other'} />
               {value}
             </>
           ) : (
             'Semua kategori'
           )}
         </span>
-        <ChevronDown size={18} />
+        <DesignIcon name="chevron" />
       </button>
-      {open && (
-        <Modal
-          title="Pilih kategori"
-          subtitle="Temukan tempat yang pas untuk pengeluaranmu."
-          onClose={() => setOpen(false)}
-        >
-          <div className="category-options" role="listbox" aria-label="Kategori">
-            {[...(allowAll ? [''] : []), ...categories].map((c) => (
-              <button
-                key={c}
-                role="option"
-                type="button"
-                aria-selected={c === value}
-                className={c === value ? 'selected' : ''}
-                onClick={() => {
-                  onChange(c);
-                  setOpen(false);
-                }}
-              >
-                <span className="category-option-emoji">{categoryEmoji[c] ?? '🗂️'}</span>
-                <span>{c || 'Semua kategori'}</span>
-                {c === value && <Check size={21} />}
-              </button>
-            ))}
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-}
+      <AnimatePresence>
+        {open && (
+          <Modal
+            title="Pilih kategori"
 
-export function CashflowChart({
-  transactions,
-  days,
-}: {
-  transactions: Transaction[];
-  days: number;
-}) {
-  const buckets = cashflowBuckets(transactions, days).map((bucket) => ({
-    ...bucket,
-    date: bucket.start,
-  }));
-  const count = buckets.length;
-  const max = Math.max(100000, ...buckets.flatMap((b) => [b.income, b.expense])) * 1.12;
-  return (
-    <div className="cashflow-chart">
-      <div className="cashflow-legend">
-        <span>
-          <i />
-          Pemasukan
-        </span>
-        <span>
-          <i />
-          Pengeluaran
-        </span>
-      </div>
-      <svg
-        viewBox="0 0 720 250"
-        role="img"
-        aria-label={`Grafik pemasukan dan pengeluaran ${days} hari terakhir`}
-      >
-        {[0, 1, 2, 3].map((i) => (
-          <g key={i}>
-            <line
-              x1="48"
-              x2="700"
-              y1={25 + i * 57}
-              y2={25 + i * 57}
-              stroke="var(--line)"
-              strokeDasharray="3 5"
-            />
-            <text x="0" y={29 + i * 57} fontSize="11" fill="var(--muted)">
-              {compact(max * (1 - i / 3))}
-            </text>
-          </g>
-        ))}
-        {buckets.map((b, i) => {
-          const x = 70 + i * (620 / count);
-          return (
-            <g key={b.date}>
-              <rect
-                x={x}
-                y={196 - (b.income / max) * 171}
-                width="22"
-                height={(b.income / max) * 171}
-                rx="8"
-                fill="#7ccb8c"
-              >
-                <title>
-                  Pemasukan {displayDate(b.date)}: {money(b.income)}
-                </title>
-              </rect>
-              <rect
-                x={x + 27}
-                y={196 - (b.expense / max) * 171}
-                width="22"
-                height={(b.expense / max) * 171}
-                rx="8"
-                fill="#f37777"
-              >
-                <title>
-                  Pengeluaran {displayDate(b.date)}: {money(b.expense)}
-                </title>
-              </rect>
-              <text x={x + 24} y="231" textAnchor="middle" fontSize="11" fill="var(--muted)">
-                {displayDate(b.date, { day: 'numeric', month: 'short' })}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+            onClose={() => setOpen(false)}
+          >
+            <div className="category-options" role="listbox" aria-label="Kategori">
+              {[...(allowAll ? [''] : []), ...expenseEntryCategories].map((c) => (
+                <button
+                  key={c}
+                  role="option"
+                  aria-label={c || 'Semua kategori'}
+                  type="button"
+                  aria-selected={c === value}
+                  className={c === value ? 'selected' : ''}
+                  onClick={() => {
+                    onChange(c);
+                    setOpen(false);
+                  }}
+                >
+                  <span className="category-option-emoji" aria-hidden="true">
+                    <DesignIcon name={categoryArtwork[c] ?? 'category-other'} />
+                  </span>
+                  <span>{c || 'Semua kategori'}</span>
+                  {c === value && <DesignIcon name="check" />}
+                </button>
+              ))}
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

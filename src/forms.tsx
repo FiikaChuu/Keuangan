@@ -1,38 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
+import { m, useReducedMotion } from 'framer-motion';
 import type { FormEvent } from 'react';
 import {
-  UploadCloud,
-  FileText,
   Check,
   LoaderCircle,
   ArrowRight,
   ShieldCheck,
   Info,
   Plus,
-  Paperclip,
-  Download,
   Trash2,
   ArrowLeftRight,
   Pencil,
+  ChevronDown,
 } from 'lucide-react';
 import type { Store, Transaction, Account, Goal } from './domain';
-import { categories, providers, today, money, balances, replaceTransaction } from './domain';
 import {
-  extractReceipt,
-  parseReceipt,
-  saveReceipt,
-  hashFile,
-  readReceipt,
-  deleteReceipt,
-} from './receipts';
+  normalizeCategory,
+  providers,
+  today,
+  money,
+  balances,
+  replaceTransaction,
+  MAX_NOTE_LENGTH,
+} from './domain';
+import { AnimatedReveal, sheetSpring } from './motion';
 import { EmptyState, CategoryPicker, AccountPicker, ProviderPicker } from './ui';
 
-type Save = (next: Store) => boolean;
+type Save = (next: Store) => Promise<boolean>;
 export function TransactionForm({
   store,
   save,
   close,
-  mode = 'manual',
+  amountIncludesFee = false,
   defaults = {},
   onAccount,
   editingId,
@@ -40,147 +39,94 @@ export function TransactionForm({
   store: Store;
   save: Save;
   close: () => void;
-  mode?: 'manual' | 'receipt';
+  amountIncludesFee?: boolean;
   defaults?: Partial<Transaction>;
   editingId?: string;
   onAccount: () => void;
 }) {
-  const [tab, setTab] = useState(mode);
-  const [kind, setKind] = useState<Transaction['kind']>(defaults.kind ?? 'expense');
-  const [title, setTitle] = useState(defaults.title ?? '');
+  const [newId] = useState(() => crypto.randomUUID());
+  const submitting = useRef(false);
+  const [flow, setFlow] = useState<'expense' | 'income'>(
+    defaults.kind === 'income' ? 'income' : 'expense',
+  );
   const [amount, setAmount] = useState(defaults.amount ? String(defaults.amount) : '');
   const [accountId, setAccountId] = useState(
-    defaults.accountId ??
-      (mode === 'manual'
-        ? (store.accounts.find((a) => !a.shared)?.id ?? store.accounts[0]?.id ?? '')
-        : ''),
+    defaults.accountId ?? store.accounts.find((a) => !a.shared)?.id ?? store.accounts[0]?.id ?? '',
   );
   const [toId, setToId] = useState(defaults.toId ?? '');
   const [date, setDate] = useState(defaults.date ?? today());
   const [category, setCategory] = useState(
-    defaults.category && categories.includes(defaults.category)
-      ? defaults.category
-      : 'Makanan & minuman',
+    defaults.kind === 'transfer' ? 'Transfer' : normalizeCategory(defaults.category ?? 'Makan'),
   );
+  const kind = flow === 'income' ? 'income' : category === 'Transfer' ? 'transfer' : 'expense';
+  const transactionCategory = kind === 'income' ? 'Pemasukan' : category;
   const [source, setSource] = useState(defaults.source ?? '');
   const [fee, setFee] = useState(defaults.fee ? String(defaults.fee) : '');
-  const [note, setNote] = useState(defaults.note ?? '');
+  const [note, setNote] = useState(() => {
+    const oldTitle =
+      editingId &&
+      defaults.title &&
+      defaults.title !==
+        (defaults.kind === 'income'
+          ? 'Pemasukan'
+          : defaults.kind === 'transfer'
+            ? 'Transfer'
+            : defaults.category)
+        ? defaults.title
+        : '';
+    return [oldTitle, defaults.note].filter(Boolean).join('\n\n');
+  });
+  const [detailsOpen, setDetailsOpen] = useState(
+    !!(amountIncludesFee || defaults.fee || note || defaults.reference),
+  );
+  const detailsId = useId();
+  const reducedMotion = useReducedMotion();
+  const accountBalances = useMemo(() => balances(store), [store]);
+  const destinationAccounts = useMemo(
+    () => store.accounts.filter((account) => account.id !== accountId),
+    [store.accounts, accountId],
+  );
   const [reference, setReference] = useState(defaults.reference ?? '');
-  const [file, setFile] = useState<File | null>(null);
-  const [hash, setHash] = useState('');
-  const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState('');
-  const [text, setText] = useState('');
   const [error, setError] = useState('');
-  const [hint, setHint] = useState('');
-  const [preview, setPreview] = useState('');
-  useEffect(() => {
-    if (!file || !file.type.startsWith('image/')) {
-      setPreview('');
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-  async function process(file: File) {
-    setError('');
-    setText('');
-    setHash('');
-    setHint('');
-    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
-      setError(
-        'Gunakan gambar JPG, PNG, WEBP, atau dokumen PDF. Untuk HEIC, simpan sebagai JPG terlebih dahulu.',
-      );
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024 || file.size === 0) {
-      setError('Bukti harus berukuran antara 1 byte dan 10 MB.');
-      return;
-    }
-    setBusy(true);
-    setStatus('Menyiapkan pembaca bukti…');
-    setFile(file);
-    try {
-      const fingerprint = await hashFile(file);
-      if (store.transactions.some((t) => t.id !== editingId && t.receiptHash === fingerprint)) {
-        setFile(null);
-        throw new Error('Bukti ini sudah tercatat. Buka riwayat untuk melihat transaksinya.');
-      }
-      setHash(fingerprint);
-      const result = await extractReceipt(file, setStatus);
-      setText(result);
-      const parsed = parseReceipt(result);
-      if (parsed.amount) setAmount(String(parsed.amount));
-      if (parsed.date) setDate(parsed.date);
-      if (parsed.category) setCategory(parsed.category);
-      if (parsed.reference) setReference(parsed.reference);
-      const accounts = store.accounts.filter((a) => a.provider === parsed.provider);
-      if (accounts.length === 1) setAccountId(accounts[0].id);
-      else setAccountId('');
-      setHint(
-        parsed.provider && accounts.length === 1
-          ? `Sumber terindikasi ${parsed.provider}. Pastikan rekening dan jenis transaksinya benar.`
-          : parsed.candidates.length
-            ? `${parsed.candidates.join(', ')} ditemukan pada bukti. Pilih rekening asal secara manual agar tidak tertukar dengan penerima.`
-            : 'Rekening asal belum dikenali. Pilih secara manual dan periksa nominalnya.',
-      );
-      setStatus(
-        result.trim()
-          ? 'Bukti selesai dibaca. Periksa dan lengkapi hasilnya.'
-          : 'Teks belum terbaca. Kamu tetap bisa mengisi detail secara manual.',
-      );
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : 'Bukti belum bisa dibaca. Isi detail secara manual atau coba gambar yang lebih jelas.',
-      );
-      setStatus('');
-    } finally {
-      setBusy(false);
-    }
-  }
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (submitting.current) return;
     setError('');
+    if (amountIncludesFee && kind === 'transfer' && fee === '') {
+      setDetailsOpen(true);
+      setError('Konfirmasi biaya admin pada nota. Isi 0 jika tidak ada biaya.');
+      return;
+    }
     const tx: Transaction = {
-      id: editingId ?? crypto.randomUUID(),
+      id: editingId ?? newId,
+      version: defaults.version,
       kind,
-      title: title.trim(),
-      amount: Number(amount),
+      title: transactionCategory,
+      amount: Number(amount) - (amountIncludesFee && kind !== 'income' ? Number(fee || 0) : 0),
       fee: kind === 'income' ? 0 : Number(fee || 0),
       date,
       accountId,
       toId: kind === 'transfer' ? toId : undefined,
-      category: kind === 'transfer' ? 'Transfer' : kind === 'income' ? 'Pemasukan' : category,
+      category: transactionCategory,
       source: kind === 'income' ? source.trim() : '',
       note: note.trim(),
       reference: reference.trim() || undefined,
-      receiptId: file ? crypto.randomUUID() : defaults.receiptId,
-      receiptHash: file && hash ? hash : defaults.receiptHash,
+      receiptHash: defaults.receiptHash,
     };
     const result = replaceTransaction(store, tx, editingId);
     if (result.error || !result.data) {
       setError(result.error);
       return;
     }
-    if (file && !hash) {
-      setError('Bukti belum siap. Hapus bukti atau unggah ulang sebelum menyimpan.');
-      return;
-    }
+    submitting.current = true;
     setSaving(true);
     try {
-      if (file && tx.receiptId) await saveReceipt(tx.receiptId, file);
-      if (save(result.data)) {
-        close();
-        if (file && defaults.receiptId)
-          await deleteReceipt(defaults.receiptId).catch(() => undefined);
-      } else if (file && tx.receiptId) await deleteReceipt(tx.receiptId);
+      if (await save(result.data)) close();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Transaksi belum tersimpan. Coba lagi.');
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -199,150 +145,51 @@ export function TransactionForm({
     );
   return (
     <form onSubmit={submit} className="form-stack modal-form">
-      <div className="modal-form-content">
-        {editingId && defaults.receiptId && !file && (
-          <div className="info-note">
-            <Paperclip size={17} />
-            <span>
-              Bukti asli tetap tersimpan saat detail transaksi diubah. Unggah bukti baru jika ingin
-              menggantinya.
-            </span>
-          </div>
-        )}
-        <div className="form-tabs">
-          <button
-            type="button"
-            className={tab === 'manual' ? 'active' : ''}
-            onClick={() => {
-              setTab('manual');
-              if (!accountId)
-                setAccountId(
-                  store.accounts.find((a) => !a.shared)?.id ?? store.accounts[0]?.id ?? '',
-                );
-            }}
-          >
-            <Plus size={16} />
-            Input manual
-          </button>
-          <button
-            type="button"
-            className={tab === 'receipt' ? 'active' : ''}
-            onClick={() => setTab('receipt')}
-          >
-            <UploadCloud size={16} />
-            Dari bukti transaksi
-          </button>
-        </div>
-        {tab === 'receipt' && (
-          <>
-            <label
-              className={`upload-zone ${busy ? 'busy' : ''}`}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const f = e.dataTransfer.files[0];
-                if (f && !busy) void process(f);
-              }}
-            >
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,application/pdf"
-                disabled={busy || saving}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void process(f);
-                  e.target.value = '';
-                }}
-              />
-              <span className="upload-symbol">
-                {busy ? <LoaderCircle className="spin" size={26} /> : <UploadCloud size={26} />}
-              </span>
-              <strong>{busy ? status : 'Pilih atau letakkan bukti di sini'}</strong>
-              <small>Screenshot, foto, atau PDF · Maks. 10 MB / 5 halaman</small>
-              <span className="upload-privacy">
-                <ShieldCheck size={12} />
-                Dibaca di perangkat, tanpa mengunggah ke server
-              </span>
-            </label>
-            {file && (
-              <div className="receipt-preview">
-                {preview ? (
-                  <img src={preview} alt="Pratinjau bukti transaksi" />
-                ) : (
-                  <FileText size={28} />
-                )}
-                <div>
-                  <strong>{file.name}</strong>
-                  <small>{busy ? status : status || 'Bukti terlampir'}</small>
-                </div>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="icon-btn"
-                  aria-label="Hapus lampiran bukti"
-                  onClick={() => {
-                    setFile(null);
-                    setHash('');
-                    setText('');
-                    setHint('');
-                    setStatus('');
-                  }}
-                >
-                  <Trash2 size={17} />
-                </button>
-              </div>
-            )}
-            {hint && (
-              <div className="info-note">
-                <Info size={17} />
-                <span>
-                  {hint} Pembacaan otomatis dapat keliru; konfirmasi semua detail sebelum menyimpan.
-                </span>
-              </div>
-            )}
-            {text && (
-              <details className="extracted-text">
-                <summary>Lihat teks yang terbaca</summary>
-                <pre>{text}</pre>
-              </details>
-            )}
-          </>
-        )}
-        {tab === 'manual' && file && (
-          <p className="field-hint">
-            <Paperclip size={13} />
-            Bukti tetap terlampir. Buka tab bukti untuk menghapusnya.
+      <m.div className="modal-form-content" layoutScroll>
+        {amountIncludesFee && (
+          <p className="info-note">
+            Hasil baca nota perlu diperiksa. Total sudah termasuk biaya admin. Untuk transfer, pilih
+            hanya rekening milikmu atau akun bersama; pembayaran ke merchant tetap dicatat sesuai
+            kategori pengeluarannya.
           </p>
         )}
         <div className="kind-switch" aria-label="Jenis transaksi">
-          {(['expense', 'income', 'transfer'] as const).map((k) => (
+          {(['expense', 'income'] as const).map((k) => (
             <button
               type="button"
               key={k}
-              className={kind === k ? 'active' : ''}
+              className={flow === k ? 'active' : ''}
+              aria-pressed={flow === k}
               onClick={() => {
-                setKind(k);
+                setFlow(k);
                 setError('');
               }}
             >
-              {{ expense: 'Pengeluaran', income: 'Pemasukan', transfer: 'Transfer' }[k]}
+              {{ expense: 'Pengeluaran', income: 'Pemasukan' }[k]}
             </button>
           ))}
         </div>
-        {kind === 'expense' && (
+        <AnimatedReveal open={flow === 'expense'}>
           <div className="category-form-field">
             <span className="field-label">Kategori</span>
-            <CategoryPicker value={category} onChange={setCategory} quick />
+            <CategoryPicker
+              quick
+              value={category}
+              onChange={(value) => {
+                setCategory(value);
+                setError('');
+              }}
+            />
             {category === 'Tarik tunai' && (
               <small className="field-hint">
                 Dihitung sebagai pengeluaran. Tidak menambah dompet tunai.
               </small>
             )}
           </div>
-        )}
+        </AnimatedReveal>
         <div className="form-grid">
           <label>
-            Nominal (Rp)
+            {amountIncludesFee && kind !== 'income' ? 'Total terdebet (Rp)' : 'Nominal (Rp)'}
             <input
               type="number"
               inputMode="numeric"
@@ -366,53 +213,55 @@ export function TransactionForm({
             />
           </label>
         </div>
-        <label>
-          Nama transaksi
-          <input
-            required
-            maxLength={100}
-            placeholder={
-              kind === 'income'
-                ? 'Mis. Project desain selesai'
-                : kind === 'transfer'
-                  ? 'Mis. Untuk masa depan kita'
-                  : 'Mis. Makan siang atau paket data'
-            }
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </label>
         <div className="form-account-field">
           <span className="field-label">
-            {kind === 'income' ? 'Masuk ke rekening' : 'Dari rekening'}
+            {kind === 'income'
+              ? 'Masuk ke rekening'
+              : kind === 'transfer'
+                ? 'Dari bank/akun'
+                : 'Dari rekening'}
           </span>
           <AccountPicker
-            label={kind === 'income' ? 'Masuk ke rekening' : 'Dari rekening'}
+            label={
+              kind === 'income'
+                ? 'Masuk ke rekening'
+                : kind === 'transfer'
+                  ? 'Dari bank/akun'
+                  : 'Dari rekening'
+            }
             accounts={store.accounts}
-            values={balances(store)}
+            values={accountBalances}
             value={accountId}
-            onChange={setAccountId}
+            onChange={(id) => {
+              setAccountId(id);
+              if (id === toId) setToId('');
+              setError('');
+            }}
           />
         </div>
-        {kind === 'transfer' ? (
-          <>
+        <AnimatedReveal open={kind === 'transfer'}>
+          <div className="transfer-fields">
             <div className="form-account-field">
-              <span className="field-label">Ke rekening</span>
+              <span className="field-label">Ke bank/akun</span>
               <AccountPicker
-                label="Ke rekening"
-                accounts={store.accounts.filter((a) => a.id !== accountId)}
-                values={balances(store)}
+                label="Ke bank/akun"
+                accounts={destinationAccounts}
+                values={accountBalances}
                 value={toId}
-                onChange={setToId}
+                onChange={(id) => {
+                  setToId(id);
+                  setError('');
+                }}
               />
             </div>
             <p className="field-hint">
               <ArrowLeftRight size={14} />
-              Transfer ke akun bersama tetap perpindahan saldo. Hanya biaya yang dihitung sebagai
+              Saldo berpindah antar akun pribadi atau bersama. Hanya biaya admin dihitung sebagai
               pengeluaran.
             </p>
-          </>
-        ) : kind === 'income' ? (
+          </div>
+        </AnimatedReveal>
+        <AnimatedReveal open={kind === 'income'}>
           <label>
             Asal pemasukan
             <input
@@ -426,71 +275,89 @@ export function TransactionForm({
               Tidak harus rutin. Catat saat uang benar-benar diterima.
             </small>
           </label>
-        ) : null}
-        <details
+        </AnimatedReveal>
+        <m.section
           className="optional-fields"
-          open={
-            kind === 'transfer' ||
-            !!defaults.fee ||
-            !!defaults.note ||
-            !!defaults.reference ||
-            !!reference
-          }
+          layout="position"
+          layoutDependency={kind}
+          transition={reducedMotion ? { duration: 0 } : sheetSpring}
         >
-          <summary>
-            Detail tambahan <span>Biaya, referensi, dan catatan</span>
-          </summary>
-          <div className="optional-fields-content">
-            <div className="form-grid">
-              {kind !== 'income' && (
+          <button
+            type="button"
+            className="optional-fields-toggle"
+            aria-expanded={detailsOpen}
+            aria-controls={detailsId}
+            onClick={() => setDetailsOpen((open) => !open)}
+          >
+            <span>
+              Detail tambahan
+              <small>
+                {kind === 'income'
+                  ? 'Referensi dan catatan · opsional'
+                  : 'Biaya, referensi, dan catatan · opsional'}
+              </small>
+            </span>
+            <m.span
+              aria-hidden="true"
+              animate={{ rotate: detailsOpen ? 180 : 0 }}
+              transition={reducedMotion ? { duration: 0 } : sheetSpring}
+            >
+              <ChevronDown size={18} />
+            </m.span>
+          </button>
+          <AnimatedReveal open={detailsOpen} id={detailsId}>
+            <div className="optional-fields-content">
+              <div className="form-grid">
+                {kind !== 'income' && (
+                  <label>
+                    Biaya admin (opsional)
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="1000000000"
+                      step="1"
+                      placeholder="0"
+                      value={fee}
+                      onChange={(e) => setFee(e.target.value)}
+                    />
+                  </label>
+                )}
                 <label>
-                  Biaya admin (opsional)
+                  No. referensi (opsional)
                   <input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    max="1000000000"
-                    step="1"
-                    placeholder="0"
-                    value={fee}
-                    onChange={(e) => setFee(e.target.value)}
+                    maxLength={100}
+                    value={reference}
+                    placeholder="Untuk cek duplikat"
+                    onChange={(e) => setReference(e.target.value)}
                   />
                 </label>
-              )}
+              </div>
               <label>
-                No. referensi (opsional)
-                <input
-                  maxLength={100}
-                  value={reference}
-                  placeholder="Untuk cek duplikat"
-                  onChange={(e) => setReference(e.target.value)}
+                Catatan (opsional)
+                <textarea
+                  maxLength={MAX_NOTE_LENGTH}
+                  rows={3}
+                  placeholder="Detail kecil yang ingin kamu ingat…"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
                 />
               </label>
             </div>
-            <label>
-              Catatan (opsional)
-              <textarea
-                maxLength={2000}
-                rows={2}
-                placeholder="Detail kecil yang ingin kamu ingat…"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </label>
-          </div>
-        </details>
+          </AnimatedReveal>
+        </m.section>
         {error && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
-      </div>
+      </m.div>
       <div className="form-footer modal-form-actions">
         <p>
           <ShieldCheck size={14} />
           Hanya mengubah catatan SkyWallet, bukan saldo bank.
         </p>
-        <button className="btn primary" disabled={busy || saving} type="submit">
+        <button className="btn primary" disabled={saving} type="submit">
           {saving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
           {saving ? 'Menyimpan…' : 'Simpan transaksi'}
         </button>
@@ -510,13 +377,17 @@ export function AccountForm({
   shared?: boolean;
 }) {
   const [provider, setProvider] = useState('SeaBank');
+  const [newId] = useState(() => crypto.randomUUID());
+  const submitting = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [opening, setOpening] = useState('');
   const [suffix, setSuffix] = useState('');
   const [together, setTogether] = useState(shared);
   const [error, setError] = useState('');
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
+    if (submitting.current) return;
     const amount = Number(opening || 0);
     if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1e12 || !name.trim()) {
       setError('Isi nama rekening dan saldo awal berupa rupiah utuh yang valid.');
@@ -524,7 +395,7 @@ export function AccountForm({
     }
     const p = providers.find((p) => p.name === provider)!;
     const a: Account = {
-      id: crypto.randomUUID(),
+      id: newId,
       name: name.trim(),
       provider,
       opening: amount,
@@ -532,7 +403,14 @@ export function AccountForm({
       shared: together,
       color: p.color,
     };
-    if (save({ ...store, accounts: [...store.accounts, a] })) close();
+    submitting.current = true;
+    setSaving(true);
+    try {
+      if (await save({ ...store, accounts: [...store.accounts, a] })) close();
+    } finally {
+      submitting.current = false;
+      setSaving(false);
+    }
   }
   return (
     <form onSubmit={submit} className="form-stack modal-form">
@@ -594,7 +472,7 @@ export function AccountForm({
           <Info size={17} />
           <span>
             Gunakan saldo saat mulai mencatat. Transaksi sebelum saldo awal tidak perlu dimasukkan
-            lagi. Akun bersama di versi ini dicatat pada perangkat yang sama.
+            lagi. Akun bersama hanya dapat diakses anggota yang diizinkan.
           </span>
         </div>
         {error && (
@@ -604,7 +482,7 @@ export function AccountForm({
         )}
       </div>
       <div className="modal-form-actions">
-        <button className="btn primary full-width" type="submit">
+        <button className="btn primary full-width" type="submit" disabled={saving}>
           Tambahkan dompet
           <ArrowRight size={16} />
         </button>
@@ -613,6 +491,9 @@ export function AccountForm({
   );
 }
 export function GoalForm({ store, save, close }: { store: Store; save: Save; close: () => void }) {
+  const [newId] = useState(() => crypto.randomUUID());
+  const submitting = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
   const [accountId, setAccountId] = useState('');
@@ -626,8 +507,9 @@ export function GoalForm({ store, save, close }: { store: Store; save: Save; clo
         text="Tambahkan dompet khusus yang belum dipakai untuk tujuan lain agar progres tabungan tidak dihitung dua kali."
       />
     );
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
+    if (submitting.current) return;
     if (!available.some((a) => a.id === accountId)) {
       setError('Pilih rekening khusus tujuan ini terlebih dahulu.');
       return;
@@ -642,13 +524,20 @@ export function GoalForm({ store, save, close }: { store: Store; save: Save; clo
     )
       return;
     const goal: Goal = {
-      id: crypto.randomUUID(),
+      id: newId,
       name: name.trim(),
       target: amount,
       accountId,
       emoji,
     };
-    if (save({ ...store, goals: [...store.goals, goal] })) close();
+    submitting.current = true;
+    setSaving(true);
+    try {
+      if (await save({ ...store, goals: [...store.goals, goal] })) close();
+    } finally {
+      submitting.current = false;
+      setSaving(false);
+    }
   }
   return (
     <form className="form-stack modal-form" onSubmit={submit}>
@@ -713,7 +602,7 @@ export function GoalForm({ store, save, close }: { store: Store; save: Save; clo
         </p>
       </div>
       <div className="modal-form-actions">
-        <button className="btn primary" type="submit">
+        <button className="btn primary" type="submit" disabled={saving}>
           Mulai wujudkan
           <ArrowRight size={16} />
         </button>
@@ -732,35 +621,10 @@ export function TransactionDetail({
   onDelete: () => void;
   onEdit: () => void;
 }) {
-  const [url, setUrl] = useState('');
-  const [type, setType] = useState('');
-  const [error, setError] = useState('');
-  useEffect(() => {
-    let active = true;
-    let objectUrl = '';
-    if (t.receiptId)
-      readReceipt(t.receiptId)
-        .then((blob) => {
-          if (!active) return;
-          if (!blob) {
-            setError(
-              'Bukti tidak ditemukan di perangkat ini. Cadangan lama mungkin hanya berisi data transaksi.',
-            );
-            return;
-          }
-          objectUrl = URL.createObjectURL(blob);
-          setUrl(objectUrl);
-          setType(blob.type);
-        })
-        .catch(() => {
-          if (active) setError('Bukti belum bisa dibuka dari penyimpanan perangkat.');
-        });
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [t.receiptId]);
-  const account = store.accounts.find((a) => a.id === t.accountId)!;
+  const account = store.accounts.find((a) => a.id === t.accountId) ?? {
+    provider: 'Rekening pribadi',
+    name: 'Anggota lain',
+  };
   const to = store.accounts.find((a) => a.id === t.toId);
   return (
     <div className="detail-content">
@@ -808,7 +672,9 @@ export function TransactionDetail({
         </div>
         <div>
           <dt>Metode pencatatan</dt>
-          <dd>{t.receiptId ? 'Unggah bukti + konfirmasi' : 'Input manual'}</dd>
+          <dd>
+            {t.receiptHash ? 'Baca nota + konfirmasi (gambar tidak disimpan)' : 'Input manual'}
+          </dd>
         </div>
         {t.reference && (
           <div>
@@ -832,21 +698,7 @@ export function TransactionDetail({
           </span>
         </div>
       )}
-      {url && (
-        <div className="saved-receipt">
-          {type.startsWith('image/') && <img src={url} alt={`Bukti ${t.title}`} />}
-          <a
-            href={url}
-            download={`bukti-${t.id}.${type === 'application/pdf' ? 'pdf' : type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'}`}
-            className="btn secondary"
-          >
-            <Download size={16} />
-            Unduh bukti asli
-          </a>
-        </div>
-      )}
-      {error && <p className="form-error">{error}</p>}
-      <div className="detail-actions">
+      <div className="detail-actions" hidden={t.editable === false}>
         <button className="btn primary" onClick={onEdit}>
           <Pencil size={17} />
           Edit transaksi

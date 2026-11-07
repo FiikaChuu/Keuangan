@@ -89,7 +89,7 @@ export function moneyInsights(store: Store, days: number): MoneyInsight[] {
       title: 'Belanja paling besar',
       body: top
         ? `${top[0]} menjadi pengeluaran terbesar: ${money(top[1])}, atau ${Math.round((top[1] / sum.expense) * 100)}% dari total ${days} hari terakhir.`
-        : 'Catat transaksi atau unggah bukti untuk melihat pengeluaran per kategori.',
+        : 'Catat transaksi atau bagikan nota untuk melihat pengeluaran per kategori.',
     },
     {
       id: 'together',

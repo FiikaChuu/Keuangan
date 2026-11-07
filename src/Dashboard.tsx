@@ -1,27 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import {
-  Plus,
-  UploadCloud,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Sparkles,
-  Heart,
-  Wallet,
-  RefreshCw,
-  PiggyBank,
-  TriangleAlert,
-  Lightbulb,
-  ChartNoAxesCombined,
-} from 'lucide-react';
+import { Plus, ArrowUpRight, Eye, EyeOff, ArrowRight, Wallet } from 'lucide-react';
 import type { Store, Transaction, Account } from './domain';
 import { money, totals, allocations, spendingByCategory, balances } from './domain';
 import { dashboardPeriods, moneyInsights, periodTransactions } from './analytics';
 import type { InsightPreferences } from './preferences';
-import type { MoneyInsight } from './analytics';
+import { DesignIcon } from './design';
 import { BalanceChart, CashflowChart, TransactionList, SpendingDonut, EmptyState } from './ui';
 import { NetCashflowChart } from './DashboardCharts';
 
@@ -29,7 +13,6 @@ type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
 export default function Dashboard({
   store,
   total,
-  onUpload,
   go,
   detail,
   accountCard,
@@ -40,7 +23,6 @@ export default function Dashboard({
 }: {
   store: Store;
   total: number;
-  onUpload: () => void;
   go: (page: Page) => void;
   detail: (tx: Transaction) => void;
   accountCard: (a: Account) => ReactNode;
@@ -68,14 +50,6 @@ export default function Dashboard({
     [store, days, refresh, preferences],
   );
   const recent = [...store.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
-  const insightIcon = (item: MoneyInsight) =>
-    item.tone === 'warning'
-      ? TriangleAlert
-      : item.id === 'together'
-        ? Wallet
-        : item.id === 'spending'
-          ? ChartNoAxesCombined
-          : Lightbulb;
   const refreshInsights = () => {
     setRefresh((v) => v + 1);
     setRefreshedAt(
@@ -101,12 +75,6 @@ export default function Dashboard({
         <div>
           <h1>Dashboard</h1>
           <p>Your financial overview</p>
-        </div>
-        <div className="dashboard-header-actions">
-          <button className="btn primary" aria-label="Unggah bukti" onClick={onUpload}>
-            <UploadCloud size={21} />
-            <span>Unggah bukti</span>
-          </button>
         </div>
         <div className="figma-period-control" role="group" aria-label="Periode dashboard">
           {dashboardPeriods.map((period) => (
@@ -159,7 +127,7 @@ export default function Dashboard({
             <div>
               <h2>Pemasukan</h2>
               <span>
-                <ArrowDownLeft size={17} />
+                <DesignIcon name="stat-income" size={26} />
               </span>
             </div>
             <strong>{money(sum.income)}</strong>
@@ -169,7 +137,7 @@ export default function Dashboard({
             <div>
               <h2>Pengeluaran</h2>
               <span>
-                <ArrowUpRight size={17} />
+                <DesignIcon name="stat-expense" size={26} />
               </span>
             </div>
             <strong>{money(sum.expense)}</strong>
@@ -179,7 +147,7 @@ export default function Dashboard({
             <div>
               <h2>Bisa ditabung</h2>
               <span>
-                <PiggyBank size={17} />
+                <DesignIcon name="stat-saving" size={26} />
               </span>
             </div>
             <strong>{money(plan.saving)}</strong>
@@ -191,7 +159,7 @@ export default function Dashboard({
             <div>
               <h2>Dana bersama</h2>
               <span>
-                <Heart size={16} />
+                <DesignIcon name="stat-income" size={26} />
               </span>
             </div>
             <strong>{money(shared)}</strong>
@@ -225,7 +193,7 @@ export default function Dashboard({
         </section>
         <section className="panel figma-chart-panel figma-net-trend">
           <div className="panel-heading">
-            <h2>Arus dana bersih</h2>
+            <h2>Arus pemasukan & pengeluaran</h2>
             <span className="figma-tiny-legend">
               <i />
               Selisih
@@ -244,17 +212,16 @@ export default function Dashboard({
         <section className="figma-insights" aria-labelledby="sky-insights-title">
           <div className="figma-insights-header">
             <h2 id="sky-insights-title">
-              <Sparkles size={21} />
+              <DesignIcon name="insights" />
               Sky Insights
             </h2>
             <button aria-label="Perbarui insight" onClick={refreshInsights}>
-              <RefreshCw size={14} />
+              <DesignIcon name="refresh" size={14} />
               Perbarui
             </button>
           </div>
           <div className="figma-insight-cards">
             {insights.map((item) => {
-              const Icon = insightIcon(item);
               return (
                 <article
                   key={item.id}
@@ -262,7 +229,18 @@ export default function Dashboard({
                   aria-label={item.title}
                 >
                   <span className="figma-insight-icon" aria-hidden="true">
-                    <Icon size={20} strokeWidth={1.8} />
+                    <DesignIcon
+                      name={
+                        item.tone === 'warning'
+                          ? 'insight-warning'
+                          : item.id === 'spending'
+                            ? 'insight-pattern'
+                            : item.id === 'together'
+                              ? 'insight-growth'
+                              : 'insight-idea'
+                      }
+                      size={33}
+                    />
                   </span>
                   <div>
                     <div className="figma-insight-tag">

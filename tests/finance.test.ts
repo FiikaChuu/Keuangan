@@ -342,3 +342,32 @@ test('essential insights work with no history and stay limited to three summarie
   assert.ok(insights.every((i) => !/diprediksi|diproyeksikan|bulan depan/.test(i.body)));
   assert.ok(moneyInsights(emptyStore(), 7).every((i) => !/NaN|Infinity/.test(i.body)));
 });
+
+test('integer allocation preserves every rupiah including rounding remainder', () => {
+  const store = fixture();
+  store.accounts = [{ ...store.accounts[0], opening: 10001 }];
+  store.plan = { reserve: 0, saving: 33, fun: 33, together: 34 };
+  const plan = allocations(store);
+  assert.equal(plan.saving + plan.fun + plan.together, 10001);
+  assert.equal(plan.saving, 3300);
+  assert.equal(plan.fun, 3300);
+  assert.equal(plan.together, 3401);
+});
+test('balance history includes the visible side of transfers from a partner private wallet', () => {
+  const store = fixture();
+  store.accounts = [{ ...store.accounts[0], id: 'joint', opening: 0, shared: true }];
+  store.transactions = [
+    transaction({
+      kind: 'transfer',
+      accountId: 'partner-private',
+      toId: 'joint',
+      date: today(),
+      amount: 100000,
+      fee: 0,
+    }),
+  ];
+  assert.deepEqual(balanceHistory(store, 2), [
+    { date: daysAgo(1), value: 0 },
+    { date: today(), value: 100000 },
+  ]);
+});

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, Download, FileChartColumn, Printer } from 'lucide-react';
+import { DesignIcon } from './design';
 import type { Store, Transaction } from './domain';
 import { today, totals, displayDate, money, csv } from './domain';
 import { reportRange } from './analytics';
@@ -38,7 +38,7 @@ export default function Reports({ store }: { store: Store }) {
     <div className="reports-content">
       <section className="report-filters">
         <h2>
-          <CalendarDays size={18} />
+          <DesignIcon name="calendar" size={18} />
           PERIODE LAPORAN
         </h2>
         <div className="filter-tabs" role="group" aria-label="Periode laporan">
@@ -60,7 +60,7 @@ export default function Reports({ store }: { store: Store }) {
           ))}
         </div>
         <label className="filter-field">
-          Sampai tanggal
+          <span className="sr-only">Sampai tanggal</span>
           <input
             aria-label="Tanggal laporan"
             type="date"
@@ -101,7 +101,7 @@ export default function Reports({ store }: { store: Store }) {
       <section className="report-summary-section">
         <div className="report-period">
           <h2>
-            <FileChartColumn size={17} />
+            <DesignIcon name="nav-reports-active" size={18} />
             RINGKASAN {period === 'week' ? 'MINGGUAN' : period === 'month' ? 'BULANAN' : 'TAHUNAN'}
           </h2>
           <p>
@@ -126,7 +126,7 @@ export default function Reports({ store }: { store: Store }) {
       </p>
       <div className="report-actions">
         <button disabled={!!range.error} className="btn primary" onClick={() => window.print()}>
-          <Printer size={19} />
+          <DesignIcon name="report-light" />
           Cetak / simpan PDF
         </button>
         <button
@@ -140,7 +140,7 @@ export default function Reports({ store }: { store: Store }) {
             )
           }
         >
-          <Download size={19} />
+          <DesignIcon name="report-dark" />
           Ekspor CSV
         </button>
       </div>

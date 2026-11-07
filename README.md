@@ -1,80 +1,60 @@
 # SkyWallet
 
-A calm, local-first personal finance app for the web and iPhone. Built with React, TypeScript, and Vite, with Indonesian copy, rupiah amounts, and a responsive layout. Start with irregular personal income and keep shared funds in a separate space.
+Aplikasi pencatat keuangan pribadi dan bersama: Next.js + React + TypeScript, Supabase Auth/PostgreSQL/Realtime, Gemini 2.5 Flash, serta PWA. Panduan pemasangan lengkap tersedia di **[SETUP.md](SETUP.md)**.
 
-## Run
-
-Use **Node.js 24 LTS** and npm. From this checkout:
-
-```sh
-npm ci --cache /tmp/skysave-npm-cache
-npm run dev -- --port 5173
+```bash
+npm ci
+cp .env.example .env.local
+# Isi env dan jalankan SQL Supabase mengikuti SETUP.md.
+npm run dev
 ```
 
-The postinstall script copies OCR language data, WASM, and PDF workers from the integrity-checked npm dependencies into ignored public asset directories. No API key, database service, or bank credentials are needed. Typography uses the device’s system font; document-processing assets are served locally.
+## Alur utama
 
-```sh
-npm test                 # 26 financial, analytics, calendar and document-parsing tests
-npm run build            # strict TypeScript check + production build
-npm run preview -- --port 4173
-npm run test:e2e         # desktop + iPhone-size Chromium + iPhone WebKit; run build first
+- Pengeluaran memiliki kategori Makan, Belanja, Pendidikan, Transportasi, Tagihan, Transfer, dan Lainnya. Transfer memunculkan rekening sumber/tujuan; tidak ada tab utama Transfer atau input nama transaksi.
+- Judul selalu kategori; Catatan opsional. Pemasukan memiliki asal dana. Saldo pribadi dan bersama dipisahkan, termasuk alokasi tabungan.
+- RPC `commit_finance` memvalidasi akses, versi data, idempotency key, dan saldo. Trigger ledger menerapkan perubahan bersih pada kedua rekening dalam transaksi database yang sama. Tidak ada update saldo langsung dari frontend.
+- RLS membatasi baca; mutasi hanya melalui RPC tervalidasi. Whitelist email diperiksa saat signup, saat query/RPC, dan sebelum pemakaian Gemini. Secret Gemini hanya berada di server.
+- Supabase adalah sumber data produksi. Realtime disertai pemeriksaan versi ringan, pemulihan saat online/fokus, dan penolakan konflik edit. Financial data berada di memori browser selama sesi; sesi Auth dan preferensi tampilan dapat tersimpan lokal.
+- Share Target menerima satu JPG/PNG/WEBP maksimal 3 MB pada PWA/browser yang mendukungnya. Gambar hanya sementara di memori; API memakai official `@google/genai`, model `gemini-2.5-flash`, `responseSchema`, dan validasi runtime Zod. Output tidak pernah disimpan otomatis. Tidak ada Tesseract, PDF worker, atau penyimpanan foto.
+- Hash berkas dan referensi mendeteksi duplikat pada rekening sumber; request ID melindungi retry dan tombol simpan terlindung dari klik ganda. Screenshot berbeda dari pembayaran yang sama tetap perlu diperiksa pengguna.
+- Laporan, pencarian/filter, ekspor CSV/print, cadangan teks, rekening, tujuan tabungan, dan rencana dana memakai data pengguna.
+
+## Visual dan perangkat
+
+Noto Sans dimuat lokal. Token warna dan ukuran iPhone berasal dari SVG di `design/references/`; ikon/dekorasi asli diekstrak ke `public/design/`. `src/reference-ui.css` menyelaraskan tampilan. `LazyMotion` memisahkan fitur Framer Motion; transisi menggunakan transform/opacity, layout projection, dan preferensi reduced motion. Lihat [catatan desain](docs/mobile-design.md).
+
+Android Chrome mendukung Web Share Target setelah pemasangan PWA. Safari/iPhone mendukung instalasi standalone, login, dan sinkronisasi, tetapi **belum mendukung penerimaan gambar melalui Web Share Target**. Detail batas dukungan dan langkah instalasi ada di SETUP.md.
+
+## Validasi
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
 ```
 
-Browser tests use `/usr/bin/chromium` plus Playwright WebKit. Set `CHROMIUM_PATH` if Chromium is installed elsewhere. Install WebKit and its system dependencies with `npx playwright install --with-deps webkit` on a machine where package installation is permitted; `WEBKIT_EXECUTABLE_PATH` can select an existing WebKit launcher. Run only the Chromium projects with `npm run test:e2e -- --project=desktop --project=iphone-size` when WebKit is unavailable. The full suite contains 14 scenarios across all three projects. It exercises real OCR, persistence, financial flows, proof-preserving backup/restore, offline startup, report filters, insight preferences, and 375/393/430 px plus landscape layouts against the production build. WebKit emulation is not physical iPhone/Safari certification.
+Browser tests menggunakan build produksi dengan `SKYWALLET_DEMO=true` khusus server pengujian. Ini menguji UI dan PWA tanpa mengakses akun finansial sungguhan. Mode normal tidak memuat demo atau menyimpan transaksi ke localStorage. `npm test` menjalankan PostgreSQL nyata dalam PGlite untuk schema/RLS/ledger, serta mocked provider HTTP untuk validasi route dan SDK Gemini. Itu bukan bukti koneksi ke Supabase/Gemini milik Anda; lakukan uji tiga perangkat setelah konfigurasi.
 
-## What works
+Playwright memakai Chromium sistem di `/usr/bin/chromium` dan WebKit Playwright. Atur `CHROMIUM_PATH` jika berbeda; pasang WebKit dan dependensi OS dengan `npx playwright install --with-deps webkit` pada mesin pengujian. Untuk Chromium saja: `npm run test:e2e -- --project=desktop --project=iphone-size`. Emulasi WebKit tidak menggantikan pemeriksaan iPhone fisik.
 
-- A clearly labeled demo with an explicit **Mulai dengan data saya** reset flow.
-- Separate bank/e-wallet wallets, opening balances, optional last four digits, personal/shared classification, and derived balances.
-- Manual income with its source, categorized expenses, dated history, notes, transfer fees, and transfers between owned or shared accounts.
-- Cash withdrawals count as expenses; there is no cash wallet. Internal transfers are excluded from income/expense totals, while their fees count as expenses.
-- Receipt uploads: PNG, JPG, WEBP, or PDF (10 MB, up to 5 pages). Tesseract reads image text locally. PDF.js extracts text or renders scanned pages for OCR. Detection suggests amount, date, category, reference, and source bank when explicit and unambiguous. Confirmation remains required; the app never treats a bank logo alone as proof of the sending account.
-- Quick edit and confirmed deletion from transaction cards. Editing recalculates both sides of a transfer, keeps existing proof, and rejects changes that would create a negative balance or duplicate another record.
-- Original proof stored in IndexedDB and accessible from transaction details. SHA-256 proof fingerprint and account/reference checks prevent duplicates.
-- Search by title, category, account, reference, or income source; combine transaction kind, category, account, month, and min/max amount filters; sort and export the filtered result as CSV.
-- Flexible allocation from **existing personal balance minus unpaid obligations**, excluding shared wallets. Adjustable percentages always sum to 100%. A shortfall is surfaced before allocating optional spending. This is a transparent rules-based assistant, not a prediction of irregular future income or a bank-product recommendation engine.
-- Goals tied to dedicated wallets, one goal per wallet, with progress from recorded balances. Recording a proposed transfer still requires explicit confirmation.
-- Shared-account balances, goals, and transfer history. This release is a single-device record, not shared login or collaborative editing.
-- JSON backup and confirmed restore of accounts, transactions, goals, planning, and available original proofs. Backups contain sensitive financial information and should be kept private.
-- iPhone-first layout adapted from the supplied design exports: iPhone system typography, navy, neutral grouped surfaces, rounded cards, five-tab navigation, category/account bottom sheets, and light/dark/system appearance. Dashboard period controls update three charts and a five-category breakdown. Sky Insights shows only the personal-fund plan, largest spending category, and shared-account balance. Preferences for these three cards persist across reloads. See [the mobile design notes](docs/mobile-design.md).
-- Full-page reports with weekly/monthly/yearly periods, a validated end date, transaction-kind filters, six actual summary values, CSV export, and browser printing / Save as PDF. The print layout includes filtered transaction details and income sources.
-- Installable PWA manifest and production service worker. The application shell is precached. OCR/PDF supporting public assets are cached on use; first-time OCR requires the app server to be reachable.
+## Struktur
 
-## Data and financial boundaries
+| Lokasi                                        | Tanggung jawab                                        |
+| --------------------------------------------- | ----------------------------------------------------- |
+| `app/`                                        | Entry Next.js, metadata iOS, route API serverless     |
+| `src/Application.tsx`                         | Login, undangan/pemulihan password, proses Share      |
+| `src/finance-client.ts`, `src/use-finance.ts` | RPC, snapshot, konflik, idempotensi dan sinkronisasi  |
+| `supabase/`                                   | SQL schema, RLS, RPC, whitelist, pengukuran kapasitas |
+| `src/domain.ts`, `src/analytics.ts`           | Model keuangan dan perhitungan                        |
+| `src/share.ts`, `src/scan-contract.ts`        | Hasil scanner, pemetaan bank dan validasi             |
+| `src/backup.ts`                               | Pemulihan arsip teks ke akun kosong                   |
+| `src/App.tsx`, `src/forms.tsx`, `src/ui.tsx`  | Layar, formulir, dialog dan picker                    |
+| `public/design/`, `design/references/`        | Ornamen asli dan referensi SVG                        |
+| `scripts/`                                    | Build Service Worker dan ekstraksi aset desain        |
+| `tests/`                                      | Logika, database, API dan browser                     |
 
-**There is no bank connection, automatic bank synchronization, or money movement.** All balances are calculated from opening balances and confirmed records. Compare with actual bank balances periodically and record omitted charges, interest, or income.
+Deploy sebagai **Next.js di Vercel**, bukan sebagai static `dist`. File `vercel.json`, header keamanan, dan CSP ada dalam project. Tidak ada deployment atau akun cloud sungguhan yang dibuat dalam pengerjaan ini.
 
-Metadata is stored in localStorage; proofs are stored in IndexedDB. Data is scoped to the browser and origin, is not encrypted by the application, and does not automatically appear on another device. Clearing browser/site storage can erase it. Download a backup before changing devices, resetting, or clearing browser data. No analytics or external document-upload service is included.
-
-Receipt extraction can be inaccurate, especially on low-quality screenshots and unfamiliar bank layouts. Ambiguous sources remain unselected. Check transaction type (expense, income, or internal transfer), amount, account, and fees before saving. Two different screenshots of the same payment may not share a file hash; reference detection and human review remain important.
-
-Transactions cannot overdraw a recorded account. Deletion is blocked when it would make a remaining account balance negative. A plan does not reserve funds, alter bank balances, or guarantee savings. Re-evaluate it after transactions; it is a snapshot allocation, not a list of repeated transfer instructions.
-
-## Publish and use on iPhone
-
-Build with `npm run build` and serve the complete `dist/` directory at the **root of an HTTPS origin**, including the `ocr/`, `pdf/`, icons, manifest, and `sw.js` assets. Configure `index.html` as the SPA fallback. Serve `sw.js` and `index.html` with revalidation rather than long immutable caching; hashed `/assets/` files can use immutable caching. No deployment has been performed by this repository setup.
-
-On iPhone Safari: open the published HTTPS address, then **Share → Add to Home Screen**. Test image/PDF uploads and storage on the intended physical iPhone before using it as the only copy of financial records. Browser and installed PWA storage behavior can vary; export a backup before moving between them.
-
-## Structure
-
-```text
-src/domain.ts       Financial model, validation, balances, allocations, demo and CSV
-src/receipts.ts     Local OCR/PDF extraction, conservative parsing, proof storage
-src/App.tsx         App navigation, planning, backup and restore
-src/Dashboard.tsx   Responsive overview and data-derived insights
-src/TransactionsPage.tsx Combined filters and transaction card actions
-src/Reports.tsx     Period reports, CSV export and print/PDF layout
-src/analytics.ts    Period buckets, report calendar ranges and local insights
-src/preferences.ts Persisted dashboard insight preferences
-src/forms.tsx       Account, goal, transaction and proof flows
-src/ui.tsx          Accessible dialogs, charts, account marks and ledger components
-src/styles.css     Base responsive styles and reduced-motion support
-src/figma-dashboard.css Supplied design tokens and dashboard composition
-src/mobile-ui.css  iPhone screens, forms, sheets and report print layout
-src/native-ui.css  System typography, consistent controls and restrained motion
-scripts/           Reproducible local assets and service-worker template
-tests/             Financial/parsing tests and production browser tests
-```
-
-Next stages for a family product would include authenticated accounts, a secure backend, encrypted document storage, multi-device synchronization, and explicit membership/access rules. They are not simulated by the current local-first release.
+Saldo merupakan catatan aplikasi, bukan akses/mutasi ke bank. Foto dikirim ke Google selama pemindaian; aplikasi tidak menyimpannya, sedangkan retensi pihak Google mengikuti ketentuan layanan akun Anda. Kapasitas 500 MB tidak identik dengan 200 byte/baris: ukur menggunakan script kapasitas, termasuk indeks dan metadata layanan.

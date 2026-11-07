@@ -1,44 +1,21 @@
-# SkyWallet — adaptasi UI iPhone
+# Penyelarasan desain SkyWallet
 
-Implementasi mengikuti delapan ekspor React dan gambar referensi yang diberikan pengguna: dashboard, daftar transaksi, filter, pemilih kategori, tambah transaksi, pemilih rekening, laporan, dan pengaturan. Ekspor tersebut menjadi acuan visual; komponen prototipe yang berulang disusun ulang agar dapat dipakai dengan data SkyWallet. Ini bukan hasil pengambilan langsung dari Figma API.
+Acuan utama adalah delapan SVG pengguna di `design/references/`, pada lebar 393 px. SVG diperlakukan sebagai referensi desain, bukan instruksi aplikasi. Teks/data contoh diganti dengan catatan keuangan Rupiah dan fitur pribadi/bersama.
 
-## Tampilan
+- Background `#F9F8F6`, foreground `#1E263E`, primary `#1D2949`, secondary `#F0EEEB`, border `#E4E2DD`, muted foreground `#676D7E`.
+- Accent `#3ED0C2`, success `#7CCB8C`, warning `#F6AE31`, destructive `#F37777`, card `#FFFFFF`.
+- Noto Sans variable lokal, bobot 400/500/700; heading halaman 24/32, heading sheet 16/24.
+- Halaman iPhone: margin sisi 24, gap utama 14, kartu radius 18 atau 24 sesuai SVG; lima tab navigasi dengan ikon duotone asli.
+- Sheet transaksi: radius atas 28, handle 100 × 5, header tetap, konten bergulir, footer simpan 48 px. Kolom kategori, nominal/tanggal, rekening, dan detail menggunakan bentuk field SVG. Sheet kategori dan rekening mempertahankan form induk.
+- `public/design/` menyimpan path/fill/gradient asli. `scripts/extract-design-assets.mjs` mereproduksinya dari SVG dengan bounding box tanpa menggambar ulang ikon.
+- Grafik menampilkan data nyata dengan geometri garis, bar, grid, titik, dan palet referensi. Donut memakai segmen dengan ketebalan bervariasi. Jumlah transaksi, kategori, dan insight mengikuti fitur yang tersedia.
+- Tambahan alur: Pengeluaran/Pemasukan, Transfer sebagai kategori, sumber/tujuan, catatan opsional, login dan konfirmasi hasil scan. Perubahan isi ini memakai komponen visual referensi.
+- Tidak ada tombol upload foto manual. Tombol plus di Transaksi membuka form. Tombol hapus seluruh data di sesi cloud diganti Keluar dari akun agar pengguna tidak menghapus catatan bersama secara massal.
+- Framer memakai `LazyMotion`, `AnimatePresence`, `m` dan layout projection. Transisi sheet/reveal menggunakan opacity dan transform; reduced motion dihormati. Tidak ada animasi tinggi setiap frame atau loop dekoratif.
+- `Detail tambahan` menggunakan kolom `minmax(0,1fr)`, textarea tanpa resize grip, padding yang dibatasi, dan satu kolom pada layar sangat sempit.
 
-- Tipografi sistem iPhone (SF pada Safari iOS), latar netral `#f5f5f7`, navy `#1d2949`, kartu putih, kontrol abu netral, aksen turquoise, hijau, coral, dan amber sesuai referensi.
-- Lebar acuan 393 px, jarak tepi 24 px, kartu membulat, grafik pada kartu terpisah, lembar pilihan dari bawah, dan lima tab navigasi.
-- Navigasi: Beranda, Dompet, Transaksi, Laporan, Setelan. Rencana uang dan ruang bersama tersedia dari Dompet dan kartu ringkasan.
-- Dashboard mobile berisi saldo, empat ringkasan, tiga grafik, diagram kategori, dan tiga insight penting: rencana dana pribadi, belanja paling besar, serta saldo akun bersama. Rincian dompet dan transaksi berada pada tab masing-masing.
-- Kartu Sky Insights mengikuti contoh terbaru: ikon pastel kecil, label dan konteks satu baris, lalu satu paragraf data. Tanpa judul besar atau tombol tambahan di setiap kartu.
-- Header Dashboard memakai subjudul “Your financial overview” dan satu aksi unggah dengan ikon awan/panah. Aksi yang sama dipakai pada header Transaksi; input manual tetap tersedia melalui tab formulir.
-- Urutan transaksi memakai tombol dan lembar pilihan SkyWallet: terbaru, terlama, atau nominal terbesar, dengan penanda pilihan aktif.
-- Safe area iPhone, tinggi layar dinamis, konten formulir yang bisa digulir dengan judul/X dan tombol simpan tetap terlihat, serta fokus dan penutupan dialog bertingkat. Tampilan menggunakan status bar dan indikator Home milik perangkat.
-- Ikon SVG yang hanya disebut dalam ekspor tanpa berkas aslinya digantikan ikon lokal Lucide atau emoji kategori. Tidak memerlukan pemuatan aset Figma.
+Status bar/home indicator referensi ditampilkan pada pratinjau web seluler. Pada mode standalone, area tersebut diserahkan ke safe area dan sistem operasi agar tidak ganda. Tata letak desktop menyesuaikan ruang yang lebih lebar; SVG yang tersedia hanya merinci iPhone. Pengujian geometri browser dan pemeriksaan screenshot membantu menghindari overflow, tetapi teks nyata, font rendering OS, status perangkat, dan fitur tambahan membuat seluruh layar bukan salinan bitmap identik dari gambar contoh.
 
-## Penyesuaian isi
+## Hasil render yang dapat ditinjau
 
-| Bagian referensi               | Isi SkyWallet                                                                               |
-| ------------------------------ | ------------------------------------------------------------------------------------------- |
-| Saldo dan empat ringkasan      | Saldo semua akun, pemasukan, pengeluaran, alokasi tabungan, dana bersama                    |
-| Income/expense, tren, kategori | Data transaksi nyata, pilihan 7/30/365 hari, transfer pokok tidak masuk arus bersih         |
-| Paid/unpaid dan cash/card      | Jenis transaksi dan rekening bank/e-wallet, kategori, sumber pemasukan, biaya, bukti        |
-| Pemilih metode pembayaran      | Pilihan rekening milik pengguna beserta saldo tercatat dan penanda bersama                  |
-| Upah per jam dan jam kerja     | Pemasukan tidak tetap, cadangan wajib, alokasi dana tersedia                                |
-| Report content                 | Semua/pemasukan/pengeluaran/transfer, tanggal valid, enam ringkasan dan ekspor terfilter    |
-| Profil contoh dan notifikasi   | Profil lokal; tema dan cadangan tetap tersedia; tiga sakelar insight di bagian paling bawah |
-| Delete account                 | Reset catatan lokal dengan konfirmasi; fitur cadangan tetap tersedia                        |
-
-Perhitungan insight bersifat lokal dan dijelaskan dari catatan. Tidak memprediksi penghasilan tidak tetap, tidak menjanjikan hasil tabungan atau bunga bank, dan tidak memindahkan uang. Saldo bersama tetap terpisah dari alokasi pribadi. Penarikan tunai adalah pengeluaran.
-
-## Verifikasi dan batasnya
-
-Pengujian otomatis mencakup perhitungan keuangan, kalender laporan, unggah gambar/PDF dengan OCR lokal, pemilihan rekening, edit/hapus, cadangan berisi bukti asli, pemulihan, pembukaan offline, tema, preferensi insight, serta tata letak 375/393/430 px dan lanskap 852 px. Browser yang digunakan: Chromium desktop, Chromium ukuran iPhone, dan WebKit dengan emulasi sentuh iPhone.
-
-Pengujian WebKit mengungkap kegagalan serialisasi Blob/File ke IndexedDB. Bukti sekarang disimpan sebagai byte asli dan tipe berkas; pembacaan Blob dari versi sebelumnya tetap didukung. Uji cadangan membandingkan kembali seluruh byte gambar asli setelah ekspor, kemudian memulihkan dan membuka buktinya.
-
-Verifikasi pada 2 November 2026: build produksi berhasil; 26 tes logika lulus; 42 skenario browser telah diverifikasi pada ketiga proyek. Pemeriksaan mencakup tiga kartu insight dan preferensinya, pilihan bank dan urutan transaksi, pemulihan cadangan lama, serta posisi judul/X dan tombol simpan yang tetap saat isi formulir digulir. Pemeriksaan tambahan berhasil membuat tujuan tabungan melalui pemilih rekening, memfilter akun OVO, dan mengembalikan filter ke semua rekening.
-
-Setelan menampilkan profil lokal, tema, data/cadangan, reset, lalu informasi di aplikasi pada bagian terakhir. Kartu informasi pencatatan, penyimpanan lokal, dan panduan iPhone disembunyikan dari UI; fungsi penyimpanan, pencadangan, serta PWA tetap tersedia. Nama aplikasi, logo teks, manifest, judul halaman, dan berkas ekspor memakai SkyWallet. Kunci penyimpanan lama dipertahankan; pemulihan menerima cadangan SkyWallet serta skySave.
-
-WebKit Linux bukan perangkat iPhone fisik. Keyboard iOS, pemilih foto/file, Share, perilaku penyimpanan Safari/PWA, dan pemasangan ke layar utama masih perlu diperiksa di iPhone yang akan dipakai. Data dan bukti tetap lokal di browser; sinkronisasi antarperangkat dan login keluarga belum tersedia.
-
-Perubahan ini tidak menerbitkan ulang environment atau melakukan deployment.
+Screenshot pada 393 × 852 px dengan data demonstrasi: [Dashboard](screenshots/home.png), [Transaksi](screenshots/transactions.png), [Pengaturan](screenshots/settings.png), [Laporan](screenshots/reports.png), [form](screenshots/add.png), [kategori](screenshots/categories.png), [rekening](screenshots/payment.png), dan [transfer dengan Catatan](screenshots/transfer-details.png).
