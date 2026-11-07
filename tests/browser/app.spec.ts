@@ -3,7 +3,6 @@ import type { Page } from '@playwright/test';
 import { today, demoStore, balances, totals } from '../../src/domain';
 
 async function navigate(page: Page, name: string) {
-  const mobile = page.viewportSize()!.width <= 800;
   const aliases: Record<string, string> = {
     Riwayat: 'Transaksi',
     Dompet: 'Dompet saya',
@@ -14,24 +13,26 @@ async function navigate(page: Page, name: string) {
   };
   name = aliases[name] ?? name;
   const nav = page.getByRole('navigation', {
-    name: mobile ? 'Navigasi mobile' : 'Navigasi utama',
+    name: 'Navigasi utama',
   });
-  if (mobile && ['Rencana uang', 'Ruang bersama'].includes(name)) {
+  if (['Rencana uang', 'Ruang bersama'].includes(name)) {
     await nav.getByRole('button', { name: 'Dompet saya', exact: true }).click();
     await page.locator('.wallet-tools').getByRole('button', { name, exact: true }).click();
+  } else if (name === 'Laporan') {
+    await nav.getByRole('button', { name: 'Transaksi', exact: true }).click();
+    await page
+      .getByRole('group', { name: 'Tampilan transaksi' })
+      .getByRole('button', { name: 'Laporan', exact: true })
+      .click();
   } else {
     await nav.getByRole('button', { name, exact: true }).click();
   }
 }
 async function manualTransaction(page: Page) {
-  if (page.viewportSize()!.width <= 800) {
-    await navigate(page, 'Transaksi');
-    await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
-  } else
-    await page
-      .locator('.topbar')
-      .getByRole('button', { name: 'Catat transaksi', exact: true })
-      .click();
+  await page
+    .getByRole('navigation', { name: 'Navigasi utama' })
+    .getByRole('button', { name: 'Catat transaksi', exact: true })
+    .click();
   await expect(page.getByRole('dialog', { name: 'Catat transaksi' })).toBeVisible();
 }
 async function fillNote(page: Page, note: string) {
@@ -271,6 +272,7 @@ test('quick edit and confirmed delete update balances without duplicating a reco
   state = await page.evaluate(() => JSON.parse(localStorage.getItem('skysave.v1')!));
   expect(state.transactions).toHaveLength(13);
   await page.reload();
+  await navigate(page, 'Ringkasan');
   await expect(page.getByText('Rp 14.585.010', { exact: true }).first()).toBeVisible();
 });
 
@@ -321,7 +323,7 @@ test('reports export actual transactions and appearance survives reload', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pengaturan' })).toBeVisible();
 });
 
 test('account sheet preserves the form and spends only from the selected wallet', async ({

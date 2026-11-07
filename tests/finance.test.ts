@@ -1,3 +1,4 @@
+import { moneyParts } from '../src/money.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -370,4 +371,19 @@ test('balance history includes the visible side of transfers from a partner priv
     { date: daysAgo(1), value: 0 },
     { date: today(), value: 100000 },
   ]);
+});
+
+test('compact currency preserves scale, rounding boundaries, and full-detail formatting', () => {
+  assert.deepEqual(moneyParts(14540010), { number: '14,54', unit: 'jt' });
+  assert.deepEqual(moneyParts(4970005), { number: '4,97', unit: 'jt' });
+  assert.deepEqual(moneyParts(999999), { number: '999.999', unit: '' });
+  assert.deepEqual(moneyParts(1000000), { number: '1', unit: 'jt' });
+  assert.deepEqual(moneyParts(1005000), { number: '1,01', unit: 'jt' });
+  assert.deepEqual(moneyParts(1005000000), { number: '1,01', unit: 'M' });
+  assert.deepEqual(moneyParts(-1250000), { number: '1,25', unit: 'jt' });
+  assert.deepEqual(moneyParts(999999999), { number: '1', unit: 'M' });
+  assert.deepEqual(moneyParts(1250000000), { number: '1,25', unit: 'M' });
+  assert.deepEqual(moneyParts(1000000000000), { number: '1', unit: 'T' });
+  assert.deepEqual(moneyParts(0), { number: '0', unit: '' });
+  assert.deepEqual(moneyParts(14540010, false), { number: '14.540.010', unit: '' });
 });

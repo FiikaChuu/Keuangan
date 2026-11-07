@@ -2,18 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import type { ReactNode, FormEvent } from 'react';
 import {
-  LayoutDashboard,
   ArrowLeftRight,
-  Wallet,
   Sparkles,
   Heart,
   Plus,
   ArrowUpRight,
-  ChevronDown,
   ChevronRight,
-  Search,
-  Bell,
-  Settings,
   ShieldCheck,
   ArrowRight,
   Leaf,
@@ -25,7 +19,6 @@ import {
   TrendingUp,
   Coffee,
   PiggyBank,
-  FileChartColumn,
   Sun,
   Moon,
   Monitor,
@@ -50,6 +43,10 @@ import { TransactionForm, AccountForm, GoalForm, TransactionDetail } from './for
 import TransactionsPage from './TransactionsPage';
 import Overview from './Dashboard';
 import Reports from './Reports';
+import WalletPage from './WalletPage';
+import AppNavigation, { pageFromLocation, pagePaths } from './AppNavigation';
+import type { Page } from './AppNavigation';
+import { MoneyAmount } from './MoneyAmount';
 import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
 import type { InsightPreferences } from './preferences';
 import { DesignIcon, DeviceStatus } from './design';
@@ -58,7 +55,6 @@ import type { ScanResult } from './scan-contract';
 import { defaultsFromScan } from './share';
 import { readBackup } from './backup';
 
-type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together' | 'reports' | 'settings';
 type Dialog =
   | {
       type: 'transaction';
@@ -72,18 +68,6 @@ type Dialog =
   | { type: 'confirm'; title: string; text: string; action: () => void }
   | { type: 'notifications' }
   | null;
-const primaryNavItems = [
-  { id: 'overview' as const, label: 'Ringkasan', short: 'Beranda', icon: LayoutDashboard },
-  { id: 'accounts' as const, label: 'Dompet saya', short: 'Dompet', icon: Wallet },
-  { id: 'transactions' as const, label: 'Transaksi', short: 'Transaksi', icon: ArrowLeftRight },
-  { id: 'reports' as const, label: 'Laporan', short: 'Laporan', icon: FileChartColumn },
-  { id: 'settings' as const, label: 'Pengaturan', short: 'Setelan', icon: Settings },
-];
-const navItems = [
-  ...primaryNavItems,
-  { id: 'plan' as const, label: 'Rencana uang', short: 'Rencana', icon: Sparkles },
-  { id: 'together' as const, label: 'Ruang bersama', short: 'Bersama', icon: Heart },
-];
 function loadStore(): { data: Store; error: string } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -120,7 +104,20 @@ export default function App({
   const [localStore, setStore] = useState(initial.data);
   const store = remote?.store ?? localStore;
   const [recoveryError, setRecoveryError] = useState(initial.error);
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setPageState] = useState<Page>(pageFromLocation);
+  function setPage(next: Page) {
+    history.pushState(null, '', pagePaths[next]);
+    setPageState(next);
+  }
+  useEffect(() => {
+    const sync = () => setPageState(pageFromLocation());
+    window.addEventListener('popstate', sync);
+    window.addEventListener('hashchange', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('hashchange', sync);
+    };
+  }, []);
   const [dialog, setDialogState] = useState<(Exclude<Dialog, null> & { key: string }) | null>(null);
   function setDialog(next: Dialog) {
     // A new session must not reuse form state while the previous sheet is still exiting.
@@ -270,8 +267,12 @@ export default function App({
           {account.provider} · {account.name}
         </p>
         <div className="goal-amount">
-          <strong>{money(current)}</strong>
-          <span>dari {money(g.target)}</span>
+          <strong>
+            <MoneyAmount value={current} />
+          </strong>
+          <span>
+            dari <MoneyAmount value={g.target} />
+          </span>
         </div>
         <div className="progress-track">
           <span style={{ width: `${progress}%` }} />
@@ -312,7 +313,9 @@ export default function App({
         <span>{a.name}</span>
       </div>
       <div className="wallet-balance">
-        <strong>{money(b[a.id])}</strong>
+        <strong>
+          <MoneyAmount value={b[a.id]} />
+        </strong>
         <ArrowUpRight size={15} />
       </div>
       {full && (
@@ -328,129 +331,7 @@ export default function App({
   );
   return (
     <div className="app-shell" data-demo={store.demo} data-page={page}>
-      <aside className="sidebar">
-        <a
-          href="#"
-          className="brand-link"
-          aria-label="SkyWallet beranda"
-          onClick={(e) => {
-            e.preventDefault();
-            setPage('overview');
-          }}
-        >
-          <Logo />
-        </a>
-        <div className="workspace-label">YOUR PERSONAL SPACE</div>
-        <nav aria-label="Navigasi utama">
-          {navItems.map((n) => (
-            <button
-              key={n.id}
-              aria-label={n.label}
-              className={`nav-item ${page === n.id ? 'active' : ''}`}
-              onClick={() => {
-                setPage(n.id);
-                setSearch('');
-              }}
-            >
-              <n.icon size={19} strokeWidth={1.7} />
-              <span>{n.label}</span>
-              {page === n.id && <span className="nav-active-dot" />}
-              {n.id === 'together' && <span className="new-label">FOR TWO</span>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <span className="note-illustration">
-              <Leaf size={27} strokeWidth={1.3} />
-              <span>✦</span>
-            </span>
-            <h3>
-              Small steps.
-              <br />
-              Brighter future.
-            </h3>
-            <p>
-              Mulai dari sedikit,
-              <br />
-              tumbuh jadi berarti.
-            </p>
-            <button onClick={() => setPage('plan')}>
-              Buat rencanamu
-              <ArrowUpRight size={15} />
-            </button>
-          </div>
-          <button className="nav-item settings-nav" onClick={() => setPage('settings')}>
-            <Settings size={19} strokeWidth={1.7} />
-            Pengaturan
-          </button>
-          <button className="profile" onClick={() => setPage('settings')}>
-            <span className="avatar">
-              S<span />
-            </span>
-            <span>
-              <strong>Ruang pribadimu</strong>
-              <small>
-                <span className="status-dot" />
-                {remote?.status ?? 'Mode demo · perangkat ini'}
-              </small>
-            </span>
-            <ChevronDown size={14} />
-          </button>
-        </div>
-      </aside>
       <div className="main-shell">
-        <header className="topbar">
-          <div className="topbar-breadcrumb">
-            <span className="breadcrumb-mark">
-              <LayoutDashboard size={14} />
-            </span>
-            Ruang pribadi<span>/</span>
-            <strong>{navItems.find((n) => n.id === page)?.label}</strong>
-          </div>
-          <div className="topbar-actions">
-            <button
-              className="btn primary record-transaction"
-              onClick={() => setDialog({ type: 'transaction' })}
-            >
-              <Plus size={18} />
-              Catat transaksi
-            </button>
-            <button className="local-badge" onClick={() => setPage('settings')}>
-              <ShieldCheck size={13} />
-              <span>Private by design</span>
-            </button>
-            <button
-              className="icon-btn search-top"
-              aria-label="Cari transaksi"
-              onClick={() => {
-                setPage('transactions');
-                setSearch('');
-                setTimeout(() => document.getElementById('transaction-search')?.focus(), 80);
-              }}
-            >
-              <Search size={19} />
-            </button>
-            <button
-              className="icon-btn notification-btn"
-              aria-label="Lihat insight keuangan"
-              onClick={() => setDialog({ type: 'notifications' })}
-            >
-              <Bell size={19} />
-              <i />
-            </button>
-            <button
-              className="top-avatar"
-              aria-label="Buka pengaturan"
-              onClick={() => setPage('settings')}
-            >
-              S
-            </button>
-          </div>
-          <div className="mobile-brand">
-            <Logo />
-          </div>
-        </header>
         <DeviceStatus />
         <main>
           {store.demo && (
@@ -494,109 +375,26 @@ export default function App({
             />
           )}
           {page === 'accounts' && (
-            <>
-              <PageHeading
-                eyebrow="A PLACE FOR EVERY RUPIAH"
-                title="Dompet"
-                description="Saldo rekening dan e-walletmu."
-                action={
-                  <button className="btn primary" onClick={() => setDialog({ type: 'account' })}>
-                    <Plus size={17} />
-                    Tambah dompet
-                  </button>
-                }
-              />
-              <div className="account-summary">
-                <div>
-                  <span>Total seluruh dompet</span>
-                  <strong>{money(total)}</strong>
-                </div>
-                <div>
-                  <span>Pribadi</span>
-                  <strong>
-                    {money(
-                      store.accounts.filter((a) => !a.shared).reduce((s, a) => s + b[a.id], 0),
-                    )}
-                  </strong>
-                </div>
-                <div>
-                  <span>Bersama</span>
-                  <strong>
-                    {money(store.accounts.filter((a) => a.shared).reduce((s, a) => s + b[a.id], 0))}
-                  </strong>
-                </div>
-              </div>
-              <div className="wallet-tools">
-                <button onClick={() => setPage('plan')}>
-                  <PiggyBank size={19} />
-                  <span>Rencana uang</span>
-                  <ChevronRight size={16} />
-                </button>
-                <button onClick={() => setPage('together')}>
-                  <Heart size={19} />
-                  <span>Ruang bersama</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              <div className="section-title">
-                <h2>
-                  Dompet pribadi
-                  <span className="count-badge">
-                    {store.accounts.filter((a) => !a.shared).length}
-                  </span>
-                </h2>
-                <span className="muted-label">Bank & e-wallet</span>
-              </div>
-              {store.accounts.some((a) => !a.shared) ? (
-                <div className="wallet-grid">
-                  {store.accounts.filter((a) => !a.shared).map((a) => accountCard(a, true))}
-                  <button className="add-wallet" onClick={() => setDialog({ type: 'account' })}>
-                    <span>
-                      <Plus size={22} />
-                    </span>
-                    Dompet baru
-                  </button>
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<Wallet size={28} />}
-                  title="Beri setiap rupiah tempatnya"
-                  text="Mulai dengan rekening yang paling sering kamu gunakan dan masukkan saldo awalnya."
-                  action={
-                    <button className="btn primary" onClick={() => setDialog({ type: 'account' })}>
-                      <Plus size={16} />
-                      Tambah dompet pertama
-                    </button>
-                  }
-                />
-              )}
-              <div className="section-title spaced">
-                <h2>
-                  Dompet bersama
-                  <Heart size={17} />
-                </h2>
-                <button
-                  className="text-btn"
-                  onClick={() => setDialog({ type: 'account', shared: true })}
-                >
-                  Tambah akun bersama
-                  <Plus size={14} />
-                </button>
-              </div>
-              <div className="wallet-grid">
-                {store.accounts.filter((a) => a.shared).map((a) => accountCard(a, true))}
-              </div>
-              <div className="privacy-strip">
-                <ShieldCheck size={20} />
-                <div>
-                  <strong>Catatanmu. Kendalimu.</strong>
-                  <p>
-                    Saldo mengikuti transaksi yang kamu catat, bukan saldo langsung dari bank. Tidak
-                    ada akun bank yang dihubungkan. Penarikan tunai dicatat sebagai pengeluaran.
-                  </p>
-                </div>
-              </div>
-            </>
+            <WalletPage
+              store={store}
+              onAdd={(shared) => setDialog({ type: 'account', shared })}
+              onPlan={() => setPage('plan')}
+              onTogether={() => setPage('together')}
+              accountCard={accountCard}
+            />
+          )}
+          {(page === 'transactions' || page === 'reports') && (
+            <div className="activity-tabs" role="group" aria-label="Tampilan transaksi">
+              <button
+                aria-pressed={page === 'transactions'}
+                onClick={() => setPage('transactions')}
+              >
+                Riwayat
+              </button>
+              <button aria-pressed={page === 'reports'} onClick={() => setPage('reports')}>
+                Laporan
+              </button>
+            </div>
           )}
           {page === 'transactions' && (
             <TransactionsPage
@@ -762,32 +560,14 @@ export default function App({
           </footer>
         </main>
       </div>
-      <nav className="mobile-nav" aria-label="Navigasi mobile">
-        {primaryNavItems.map((n) => (
-          <button
-            key={n.id}
-            aria-label={n.label}
-            aria-current={page === n.id ? 'page' : undefined}
-            className={page === n.id ? 'active' : ''}
-            onClick={() => {
-              setPage(n.id);
-              setSearch('');
-            }}
-          >
-            <DesignIcon
-              name={`nav-${({ overview: 'home', accounts: 'wallet', transactions: 'transactions', reports: 'reports', settings: 'settings' } as const)[n.id]}${page === n.id && n.id !== 'accounts' ? '-active' : ''}`}
-            />
-            <span>{n.short}</span>
-          </button>
-        ))}
-      </nav>
+      <AppNavigation
+        page={page}
+        go={setPage}
+        onCapture={() => setDialog({ type: 'transaction' })}
+      />
       {toast && (
         <div className="toast" role="status">
-          <Check size={17} />
-          <span>{toast}</span>
-          <button aria-label="Tutup pesan" onClick={() => setToast('')}>
-            <X size={15} />
-          </button>
+          {toast}
         </div>
       )}
       <AnimatePresence mode="wait">

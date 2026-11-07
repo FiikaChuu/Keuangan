@@ -1,3 +1,4 @@
+import { MoneyAmount } from './MoneyAmount';
 import { useState } from 'react';
 import { DesignIcon } from './design';
 import type { Store, Transaction } from './domain';
@@ -23,8 +24,8 @@ export default function Reports({ store }: { store: Store }) {
   const fees = tx.reduce((s, t) => s + t.fee, 0);
   const moved = tx.filter((t) => t.kind === 'transfer').reduce((s, t) => s + t.amount, 0);
   const summary = [
-    { label: 'Pemasukan', value: money(sum.income), tone: 'positive' },
-    { label: 'Pengeluaran', value: money(sum.expense), tone: 'negative' },
+    { label: 'Pemasukan', value: <MoneyAmount value={sum.income} />, tone: 'positive' },
+    { label: 'Pengeluaran', value: <MoneyAmount value={sum.expense} />, tone: 'negative' },
     {
       label: 'Selisih periode',
       value: money(sum.income - sum.expense),

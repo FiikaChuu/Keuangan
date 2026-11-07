@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   poweredByHeader: false,
+  async rewrites() {
+    return ['/dompet', '/expenses', '/reports', '/rencana-uang', '/ruang-bersama', '/settings'].map(
+      (source) => ({ source, destination: '/' }),
+    );
+  },
   async headers() {
     return [
       {

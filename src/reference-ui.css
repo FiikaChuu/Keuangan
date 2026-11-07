@@ -1209,3 +1209,24 @@ h3 {
     padding: 21px 18px 12px;
   }
 }
+
+/* The current main navigation/wallet system also hosts authenticated sessions. */
+.app-shell {
+  display: block;
+}
+.app-shell .main-shell {
+  margin-left: 0;
+}
+.app-navigation {
+  z-index: 40;
+}
+.app-navigation > .nav-slot > button {
+  border: 0;
+}
+.money-readable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

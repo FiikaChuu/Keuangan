@@ -6,10 +6,8 @@ const notoSans = localFont({
   display: 'swap',
   variable: '--font-noto',
 });
-import '../src/styles.css';
-import '../src/figma-dashboard.css';
-import '../src/mobile-ui.css';
-import '../src/native-ui.css';
+import '../src/app.css';
+import '../src/motion-ui.css';
 import '../src/reference-ui.css';
 
 export const metadata: Metadata = {

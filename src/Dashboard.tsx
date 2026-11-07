@@ -1,8 +1,9 @@
+import { MoneyAmount } from './MoneyAmount';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Plus, ArrowUpRight, Eye, EyeOff, ArrowRight, Wallet } from 'lucide-react';
 import type { Store, Transaction, Account } from './domain';
-import { money, totals, allocations, spendingByCategory, balances } from './domain';
+import { totals, allocations, spendingByCategory, balances } from './domain';
 import { dashboardPeriods, moneyInsights, periodTransactions } from './analytics';
 import type { InsightPreferences } from './preferences';
 import { DesignIcon } from './design';
@@ -106,15 +107,17 @@ export default function Dashboard({
               </button>
             </div>
           </div>
-          <strong className="figma-balance-amount">{visible ? money(total) : 'Rp ••••••••'}</strong>
+          <strong className="figma-balance-amount">
+            {visible ? <MoneyAmount value={total} /> : 'Rp ••••••••'}
+          </strong>
           <dl className="figma-balance-breakdown">
             <div>
               <dt>Pribadi</dt>
-              <dd>{visible ? money(plan.personal) : '••••••'}</dd>
+              <dd>{visible ? <MoneyAmount value={plan.personal} /> : '••••••'}</dd>
             </div>
             <div>
               <dt>Bersama</dt>
-              <dd>{visible ? money(shared) : '••••••'}</dd>
+              <dd>{visible ? <MoneyAmount value={shared} /> : '••••••'}</dd>
             </div>
           </dl>
           <button className="figma-manage-wallets" onClick={() => go('accounts')}>
@@ -130,7 +133,9 @@ export default function Dashboard({
                 <DesignIcon name="stat-income" size={26} />
               </span>
             </div>
-            <strong>{money(sum.income)}</strong>
+            <strong>
+              <MoneyAmount value={sum.income} />
+            </strong>
             <p>{tx.filter((t) => t.kind === 'income').length} kali uang masuk</p>
           </article>
           <article className="figma-stat expense">
@@ -140,7 +145,9 @@ export default function Dashboard({
                 <DesignIcon name="stat-expense" size={26} />
               </span>
             </div>
-            <strong>{money(sum.expense)}</strong>
+            <strong>
+              <MoneyAmount value={sum.expense} />
+            </strong>
             <p>Dalam periode ini</p>
           </article>
           <article className="figma-stat saving">
@@ -150,7 +157,9 @@ export default function Dashboard({
                 <DesignIcon name="stat-saving" size={26} />
               </span>
             </div>
-            <strong>{money(plan.saving)}</strong>
+            <strong>
+              <MoneyAmount value={plan.saving} />
+            </strong>
             <button onClick={() => go('plan')}>
               Alokasi {store.plan.saving}%<ArrowUpRight size={12} />
             </button>
@@ -162,7 +171,9 @@ export default function Dashboard({
                 <DesignIcon name="stat-income" size={26} />
               </span>
             </div>
-            <strong>{money(shared)}</strong>
+            <strong>
+              <MoneyAmount value={shared} />
+            </strong>
             <button onClick={() => go('together')}>
               {sharedAccounts.length} akun bersama
               <ArrowUpRight size={12} />
