@@ -4,10 +4,10 @@ import { money, compact, displayDate, balanceHistory } from './domain';
 import { cashflowBuckets } from './analytics';
 
 type Point = [number, number];
-const left = 23,
-  right = 307,
-  top = 4,
-  bottom = 166;
+const left = 48,
+  right = 350,
+  top = 12,
+  bottom = 170;
 const curve = (points: Point[]) =>
   points
     .map((p, i) =>
@@ -34,7 +34,7 @@ function Grid({ max, min = 0, dates }: { max: number; min?: number; dates: strin
             x={left - 4}
             y={top + 3 + (i * (bottom - top)) / 4}
             textAnchor="end"
-            fontSize="9"
+            fontSize="10"
             fill="var(--muted)"
           >
             {compact(max - (i * (max - min)) / 4)}
@@ -56,9 +56,9 @@ function Grid({ max, min = 0, dates }: { max: number; min?: number; dates: strin
             />
             <text
               x={x}
-              y="183"
+              y="193"
               textAnchor={i === 0 ? 'start' : i === dates.length - 1 ? 'end' : 'middle'}
-              fontSize="9"
+              fontSize="10"
               fill="var(--muted)"
             >
               {displayDate(date, { day: 'numeric', month: 'short' })}
@@ -101,14 +101,14 @@ export const BalanceChart = memo(function BalanceChart({
   return (
     <div className="reference-chart">
       <svg
-        viewBox="0 0 309 190"
+        viewBox="0 0 366 200"
         role="img"
         aria-label={`Grafik total saldo ${days} hari terakhir, saldo saat ini ${money(history.at(-1)!.value)}`}
       >
         <Grid max={max} dates={samples.map((p) => p.date)} />
-        <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="#3ED0C2" strokeWidth="1" />
-        <path d={curve(points)} fill="none" stroke="#3ED0C2" strokeWidth="1" />
-        <Dots points={points} color="#3ED0C2" />
+        <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="var(--accent)" strokeWidth="1" />
+        <path d={curve(points)} fill="none" stroke="var(--accent)" strokeWidth="2" />
+        <Dots points={points} color="var(--accent)" />
         {points.map((p, i) => (
           <circle key={i} cx={p[0]} cy={p[1]} r="12" fill="transparent">
             <title>
@@ -132,8 +132,18 @@ export const CashflowChart = memo(function CashflowChart({
   const width = (right - left) / buckets.length;
   return (
     <div className="reference-chart">
+      <div className="cashflow-legend">
+        <span>
+          <i />
+          Pemasukan
+        </span>
+        <span>
+          <i />
+          Pengeluaran
+        </span>
+      </div>
       <svg
-        viewBox="0 0 309 190"
+        viewBox="0 0 366 200"
         role="img"
         aria-label={`Grafik pemasukan hijau dan pengeluaran merah ${days} hari terakhir`}
       >
@@ -141,8 +151,8 @@ export const CashflowChart = memo(function CashflowChart({
         {buckets.map((b, i) => (
           <g key={b.end}>
             {[
-              ['income', '#7CCB8C'],
-              ['expense', '#F37777'],
+              ['income', 'var(--mint)'],
+              ['expense', 'var(--coral)'],
             ].map(([key, color], j) => {
               const value = b[key as 'income' | 'expense'];
               const height = (value / max) * (bottom - top);
@@ -165,7 +175,7 @@ export const CashflowChart = memo(function CashflowChart({
             })}
           </g>
         ))}
-        <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="#3ED0C2" strokeWidth="1" />
+        <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="var(--accent)" strokeWidth="1" />
       </svg>
     </div>
   );
@@ -191,16 +201,16 @@ export const NetCashflowChart = memo(function NetCashflowChart({
   return (
     <div className="reference-chart">
       <svg
-        viewBox="0 0 309 190"
+        viewBox="0 0 366 200"
         role="img"
         aria-label={`Grafik arus dana ${days} hari: pemasukan di atas nol, pengeluaran di bawah nol`}
       >
         <Grid max={max} min={-max} dates={buckets.map((b) => b.end)} />
-        <line x1={left} x2={right} y1={zero} y2={zero} stroke="#3ED0C2" strokeWidth="1" />
-        <path d={curve(incoming)} fill="none" stroke="#3ED0C2" strokeWidth="1" />
-        <Dots points={incoming} color="#3ED0C2" />
-        <path d={curve(outgoing)} fill="none" stroke="#F37777" strokeWidth="1" />
-        <Dots points={outgoing} color="#F37777" />
+        <line x1={left} x2={right} y1={zero} y2={zero} stroke="var(--accent)" strokeWidth="1" />
+        <path d={curve(incoming)} fill="none" stroke="var(--mint)" strokeWidth="2" />
+        <Dots points={incoming} color="var(--mint)" />
+        <path d={curve(outgoing)} fill="none" stroke="var(--coral)" strokeWidth="2" />
+        <Dots points={outgoing} color="var(--coral)" />
         {buckets.map((b, i) => (
           <rect
             key={b.end}

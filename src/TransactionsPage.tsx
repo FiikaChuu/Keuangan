@@ -26,7 +26,6 @@ const sortOptions = [
 
 export default function TransactionsPage({
   store,
-  onCreate,
   search,
   setSearch,
   detail,
@@ -123,13 +122,6 @@ export default function TransactionsPage({
           </h1>
           <p>Riwayat pemasukan dan pengeluaran.</p>
         </div>
-        <button
-          className="btn primary create-transaction"
-          aria-label="Catat transaksi"
-          onClick={onCreate}
-        >
-          <DesignIcon name="plus" />
-        </button>
       </div>
       <section className="ledger-panel" aria-label="Riwayat transaksi">
         <div className="ledger-tools">

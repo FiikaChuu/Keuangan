@@ -11,7 +11,7 @@ import '../src/motion-ui.css';
 import '../src/reference-ui.css';
 
 export const metadata: Metadata = {
-  title: 'SkyWallet — Your money, in balance.',
+  title: 'SkyWallet — Ruang untuk uangmu.',
   description: 'Catatan keuangan pribadi dan bersama.',
   manifest: '/manifest.json',
   appleWebApp: { capable: true, title: 'SkyWallet', statusBarStyle: 'default' },
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#F9F8F6',
+  themeColor: '#f3f6f6',
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

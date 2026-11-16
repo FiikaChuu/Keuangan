@@ -12,6 +12,13 @@ import {
   ArrowLeftRight,
   Pencil,
   ChevronDown,
+  Sprout,
+  House,
+  Plane,
+  Gem,
+  GraduationCap,
+  Laptop,
+  ScanLine,
 } from 'lucide-react';
 import type { Store, Transaction, Account, Goal } from './domain';
 import {
@@ -27,6 +34,15 @@ import { AnimatedReveal, sheetSpring } from './motion';
 import { EmptyState, CategoryPicker, AccountPicker, ProviderPicker } from './ui';
 
 type Save = (next: Store) => Promise<boolean>;
+
+const goalIconOptions = [
+  { value: '🌱', label: 'Pertumbuhan', Icon: Sprout },
+  { value: '🏡', label: 'Rumah', Icon: House },
+  { value: '✈️', label: 'Perjalanan', Icon: Plane },
+  { value: '💍', label: 'Pernikahan', Icon: Gem },
+  { value: '🎓', label: 'Pendidikan', Icon: GraduationCap },
+  { value: '💻', label: 'Perangkat', Icon: Laptop },
+] as const;
 export function TransactionForm({
   store,
   save,
@@ -35,6 +51,7 @@ export function TransactionForm({
   defaults = {},
   onAccount,
   editingId,
+  onReceipt,
 }: {
   store: Store;
   save: Save;
@@ -43,6 +60,7 @@ export function TransactionForm({
   defaults?: Partial<Transaction>;
   editingId?: string;
   onAccount: () => void;
+  onReceipt?: (file: File) => void;
 }) {
   const [newId] = useState(() => crypto.randomUUID());
   const submitting = useRef(false);
@@ -144,16 +162,51 @@ export function TransactionForm({
       />
     );
   return (
-    <form onSubmit={submit} className="form-stack modal-form">
+    <form onSubmit={submit} className="form-stack modal-form" aria-busy={saving}>
       <m.div className="modal-form-content" layoutScroll>
-        {amountIncludesFee && (
-          <p className="info-note">
-            Hasil baca nota perlu diperiksa. Total sudah termasuk biaya admin. Untuk transfer, pilih
-            hanya rekening milikmu atau akun bersama; pembayaran ke merchant tetap dicatat sesuai
-            kategori pengeluarannya.
-          </p>
+        {!editingId && !amountIncludesFee && (
+          <div className="receipt-entry">
+            <label className={`scan-action ${!onReceipt ? 'scan-unavailable' : ''}`}>
+              <ScanLine size={22} strokeWidth={1.7} aria-hidden="true" />
+              <span>
+                <strong>Pindai nota</strong>
+                <small>
+                  {onReceipt
+                    ? 'JPG, PNG, atau WEBP · maksimal 3 MB'
+                    : 'Tersedia setelah masuk ke akun, bukan dalam demo.'}
+                </small>
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Pindai nota"
+                disabled={!onReceipt || saving}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) onReceipt?.(file);
+                  event.target.value = '';
+                }}
+              />
+            </label>
+            {onReceipt && (
+              <p className="field-hint">
+                Gambar diproses sementara oleh Gemini, tidak disimpan. Periksa hasil sebelum
+                menyimpan.
+              </p>
+            )}
+          </div>
         )}
-        <div className="kind-switch" aria-label="Jenis transaksi">
+        {amountIncludesFee && (
+          <div className="info-note" role="note">
+            <Info size={17} aria-hidden="true" />
+            <span>
+              Periksa hasil baca nota sebelum menyimpan. Total sudah termasuk biaya admin. Untuk
+              transfer, pilih hanya rekening milikmu atau akun bersama. Pembayaran ke penjual tetap
+              dicatat sesuai kategori pengeluarannya.
+            </span>
+          </div>
+        )}
+        <div className="kind-switch" role="group" aria-label="Jenis transaksi">
           {(['expense', 'income'] as const).map((k) => (
             <button
               type="button"
@@ -310,7 +363,9 @@ export function TransactionForm({
               <div className="form-grid">
                 {kind !== 'income' && (
                   <label>
-                    Biaya admin (opsional)
+                    {amountIncludesFee && kind === 'transfer'
+                      ? 'Biaya admin (Rp) · perlu dikonfirmasi'
+                      : 'Biaya admin (Rp, opsional)'}
                     <input
                       type="number"
                       inputMode="numeric"
@@ -324,7 +379,7 @@ export function TransactionForm({
                   </label>
                 )}
                 <label>
-                  No. referensi (opsional)
+                  Nomor referensi (opsional)
                   <input
                     maxLength={100}
                     value={reference}
@@ -354,12 +409,16 @@ export function TransactionForm({
       </m.div>
       <div className="form-footer modal-form-actions">
         <p>
-          <ShieldCheck size={14} />
+          <ShieldCheck size={14} aria-hidden="true" />
           Hanya mengubah catatan SkyWallet, bukan saldo bank.
         </p>
         <button className="btn primary" disabled={saving} type="submit">
-          {saving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
-          {saving ? 'Menyimpan…' : 'Simpan transaksi'}
+          {saving ? (
+            <LoaderCircle className="spin" size={16} aria-hidden="true" />
+          ) : (
+            <Check size={16} aria-hidden="true" />
+          )}
+          <span>{saving ? 'Menyimpan…' : 'Simpan transaksi'}</span>
         </button>
       </div>
     </form>
@@ -413,7 +472,7 @@ export function AccountForm({
     }
   }
   return (
-    <form onSubmit={submit} className="form-stack modal-form">
+    <form onSubmit={submit} className="form-stack modal-form" aria-busy={saving}>
       <div className="modal-form-content">
         <div className="form-account-field">
           <span className="field-label">Bank atau e-wallet</span>
@@ -472,7 +531,7 @@ export function AccountForm({
           <Info size={17} />
           <span>
             Gunakan saldo saat mulai mencatat. Transaksi sebelum saldo awal tidak perlu dimasukkan
-            lagi. Akun bersama hanya dapat diakses anggota yang diizinkan.
+            lagi.
           </span>
         </div>
         {error && (
@@ -483,8 +542,12 @@ export function AccountForm({
       </div>
       <div className="modal-form-actions">
         <button className="btn primary full-width" type="submit" disabled={saving}>
-          Tambahkan dompet
-          <ArrowRight size={16} />
+          <span>{saving ? 'Menyimpan…' : 'Tambahkan dompet'}</span>
+          {saving ? (
+            <LoaderCircle className="spin" size={16} aria-hidden="true" />
+          ) : (
+            <ArrowRight size={16} aria-hidden="true" />
+          )}
         </button>
       </div>
     </form>
@@ -540,7 +603,7 @@ export function GoalForm({ store, save, close }: { store: Store; save: Save; clo
     }
   }
   return (
-    <form className="form-stack modal-form" onSubmit={submit}>
+    <form className="form-stack modal-form" onSubmit={submit} aria-busy={saving}>
       <div className="modal-form-content">
         <label>
           Nama tujuan
@@ -552,18 +615,23 @@ export function GoalForm({ store, save, close }: { store: Store; save: Save; clo
             onChange={(e) => setName(e.target.value)}
           />
         </label>
-        <div className="emoji-picker">
-          {['🌱', '🏡', '✈️', '💍', '🎓', '💻'].map((e) => (
-            <button
-              key={e}
-              className={emoji === e ? 'selected' : ''}
-              type="button"
-              aria-label={`Pilih ikon ${e}`}
-              onClick={() => setEmoji(e)}
-            >
-              {e}
-            </button>
-          ))}
+        <div className="form-icon-field" role="group" aria-label="Ikon tujuan">
+          <span className="field-label">Ikon tujuan</span>
+          <div className="emoji-picker goal-icon-picker">
+            {goalIconOptions.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                className={emoji === value ? 'selected' : ''}
+                type="button"
+                aria-label={`Pilih ikon ${label.toLowerCase()}`}
+                aria-pressed={emoji === value}
+                title={label}
+                onClick={() => setEmoji(value)}
+              >
+                <Icon size={21} strokeWidth={1.7} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
         </div>
         <label>
           Target tabungan (Rp)
@@ -603,8 +671,12 @@ export function GoalForm({ store, save, close }: { store: Store; save: Save; clo
       </div>
       <div className="modal-form-actions">
         <button className="btn primary" type="submit" disabled={saving}>
-          Mulai wujudkan
-          <ArrowRight size={16} />
+          <span>{saving ? 'Menyimpan…' : 'Simpan tujuan'}</span>
+          {saving ? (
+            <LoaderCircle className="spin" size={16} aria-hidden="true" />
+          ) : (
+            <ArrowRight size={16} aria-hidden="true" />
+          )}
         </button>
       </div>
     </form>

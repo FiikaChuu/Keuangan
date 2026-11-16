@@ -329,7 +329,9 @@ export function EmptyState({
 }) {
   return (
     <div className="empty-state">
-      <span className="empty-icon">{icon}</span>
+      <span className="empty-icon" aria-hidden="true">
+        {icon}
+      </span>
       <h3>{title}</h3>
       <p>{text}</p>
       {action}
@@ -453,7 +455,19 @@ export function SpendingDonut({
   const top = entries.slice(0, entries.length > 5 ? 4 : 5);
   const rest = entries.slice(top.length).reduce((s, [, n]) => s + n, 0);
   if (rest) top.push(['Lainnya', rest]);
-  const colors = ['#1D2949', '#F37777', '#F6AE31', '#7CCB8C', '#3ED0C2'];
+  const colors = [
+    'var(--coral-ink)',
+    'var(--expense-chart-2)',
+    'var(--expense-chart-3)',
+    'var(--expense-chart-4)',
+    'var(--expense-chart-5)',
+  ];
+  if (!total)
+    return (
+      <p className="chart-empty">
+        Belum ada pengeluaran pada periode ini. Kategori akan muncul setelah pengeluaran dicatat.
+      </p>
+    );
   let accumulated = 135;
   return (
     <>
@@ -470,7 +484,7 @@ export function SpendingDonut({
             const start = accumulated + 1;
             accumulated += (value / total) * 360;
             const end = accumulated - 1;
-            const outer = [78, 70, 76, 66, 62][index];
+            const outer = 78;
             const point = (angle: number, radius: number) =>
               [
                 90 + Math.cos((angle * Math.PI) / 180) * radius,

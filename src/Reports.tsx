@@ -40,7 +40,7 @@ export default function Reports({ store }: { store: Store }) {
       <section className="report-filters">
         <h2>
           <DesignIcon name="calendar" size={18} />
-          PERIODE LAPORAN
+          Periode laporan
         </h2>
         <div className="filter-tabs" role="group" aria-label="Periode laporan">
           {(
@@ -78,7 +78,7 @@ export default function Reports({ store }: { store: Store }) {
         )}
       </section>
       <section className="report-content-filter">
-        <h2>ISI LAPORAN</h2>
+        <h2>Isi laporan</h2>
         <div role="group" aria-label="Isi laporan">
           {(
             [
@@ -103,7 +103,7 @@ export default function Reports({ store }: { store: Store }) {
         <div className="report-period">
           <h2>
             <DesignIcon name="nav-reports-active" size={18} />
-            RINGKASAN {period === 'week' ? 'MINGGUAN' : period === 'month' ? 'BULANAN' : 'TAHUNAN'}
+            Ringkasan {period === 'week' ? 'mingguan' : period === 'month' ? 'bulanan' : 'tahunan'}
           </h2>
           <p>
             {range.error
