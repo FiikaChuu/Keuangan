@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, LazyMotion, MotionConfig } from 'framer-motion';
 import type { Session } from '@supabase/supabase-js';
+import { ArrowRight, LoaderCircle, NotebookPen, ReceiptText, Users } from 'lucide-react';
 import App from './App';
 import { Logo, Modal } from './ui';
 import { loadMotionFeatures } from './motion';
@@ -37,72 +38,126 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
     }
   }
   return (
-    <main className="auth-page">
-      <section className="auth-card">
+    <main className="auth-page auth-layout">
+      <section className="auth-intro" aria-labelledby="auth-intro-title">
         <Logo />
-        <h1>{recovery ? 'Atur kata sandi' : 'Selamat datang'}</h1>
-        <p>
-          {recovery
-            ? 'Buat kata sandi yang kuat untuk akunmu.'
-            : 'Masuk ke ruang keuangan pribadi dan bersama.'}
-        </p>
-        <form className="form-stack" onSubmit={submit}>
+        <div className="auth-intro-copy">
+          <h2 id="auth-intro-title">Ruang untuk catatan dan rencana.</h2>
+          <p>Catat uang sehari-hari, pisahkan dana bersama, dan ikuti tujuan tabunganmu.</p>
+        </div>
+        <ul className="auth-features" aria-label="Fitur SkyWallet">
+          <li>
+            <NotebookPen size={22} strokeWidth={1.6} aria-hidden="true" />
+            <div>
+              <strong>Catatan pribadi</strong>
+              <p>Pemasukan dan pengeluaran di setiap rekening.</p>
+            </div>
+          </li>
+          <li>
+            <Users size={22} strokeWidth={1.6} aria-hidden="true" />
+            <div>
+              <strong>Ruang bersama</strong>
+              <p>Catatan dana bersama untuk anggota yang diizinkan.</p>
+            </div>
+          </li>
+          <li>
+            <ReceiptText size={22} strokeWidth={1.6} aria-hidden="true" />
+            <div>
+              <strong>Nota jadi catatan</strong>
+              <p>Baca nota, periksa hasilnya, lalu simpan transaksi.</p>
+            </div>
+          </li>
+        </ul>
+      </section>
+      <section className="auth-form-panel" aria-labelledby="auth-form-title">
+        <header className="auth-form-heading">
+          <h1 id="auth-form-title">{recovery ? 'Atur kata sandi' : 'Masuk ke SkyWallet'}</h1>
+          <p>
+            {recovery
+              ? 'Buat kata sandi baru untuk melanjutkan ke catatanmu.'
+              : 'Gunakan email yang telah diundang untuk membuka catatanmu.'}
+          </p>
+        </header>
+        <form className="form-stack" onSubmit={submit} aria-busy={busy}>
           {!recovery && (
-            <label>
+            <label htmlFor="auth-email">
               Email
               <input
+                id="auth-email"
+                name="email"
                 type="email"
                 autoComplete="username"
+                placeholder="nama@contoh.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
           )}
-          <label>
-            Kata sandi
+          <label htmlFor="auth-password">
+            {recovery ? 'Kata sandi baru' : 'Kata sandi'}
             <input
+              id="auth-password"
+              name="password"
               type="password"
               autoComplete={recovery ? 'new-password' : 'current-password'}
+              aria-describedby={recovery ? 'auth-password-hint' : undefined}
               required
               minLength={recovery ? 12 : 1}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {recovery && (
+              <small className="field-hint" id="auth-password-hint">
+                Gunakan minimal 12 karakter.
+              </small>
+            )}
           </label>
-          <button className="btn primary" disabled={busy}>
-            {busy ? 'Memproses…' : recovery ? 'Simpan kata sandi' : 'Masuk'}
+          <button className="btn primary" type="submit" disabled={busy}>
+            <span>{busy ? 'Memproses…' : recovery ? 'Simpan kata sandi' : 'Masuk'}</span>
+            {busy ? (
+              <LoaderCircle className="spin" size={18} aria-hidden="true" />
+            ) : (
+              <ArrowRight size={18} aria-hidden="true" />
+            )}
           </button>
           {message && (
-            <p className="form-error" role="status">
+            <p className="auth-feedback info-note" role="status" aria-atomic="true">
               {message}
             </p>
           )}
         </form>
         {!recovery && (
-          <button
-            className="text-btn"
-            disabled={busy || !email}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await supabase?.auth.resetPasswordForEmail(email.trim(), {
-                  redirectTo: location.origin,
-                });
-                setMessage(
-                  'Jika email diizinkan, tautan pemulihan akan dikirim. Periksa kotak masuk.',
-                );
-              } catch {
-                setMessage('Koneksi belum tersedia. Coba lagi.');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Lupa kata sandi?
-          </button>
+          <div className="auth-recovery">
+            <button
+              className="text-btn"
+              type="button"
+              disabled={busy || !email}
+              aria-describedby="auth-recovery-hint"
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await supabase?.auth.resetPasswordForEmail(email.trim(), {
+                    redirectTo: location.origin,
+                  });
+                  setMessage(
+                    'Jika email diizinkan, tautan pemulihan akan dikirim. Periksa kotak masuk.',
+                  );
+                } catch {
+                  setMessage('Koneksi belum tersedia. Coba lagi.');
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Lupa kata sandi?
+            </button>
+            <p className="field-hint" id="auth-recovery-hint">
+              Isi email di atas untuk meminta tautan pemulihan.
+            </p>
+          </div>
         )}
-        <small>Akses khusus email yang telah diundang.</small>
+        <p className="auth-access-note">Akses khusus email yang telah diundang.</p>
       </section>
     </main>
   );
@@ -111,10 +166,12 @@ function Workspace({
   session,
   shared,
   clearShare,
+  onReceipt,
 }: {
   session: Session;
   shared: File | null;
   clearShare: () => void;
+  onReceipt: (file: File) => void;
 }) {
   const finance = useFinance(supabase!, session.user.id);
   const [scan, setScan] = useState<{ result: ScanResult; hash: string }>();
@@ -147,16 +204,32 @@ function Workspace({
   if (!finance.store)
     return (
       <main className="auth-page">
-        <section className="auth-card">
+        <section className="auth-card auth-state-card" aria-labelledby="workspace-status-title">
           <Logo />
-          <h1>{finance.error ? 'Belum terhubung' : 'Menyiapkan akun…'}</h1>
-          <p role="status">{finance.error || 'Memuat catatan yang dapat kamu akses.'}</p>
-          <button className="btn primary" onClick={() => void finance.refresh()}>
-            Coba lagi
-          </button>
-          <button className="text-btn" onClick={() => void signOut()}>
-            Keluar
-          </button>
+          {!finance.error && (
+            <LoaderCircle className="spin auth-state-icon" size={28} aria-hidden="true" />
+          )}
+          <div aria-busy={!finance.error}>
+            <h1 id="workspace-status-title">
+              {finance.error ? 'Catatan belum dapat dimuat' : 'Menyiapkan akun…'}
+            </h1>
+            <p role="status" aria-atomic="true">
+              {finance.error || 'Memuat catatan yang dapat kamu akses.'}
+            </p>
+          </div>
+          {finance.error && (
+            <p className="field-hint">
+              Periksa koneksi, lalu coba muat ulang. Kamu juga dapat keluar untuk masuk kembali.
+            </p>
+          )}
+          <div className="auth-state-actions">
+            <button className="btn primary" onClick={() => void finance.refresh()}>
+              Coba lagi
+            </button>
+            <button className="text-btn" onClick={() => void signOut()}>
+              Keluar
+            </button>
+          </div>
         </section>
       </main>
     );
@@ -170,6 +243,7 @@ function Workspace({
           save: finance.save,
           signOut,
         }}
+        onReceipt={onReceipt}
         incomingScan={scan}
         onScanUsed={() => setScan(undefined)}
       />
@@ -185,7 +259,17 @@ function Workspace({
               setScanError('');
             }}
           >
-            <p role="status">{scanError || scanStatus}</p>
+            <div className="scan-status" aria-busy={!!scanStatus && !scanError}>
+              {!scanError && <LoaderCircle className="spin" size={22} aria-hidden="true" />}
+              <p role="status" aria-atomic="true">
+                {scanError || scanStatus}
+              </p>
+            </div>
+            {scanError && (
+              <p className="field-hint">
+                Coba unggah foto yang lebih jelas, atau catat transaksi secara manual.
+              </p>
+            )}
             <p className="field-hint">
               Gambar diproses sementara oleh Gemini dan tidak disimpan oleh aplikasi. Periksa hasil
               sebelum menyimpan.
@@ -228,12 +312,12 @@ function Authenticated() {
   if (!supabase)
     return (
       <main className="auth-page">
-        <section className="auth-card">
+        <section className="auth-card auth-state-card" aria-labelledby="setup-title">
           <Logo />
-          <h1>Hubungkan SkyWallet</h1>
-          <p>
-            Isi konfigurasi Supabase di .env.local, lalu jalankan ulang aplikasi. Ikuti panduan
-            SETUP.md.
+          <h1 id="setup-title">Hubungkan SkyWallet</h1>
+          <p role="status">
+            Konfigurasi layanan belum tersedia. Isi konfigurasi Supabase di <code>.env.local</code>,
+            lalu jalankan ulang aplikasi sesuai panduan <code>SETUP.md</code>.
           </p>
         </section>
       </main>
@@ -241,7 +325,12 @@ function Authenticated() {
   if (session === undefined)
     return (
       <main className="auth-page">
-        <p>Memeriksa sesi…</p>
+        <section className="auth-card auth-state-card" aria-busy="true">
+          <Logo />
+          <LoaderCircle className="spin auth-state-icon" size={28} aria-hidden="true" />
+          <h1>Memeriksa sesi…</h1>
+          <p role="status">Menyiapkan akses ke catatanmu.</p>
+        </section>
       </main>
     );
   return (
@@ -252,6 +341,7 @@ function Authenticated() {
           session={session}
           shared={shared}
           clearShare={() => setShared(null)}
+          onReceipt={setShared}
         />
       ) : (
         <Login recovery={recovery && !!session} complete={() => setRecovery(false)} />

@@ -26,7 +26,14 @@ import {
   Trash2,
   LoaderCircle,
   HardDrive,
+  Sprout,
+  House,
+  Plane,
+  Gem,
+  GraduationCap,
+  Laptop,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Store, Transaction, Account, Goal, Plan } from './domain';
 import {
   STORAGE_KEY,
@@ -49,11 +56,20 @@ import type { Page } from './AppNavigation';
 import { MoneyAmount } from './MoneyAmount';
 import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
 import type { InsightPreferences } from './preferences';
-import { DesignIcon, DeviceStatus } from './design';
+import { DesignIcon } from './design';
 import type { RemoteFinance } from './use-finance';
 import type { ScanResult } from './scan-contract';
 import { defaultsFromScan } from './share';
 import { readBackup } from './backup';
+
+const goalIcons: Record<string, LucideIcon> = {
+  '🌱': Sprout,
+  '🏡': House,
+  '✈️': Plane,
+  '💍': Gem,
+  '🎓': GraduationCap,
+  '💻': Laptop,
+};
 
 type Dialog =
   | {
@@ -95,10 +111,12 @@ export default function App({
   remote,
   incomingScan,
   onScanUsed,
+  onReceipt,
 }: {
   remote?: RemoteFinance;
   incomingScan?: { result: ScanResult; hash: string };
   onScanUsed?: () => void;
+  onReceipt?: (file: File) => void;
 }) {
   const [initial] = useState(() => (remote ? { data: emptyStore(), error: '' } : loadStore()));
   const [localStore, setStore] = useState(initial.data);
@@ -240,10 +258,13 @@ export default function App({
     const current = b[g.accountId];
     const progress = Math.min(100, (current / g.target) * 100);
     const account = store.accounts.find((a) => a.id === g.accountId)!;
+    const GoalIcon = goalIcons[g.emoji] ?? Target;
     return (
       <div className="goal-card" key={g.id}>
         <div className="goal-top">
-          <span className="goal-emoji">{g.emoji}</span>
+          <span className="goal-emoji" aria-hidden="true">
+            <GoalIcon size={24} strokeWidth={1.7} />
+          </span>
           <button
             className="icon-btn small-icon"
             aria-label={`Hapus tujuan ${g.name}`}
@@ -332,8 +353,21 @@ export default function App({
   return (
     <div className="app-shell" data-demo={store.demo} data-page={page}>
       <div className="main-shell">
-        <DeviceStatus />
-        <main>
+        <a
+          className="skip-link"
+          href="#main-content"
+          onClick={(event) => {
+            event.preventDefault();
+            document.getElementById('main-content')?.focus();
+          }}
+        >
+          Langsung ke konten
+        </a>
+        <header className="mobile-brand">
+          <Logo />
+          <span>Catatan keuangan</span>
+        </header>
+        <main id="main-content" tabIndex={-1}>
           {store.demo && (
             <div className="demo-banner">
               <span>
@@ -446,7 +480,9 @@ export default function App({
               <div className="info-note together-info">
                 <Info size={17} />
                 <span>
-                  Akun bersama saat ini adalah catatan di perangkatmu, belum akses multi-pengguna.
+                  {remote
+                    ? 'Catatan akun bersama hanya dapat diakses anggota yang diizinkan. '
+                    : 'Dalam demo, akun bersama adalah catatan pada perangkat ini. '}
                   Transfer dari rekening pribadi ke akun bersama tidak dihitung sebagai pengeluaran.
                 </span>
               </div>
@@ -547,15 +583,10 @@ export default function App({
             </section>
           )}
           <footer className="page-footer">
+            <span>SkyWallet · Ruang untuk uangmu.</span>
             <span>
-              <Logo small />
-              Made for a little more peace of mind.
-            </span>
-            <span>
-              <ShieldCheck size={12} />
-              {remote
-                ? 'Data akun · Cadangkan secara berkala'
-                : 'Data demo · Cadangkan secara berkala'}
+              <ShieldCheck size={14} />
+              Cadangkan catatan secara berkala.
             </span>
           </footer>
         </main>
@@ -585,6 +616,7 @@ export default function App({
               save={save}
               close={close}
               amountIncludesFee={dialog.amountIncludesFee}
+              onReceipt={onReceipt}
               defaults={dialog.defaults}
               onAccount={() => setDialog({ type: 'account' })}
             />
@@ -716,7 +748,6 @@ export default function App({
 }
 
 function PageHeading({
-  eyebrow,
   title,
   description,
   action,
@@ -729,7 +760,6 @@ function PageHeading({
   return (
     <div className="page-heading">
       <div>
-        <span className="eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -784,7 +814,7 @@ function Planning({
       name: 'Tabungan',
       subtitle: 'Tabungan & dana darurat',
       icon: PiggyBank,
-      color: '#53aa8d',
+      color: 'var(--turquoise-ink)',
       amount: preview.saving,
       account: store.accounts.find(
         (a) => !a.shared && store.goals.some((g) => g.accountId === a.id),
@@ -795,7 +825,7 @@ function Planning({
       name: 'Pribadi',
       subtitle: 'Jajan, hiburan, hal yang kamu suka',
       icon: Coffee,
-      color: '#d4a05c',
+      color: 'var(--muted)',
       amount: preview.fun,
       account: undefined,
     },
@@ -804,7 +834,7 @@ function Planning({
       name: 'Akun bersama',
       subtitle: 'Alokasi ke akun bersama',
       icon: Heart,
-      color: '#9694bf',
+      color: 'var(--lavender-ink)',
       amount: preview.together,
       account: store.accounts.find((a) => a.shared),
     },
@@ -861,7 +891,10 @@ function Planning({
               <div className="allocation-heading">
                 <span
                   className="allocation-icon"
-                  style={{ color: row.color, background: `${row.color}13` }}
+                  style={{
+                    color: row.color,
+                    background: `color-mix(in srgb, ${row.color} 10%, var(--surface))`,
+                  }}
                 >
                   <row.icon size={22} strokeWidth={1.6} />
                 </span>
@@ -1110,7 +1143,7 @@ function SettingsPanel({
       </section>
       <section className="appearance-settings">
         <h3>
-          <DesignIcon name="settings-appearance" size={18} /> TAMPILAN
+          <DesignIcon name="settings-appearance" size={18} /> Tampilan
         </h3>
         <p>Pilih suasana SkyWallet sesuai harimu.</p>
         <div className="theme-options">
@@ -1125,7 +1158,7 @@ function SettingsPanel({
               className={theme === t.id ? 'selected' : ''}
               onClick={() => chooseTheme(t.id)}
             >
-              <DesignIcon name={`theme-${t.id}`} />
+              <t.icon size={24} strokeWidth={1.7} aria-hidden="true" />
               <span>{t.label}</span>
               {theme === t.id && <Check size={14} />}
             </button>
@@ -1134,7 +1167,7 @@ function SettingsPanel({
       </section>
       <div className="settings-section">
         <h3>
-          <DesignIcon name="settings-data" size={18} /> DATA & CADANGAN
+          <DesignIcon name="settings-data" size={18} /> Data & cadangan
         </h3>
         <p>Cadangan berisi catatan keuangan tanpa gambar nota; simpan secara pribadi.</p>
         <button
@@ -1209,7 +1242,7 @@ function SettingsPanel({
       </div>
       <div className="settings-section settings-danger">
         <h3>
-          <DesignIcon name="settings-warning" size={18} /> {remote ? 'SESI AKUN' : 'HAPUS DATA'}
+          <DesignIcon name="settings-warning" size={18} /> {remote ? 'Sesi akun' : 'Mulai ulang'}
         </h3>
         <button
           className="settings-action reset-action"
@@ -1225,7 +1258,11 @@ function SettingsPanel({
                   ? 'Mulai dengan data sendiri'
                   : 'Hapus data dan mulai ulang'}
             </strong>
-            <small>Memerlukan konfirmasi. Cadangkan terlebih dahulu.</small>
+            <small>
+              {remote
+                ? 'Akhiri sesi pada perangkat ini. Masuk kembali untuk membuka catatan.'
+                : 'Memerlukan konfirmasi. Cadangkan terlebih dahulu.'}
+            </small>
           </span>
           <ChevronRight size={16} />
         </button>
@@ -1233,7 +1270,7 @@ function SettingsPanel({
       <section className="settings-section insight-preferences">
         <h3>
           <DesignIcon name="settings-notifications" size={18} />
-          INFORMASI DI APLIKASI
+          Informasi di aplikasi
         </h3>
         <p>Atur informasi yang ditampilkan di dashboard saat SkyWallet dibuka.</p>
         {(

@@ -63,7 +63,7 @@ test('dashboard renders without errors and navigation fits the viewport', async 
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-  await expect(page.getByText('Your financial overview', { exact: true })).toBeVisible();
+  await expect(page.getByText('Uang hari ini, rencana untuk esok.', { exact: true })).toBeVisible();
   await expect(page.locator('.dashboard-header-actions > button')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Unggah bukti', exact: true })).toHaveCount(0);
   await expect(page.locator('.app-shell')).toHaveAttribute('data-demo', 'true');

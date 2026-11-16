@@ -1,77 +1,93 @@
-/* SkyWallet: one mobile-first UI system, based on all published Framer screens. */
+/* Structural primitives. Ledger & daylight surface styling lives in reference-ui.css. */
 :root {
-  font-family:
-    'Noto Sans',
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-  color: #1d2949;
-  background: #f9f8f6;
+  font-family: var(--font-noto), 'Noto Sans', sans-serif;
   font-synthesis: none;
-  --bg: #f9f8f6;
-  --surface: #fff;
-  --soft: #f0efec;
-  --ink: #1d2949;
-  --muted: #697087;
-  --line: #e8e6e2;
-  --navy: #1d2949;
-  --accent: #1d2949;
-  --accent-text: #fff;
-  --mint: #7ccb8c;
-  --mint-ink: #32854b;
-  --mint-soft: #edf8ef;
-  --coral: #f37777;
-  --coral-ink: #c84150;
-  --coral-soft: #fff0f0;
-  --turquoise: #3ed0c2;
-  --turquoise-ink: #148f87;
-  --turquoise-soft: #e8f9f7;
-  --lavender: #b5aad0;
-  --lavender-ink: #7c6ca0;
-  --lavender-soft: #f3effa;
-  --warning-soft: #fff5e1;
-  --warning-ink: #aa6900;
-  --radius: 24px;
+  --bg: #f3f6f6;
+  --surface: #ffffff;
+  --soft: #eaf0f0;
+  --ink: #192e32;
+  --muted: #52666b;
+  --line: #dce5e6;
+  --accent: #156b68;
+  --accent-text: #ffffff;
+  --accent-soft: #e4f1ef;
+  --navy: var(--accent);
+  --mint: #28845a;
+  --mint-ink: #20764e;
+  --mint-soft: #e9f4ec;
+  --coral: #c86250;
+  --coral-ink: #b04435;
+  --coral-soft: #fcf0ed;
+  --turquoise: #53769b;
+  --turquoise-ink: #42658b;
+  --turquoise-soft: #edf2f8;
+  --lavender: #8770a7;
+  --lavender-ink: #75538f;
+  --lavender-soft: #f3eef8;
+  --warning-ink: #865b18;
+  --warning-soft: #faf2e4;
+  --expense-chart-2: #c97660;
+  --expense-chart-3: #d99c88;
+  --expense-chart-4: #e6bfae;
+  --expense-chart-5: #eeddcf;
+  --radius: 20px;
+  --shadow: 0 4px 8px #1b363303, 0 14px 36px #1b363306;
   color-scheme: light;
   -webkit-font-smoothing: antialiased;
 }
 :root[data-theme='dark'] {
-  --bg: #12151d;
-  --surface: #1d2230;
-  --soft: #2a3040;
-  --ink: #f0f2f8;
-  --muted: #a7aec1;
-  --line: #353b4a;
-  --accent: #dbe4ff;
-  --accent-text: #1d2949;
-  --mint-ink: #91d59d;
-  --mint-soft: #23392e;
-  --coral-ink: #ff9eaa;
-  --coral-soft: #412a32;
-  --turquoise-ink: #75dacf;
-  --turquoise-soft: #203c3c;
-  --warning-soft: #3b3224;
-  --warning-ink: #efbc68;
+  --bg: #121e22;
+  --surface: #1a2a2f;
+  --soft: #263a40;
+  --ink: #edf4f3;
+  --muted: #b0c0c3;
+  --line: #354a50;
+  --accent: #86d1c4;
+  --accent-text: #12332f;
+  --accent-soft: #253f3d;
+  --mint: #82c69a;
+  --mint-ink: #98d5ad;
+  --mint-soft: #223e32;
+  --coral: #ea9582;
+  --coral-ink: #ffad99;
+  --coral-soft: #422e2b;
+  --turquoise: #98b8df;
+  --turquoise-ink: #a8c4e6;
+  --turquoise-soft: #27374b;
+  --lavender: #b7a0d5;
+  --lavender-ink: #c8b3e3;
+  --lavender-soft: #382f48;
+  --warning-ink: #eac48a;
+  --warning-soft: #3e3527;
+  --shadow: 0 8px 30px #07111420;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-theme='system'] {
-    --bg: #12151d;
-    --surface: #1d2230;
-    --soft: #2a3040;
-    --ink: #f0f2f8;
-    --muted: #a7aec1;
-    --line: #353b4a;
-    --accent: #dbe4ff;
-    --accent-text: #1d2949;
-    --mint-ink: #91d59d;
-    --mint-soft: #23392e;
-    --coral-ink: #ff9eaa;
-    --coral-soft: #412a32;
-    --turquoise-ink: #75dacf;
-    --turquoise-soft: #203c3c;
-    --warning-soft: #3b3224;
-    --warning-ink: #efbc68;
+    --bg: #121e22;
+    --surface: #1a2a2f;
+    --soft: #263a40;
+    --ink: #edf4f3;
+    --muted: #b0c0c3;
+    --line: #354a50;
+    --accent: #86d1c4;
+    --accent-text: #12332f;
+    --accent-soft: #253f3d;
+    --mint: #82c69a;
+    --mint-ink: #98d5ad;
+    --mint-soft: #223e32;
+    --coral: #ea9582;
+    --coral-ink: #ffad99;
+    --coral-soft: #422e2b;
+    --turquoise: #98b8df;
+    --turquoise-ink: #a8c4e6;
+    --turquoise-soft: #27374b;
+    --lavender: #b7a0d5;
+    --lavender-ink: #c8b3e3;
+    --lavender-soft: #382f48;
+    --warning-ink: #eac48a;
+    --warning-soft: #3e3527;
+    --shadow: 0 8px 30px #07111420;
     color-scheme: dark;
   }
 }
@@ -186,7 +202,7 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   color: var(--muted);
-  opacity: 0.75;
+  opacity: 1;
 }
 input[type='range'] {
   width: 100%;
@@ -260,7 +276,7 @@ main {
   color: var(--muted);
 }
 .app-navigation small {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 14px;
 }
@@ -334,14 +350,14 @@ main {
   background: var(--turquoise-soft);
   color: var(--turquoise-ink);
   border-radius: 12px;
-  font-size: 10px;
+  font-size: 12px;
 }
 .demo-banner button,
 .dashboard-demo-mobile button {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   text-align: right;
 }
@@ -408,7 +424,7 @@ main {
   gap: 5px;
   min-height: 36px;
   padding: 4px 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 .section-title {
@@ -420,7 +436,7 @@ main {
 }
 .section-title > span,
 .muted-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .section-title h2 {
@@ -442,11 +458,11 @@ main {
   margin-bottom: 16px;
 }
 .panel-heading p {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 4px;
 }
 .panel-heading .text-btn {
-  font-size: 10px;
+  font-size: 12px;
   min-height: 28px;
 }
 .empty-state {
@@ -475,7 +491,7 @@ main {
   color: var(--muted);
 }
 .count-badge {
-  font-size: 10px;
+  font-size: 12px;
   padding: 3px 7px;
   border-radius: 8px;
   background: var(--soft);
@@ -561,7 +577,7 @@ main {
   min-height: 36px;
   padding: 8px 5px;
   border-radius: 11px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--muted);
 }
@@ -601,7 +617,7 @@ main {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 400;
 }
 .figma-balance-heading button {
@@ -621,7 +637,7 @@ main {
   flex-wrap: wrap;
   gap: 14px;
   margin: 0;
-  font-size: 10px;
+  font-size: 12px;
 }
 .figma-balance-breakdown > div {
   display: flex;
@@ -655,7 +671,7 @@ main {
   margin-bottom: 16px;
 }
 .figma-stat h2 {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--muted);
 }
@@ -666,7 +682,7 @@ main {
 }
 .figma-stat p,
 .figma-stat > button {
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 12px;
   line-height: 17px;
   color: var(--muted);
@@ -708,7 +724,7 @@ main {
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-bottom: 10px;
 }
@@ -734,7 +750,7 @@ main {
   display: flex;
   gap: 14px;
   margin-bottom: 16px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .cashflow-legend span {
@@ -753,7 +769,7 @@ main {
   background: var(--coral);
 }
 .chart-note {
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 12px;
   text-align: center;
 }
@@ -782,7 +798,7 @@ main {
   gap: 4px;
 }
 .donut small {
-  font-size: 8px;
+  font-size: 12px;
   color: var(--muted);
 }
 .donut strong {
@@ -797,7 +813,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
 }
 .spending-legend span {
   display: flex;
@@ -829,7 +845,7 @@ main {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   min-height: 36px;
 }
@@ -851,7 +867,7 @@ main {
   margin-bottom: 5px;
 }
 .figma-insight-card p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 17px;
 }
 .figma-insight-icon {
@@ -869,7 +885,7 @@ main {
   background: var(--warning-soft);
 }
 .insights-updated {
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 12px;
 }
 /* Wallets and shared balances */
@@ -890,7 +906,7 @@ main {
 }
 .wallet-summary > p,
 .wallet-breakdown p {
-  font-size: 11px;
+  font-size: 12px;
 }
 .wallet-total {
   display: block;
@@ -921,7 +937,7 @@ main {
   border-radius: 16px;
   padding: 14px 12px;
   min-height: 47px;
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
 }
 .wallet-tools svg {
@@ -945,7 +961,7 @@ main {
   justify-content: space-between;
   align-items: center;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .provider-mark {
   display: inline-grid;
@@ -954,7 +970,7 @@ main {
   height: 34px;
   border-radius: 11px;
   color: white;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
   letter-spacing: -0.02em;
@@ -973,7 +989,7 @@ main {
   font-size: 14px;
 }
 .wallet-name > span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .wallet-balance {
@@ -992,7 +1008,7 @@ main {
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .wallet-type > span {
@@ -1024,7 +1040,7 @@ main {
   border-radius: 14px;
   background: var(--soft);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
 }
 .info-note svg {
@@ -1095,7 +1111,7 @@ main {
   color: var(--ink);
 }
 .filter-toggle > span {
-  font-size: 10px;
+  font-size: 12px;
 }
 .advanced-filters {
   padding: 16px;
@@ -1112,7 +1128,7 @@ main {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .advanced-grid {
   display: grid;
@@ -1121,7 +1137,7 @@ main {
 .filter-field {
   display: grid;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .filter-field input {
@@ -1163,7 +1179,7 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .active-filter-notice button {
@@ -1186,7 +1202,7 @@ main {
 }
 .transaction-summary > div > span {
   display: block;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   margin-bottom: 9px;
 }
@@ -1202,7 +1218,7 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .ledger-sort {
@@ -1214,7 +1230,7 @@ main {
   min-height: 44px;
   border-radius: 13px;
   background: var(--surface);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink);
 }
 .transaction-list {
@@ -1271,7 +1287,7 @@ main {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   overflow-wrap: anywhere;
 }
@@ -1301,11 +1317,11 @@ main {
   color: var(--mint-ink);
 }
 .transaction-amount small {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .kind-badge {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 .transaction-actions {
@@ -1331,7 +1347,7 @@ main {
   gap: 12px;
 }
 .ledger-footer > p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 17px;
 }
 .ledger-footer > p > svg {
@@ -1358,7 +1374,7 @@ main {
 .report-filters > h2,
 .report-content-filter > h2,
 .report-period h2 {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   margin-bottom: 14px;
   display: flex;
@@ -1379,7 +1395,7 @@ main {
 .report-content-filter button {
   padding: 10px 5px;
   min-height: 38px;
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 11px;
   color: var(--muted);
 }
@@ -1388,10 +1404,10 @@ main {
   color: white;
 }
 .report-period p {
-  font-size: 11px;
+  font-size: 12px;
 }
 .report-period small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .report-summary {
@@ -1408,7 +1424,7 @@ main {
 }
 .report-summary > div > span {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin-bottom: 12px;
 }
@@ -1416,7 +1432,7 @@ main {
   font-size: 21px;
 }
 .report-explanation {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
 }
 .report-actions {
@@ -1442,7 +1458,7 @@ main {
   font-size: 12px;
 }
 .reserve-field p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
 }
 .currency-input {
@@ -1469,7 +1485,7 @@ main {
   margin: 18px 0;
 }
 .available-strip > span {
-  font-size: 11px;
+  font-size: 12px;
   color: #d7deed;
 }
 .available-strip strong {
@@ -1499,7 +1515,7 @@ main {
   font-size: 13px;
 }
 .allocation-heading p {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 16px;
 }
 .allocation-heading > strong {
@@ -1520,7 +1536,7 @@ main {
   gap: 12px;
 }
 .allocation-footer > span {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 16px;
   color: var(--muted);
   max-width: 54%;
@@ -1541,7 +1557,7 @@ main {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .plan-explanation {
@@ -1556,7 +1572,7 @@ main {
   font-size: 16px;
 }
 .calculation-card > p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
   margin: 8px 0;
 }
@@ -1609,7 +1625,7 @@ main {
   margin-top: 12px;
 }
 .goal-account {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -1624,7 +1640,7 @@ main {
   font-size: 22px;
 }
 .goal-amount > span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .progress-track {
@@ -1644,7 +1660,7 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
 }
 .goal-card > .btn {
   width: 100%;
@@ -1681,7 +1697,7 @@ main {
   font-size: 15px;
 }
 .settings-local-profile p {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 4px;
 }
 .appearance-settings h3,
@@ -1690,7 +1706,7 @@ main {
 }
 .appearance-settings > p,
 .settings-section > p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 18px;
   margin-top: 7px;
 }
@@ -1710,7 +1726,7 @@ main {
   background: var(--bg);
   border-radius: 16px;
   padding: 16px 6px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .theme-options .selected {
   background: var(--soft);
@@ -1744,7 +1760,7 @@ main {
   font-size: 12px;
 }
 .settings-action small {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 16px;
   color: var(--muted);
 }
@@ -1758,7 +1774,7 @@ main {
   opacity: 0;
 }
 .settings-danger h3 {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--muted);
 }
@@ -1810,7 +1826,7 @@ main {
   gap: 8px;
   padding: 14px 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .logo {
   display: flex;
@@ -1837,7 +1853,7 @@ main {
   font-size: 13px;
 }
 .import-confirm p {
-  font-size: 11px;
+  font-size: 12px;
   margin: 10px 0;
 }
 .import-confirm > div {
@@ -1851,8 +1867,6 @@ main {
   inset: 0;
   z-index: 100;
   background: #10182966;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1893,7 +1907,7 @@ main {
   line-height: 27px;
 }
 .modal-heading p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 17px;
   margin-top: 4px;
 }
@@ -1945,7 +1959,7 @@ main {
   width: 100%;
 }
 .modal-form-actions > p {
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
 }
 .form-grid,
@@ -1964,7 +1978,7 @@ main {
 }
 .form-stack label > small,
 .field-hint {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 17px;
   color: var(--muted);
   font-weight: 400;
@@ -2018,7 +2032,7 @@ main {
   border-radius: 14px;
   background: var(--bg);
   min-width: 0;
-  font-size: 9px;
+  font-size: 12px;
 }
 .quick-categories button > span:first-child {
   font-size: 20px;
@@ -2094,7 +2108,7 @@ main {
 }
 .account-options small {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -2111,7 +2125,7 @@ main {
   font-weight: 500;
 }
 .optional-fields summary > span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .optional-fields summary::after {
@@ -2153,7 +2167,7 @@ main {
   font-size: 13px;
 }
 .upload-zone small {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .upload-privacy {
@@ -2161,7 +2175,7 @@ main {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
   font-weight: 400;
 }
@@ -2186,21 +2200,21 @@ main {
   overflow-wrap: anywhere;
 }
 .receipt-preview strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 .receipt-preview small {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
 }
 .extracted-text {
-  font-size: 11px;
+  font-size: 12px;
 }
 .extracted-text pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 10px;
+  font-size: 12px;
   max-height: 160px;
   overflow: auto;
 }
@@ -2474,7 +2488,7 @@ main {
   }
   .print-transactions {
     display: block;
-    font-size: 10px;
+    font-size: 12px;
   }
   .print-transactions table {
     width: 100%;
@@ -2530,7 +2544,7 @@ main {
   color: var(--mint-ink);
 }
 .goal-card > p {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 4px;
 }
 .category-picker-trigger > span {
@@ -2593,7 +2607,7 @@ main {
 }
 .transaction-amount small,
 .kind-badge {
-  font-size: 8px;
+  font-size: 12px;
 }
 .transaction-actions {
   margin-top: 4px;
@@ -2606,5 +2620,5 @@ main {
   flex-wrap: wrap;
 }
 .transaction-provider {
-  font-size: 9px;
+  font-size: 12px;
 }

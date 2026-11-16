@@ -1,3 +1,18 @@
+/* One signature moment: the balance settles onto the page. Content is visible
+   even before animation starts. Sheets and disclosures only animate on action. */
+@keyframes balance-settle {
+  from {
+    transform: translateY(9px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .figma-balance-amount {
+    animation: balance-settle 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
 /* Motion owns sheet transforms; avoid competing CSS animations. */
 .modal,
 .modal-overlay {
@@ -14,8 +29,8 @@
   border: 0;
   overflow: hidden;
   /* Leave space for focus rings inside the animated clipping boundary. */
-  margin: -3px;
-  padding: 3px;
+  margin: -7px;
+  padding: 7px;
 }
 .reveal-content {
   margin: 0;
