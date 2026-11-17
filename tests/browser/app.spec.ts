@@ -63,10 +63,13 @@ test('dashboard renders without errors and navigation fits the viewport', async 
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-  await expect(page.getByText('Uang hari ini, rencana untuk esok.', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Pilih dompet ringkasan', exact: true }),
+  ).toBeVisible();
   await expect(page.locator('.dashboard-header-actions > button')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Unggah bukti', exact: true })).toHaveCount(0);
   await expect(page.locator('.app-shell')).toHaveAttribute('data-demo', 'true');
+  await page.locator('.wallet-analysis > summary').click();
   await expect(page.getByRole('img', { name: /Grafik total saldo/ })).toBeVisible();
   for (const [desktop, mobile, heading] of [
     ['Dompet saya', 'Dompet', 'Dompet'],
@@ -315,8 +318,8 @@ test('reports export actual transactions and appearance survives reload', async 
   await page.getByRole('button', { name: 'Cetak / simpan PDF', exact: true }).click();
   await expect(page.locator('body')).toHaveAttribute('data-print-called', 'true');
   await page.emulateMedia({ media: 'print' });
-  await expect(page.locator('.print-transactions')).toBeVisible();
-  await expect(page.locator('.print-transactions tbody tr')).toHaveCount(14);
+  await expect(page.locator('.report-detail-ledger')).toBeVisible();
+  await expect(page.locator('.report-detail-ledger tbody tr')).toHaveCount(14);
   await page.emulateMedia({ media: 'screen' });
   await navigate(page, 'Pengaturan');
   await page.getByRole('button', { name: 'Gelap', exact: true }).click();
@@ -355,15 +358,14 @@ test('account sheet preserves the form and spends only from the selected wallet'
 
 test('insight preferences change dashboard content and persist after reload', async ({ page }) => {
   await page.goto('/');
+  await page.locator('.wallet-analysis > summary').click();
   await expect(page.locator('.figma-insight-card')).toHaveCount(3);
   for (const name of ['Rencana dana pribadi', 'Belanja paling besar', 'Saldo akun bersama']) {
     await expect(page.getByRole('article', { name, exact: true })).toBeVisible();
   }
   await navigate(page, 'Pengaturan');
   await expect(page.locator('.recording-settings, .settings-privacy, .iphone-tip')).toHaveCount(0);
-  await expect(page.locator('.settings-content > .settings-section').last()).toHaveClass(
-    /insight-preferences/,
-  );
+  await expect(page.locator('.settings-device-column .insight-preferences')).toBeVisible();
   await expect(page.getByRole('button', { name: /^Unduh cadangan lengkap/ })).toBeVisible();
   await expect(page).toHaveTitle(/SkyWallet/);
   await expect(page.locator('.insight-preferences').getByRole('switch')).toHaveCount(3);
@@ -374,6 +376,7 @@ test('insight preferences change dashboard content and persist after reload', as
   await expect(page.locator('.figma-insight-card')).toHaveCount(2);
   await page.reload();
   await expect(page.locator('.figma-insight-card')).toHaveCount(2);
+  await page.locator('.wallet-analysis > summary').click();
   await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
   await page
     .getByRole('img', { name: /Grafik total saldo/ })
@@ -392,7 +395,8 @@ test('report filters exclude transfer principal and reject a future reporting da
   await page.getByRole('button', { name: 'Tahunan', exact: true }).click();
   await page.getByRole('button', { name: 'Transfer', exact: true }).click();
   const summary = page.locator('.report-summary');
-  await expect(summary.getByText('Rp 0', { exact: true })).toHaveCount(4);
+  await expect(summary.getByText('Rp 0', { exact: true })).toHaveCount(3);
+  await expect(page.locator('.report-net > strong')).toHaveText('Rp 0');
   await expect(summary.getByText('Rp 1.450.000', { exact: true })).toBeVisible();
   await expect(summary.getByText('2', { exact: true })).toBeVisible();
   const download = page.waitForEvent('download');

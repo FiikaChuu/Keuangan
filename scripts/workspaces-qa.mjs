@@ -1,0 +1,8 @@
+import { chromium } from 'playwright';
+import { mkdir, writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const out='test-results/workspaces'; await mkdir(out,{recursive:true});
+const browser=await chromium.launch({args:['--no-sandbox']});const checks=[];
+const routes=[['reports','/expenses#laporan','.reports-content'],['planning','/rencana-uang','.plan-overview'],['together','/ruang-bersama','.together-hero'],['settings','/settings','.settings-workspace']];
+try{for(const width of [390,1440]){for(const state of ['populated','empty']){const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(({state})=>{localStorage.setItem('skysave.theme','dark');if(state==='empty')localStorage.setItem('skysave.v1',JSON.stringify({version:1,demo:false,accounts:[],transactions:[],goals:[],plan:{reserve:0,saving:50,fun:30,together:20}}));},{state});for(const [name,path,selector] of routes){await page.goto('http://127.0.0.1:4391'+path);await page.locator(selector).waitFor();await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:`${out}/${width}-${state}-${name}.png`,fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${name} overflow`);checks.push({width,state,route:name,overflow:false,errors:[...errors]});}await context.close();}}
+await writeFile(`${out}/checks.json`,JSON.stringify(checks,null,2));console.log(JSON.stringify(checks,null,2));}finally{await browser.close();}

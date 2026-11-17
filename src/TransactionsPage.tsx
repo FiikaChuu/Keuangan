@@ -32,6 +32,7 @@ export default function TransactionsPage({
   onEdit,
   onDelete,
   onReport,
+  onCreate,
 }: {
   store: Store;
   onCreate: () => void;
@@ -122,6 +123,9 @@ export default function TransactionsPage({
           </h1>
           <p>Riwayat pemasukan dan pengeluaran.</p>
         </div>
+        <button className="btn secondary" onClick={onCreate}>
+          Catat baru <ArrowUpRight size={16} />
+        </button>
       </div>
       <section className="ledger-panel" aria-label="Riwayat transaksi">
         <div className="ledger-tools">

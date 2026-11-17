@@ -31,30 +31,31 @@ export default function WalletPage({
           <p>Saldo rekening dan e-walletmu.</p>
         </div>
       </header>
-      <button className="btn primary full-width" onClick={() => onAdd()}>
-        <Wallet size={18} />
-        Tambah dompet
-      </button>
-      <section className="wallet-summary" aria-label="Saldo dompet">
-        <p>Total seluruh dompet</p>
-        <strong className="wallet-total">
-          <MoneyAmount value={personalTotal + sharedTotal} />
-        </strong>
-        <div className="wallet-breakdown">
-          <div>
-            <p>Pribadi</p>
-            <strong>
-              <MoneyAmount value={personalTotal} />
-            </strong>
+      <div className="wallet-overview-band">
+        <section className="wallet-summary" aria-label="Saldo dompet">
+          <p>Total seluruh dompet</p>
+          <strong className="wallet-total">
+            <MoneyAmount value={personalTotal + sharedTotal} />
+          </strong>
+          <div className="wallet-breakdown">
+            <div>
+              <p>Pribadi</p>
+              <strong>
+                <MoneyAmount value={personalTotal} />
+              </strong>
+            </div>
+            <div>
+              <p>Bersama</p>
+              <strong>
+                <MoneyAmount value={sharedTotal} />
+              </strong>
+            </div>
           </div>
-          <div>
-            <p>Bersama</p>
-            <strong>
-              <MoneyAmount value={sharedTotal} />
-            </strong>
-          </div>
-        </div>
-      </section>
+        </section>
+        <button className="wallet-add-action" onClick={() => onAdd()}>
+          <span>+</span>Tambah dompet
+        </button>
+      </div>
       <div className="wallet-tools">
         <button onClick={onPlan}>
           <PiggyBank size={19} />

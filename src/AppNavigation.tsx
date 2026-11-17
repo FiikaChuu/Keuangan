@@ -40,41 +40,33 @@ export default function AppNavigation({
   const items = [
     { id: 'overview' as const, label: 'Ringkasan', text: 'Beranda', icon: House },
     { id: 'accounts' as const, label: 'Dompet saya', text: 'Dompet', icon: Wallet },
-    { id: 'transactions' as const, label: 'Transaksi', text: 'Transaksi', icon: ArrowLeftRight },
+    { id: 'transactions' as const, label: 'Transaksi', text: 'Aktivitas', icon: ArrowLeftRight },
     { id: 'settings' as const, label: 'Pengaturan', text: 'Setelan', icon: Settings },
   ];
   return (
     <nav className="app-navigation" aria-label="Navigasi utama">
       <div className="nav-brand">
         <Logo />
-        <p>Ruang untuk uangmu.</p>
       </div>
-      {items.map((item, index) => (
-        <div className={`nav-slot nav-slot-${item.id}`} key={item.id}>
-          {index === 2 && (
-            <button className="capture-button" aria-label="Catat transaksi" onClick={onCapture}>
-              <span>
-                <Plus size={23} strokeWidth={1.8} />
-              </span>
-              <small>Catat</small>
-            </button>
-          )}
+      <div className="nav-primary">
+        {items.map((item) => (
           <button
+            key={item.id}
             className={`nav-link ${active === item.id ? 'mobile-current' : ''}`}
             aria-label={item.label}
             aria-current={page === item.id ? 'page' : undefined}
             onClick={() => go(item.id)}
           >
-            <item.icon size={21} strokeWidth={1.8} />
+            <item.icon size={20} strokeWidth={1.7} />
             <small>{item.text}</small>
           </button>
-        </div>
-      ))}
+        ))}
+      </div>
       <div className="nav-secondary">
         {[
           { id: 'reports' as const, text: 'Laporan', icon: ChartNoAxesCombined },
-          { id: 'plan' as const, text: 'Rencana uang', icon: PiggyBank },
-          { id: 'together' as const, text: 'Ruang bersama', icon: Heart },
+          { id: 'plan' as const, text: 'Rencana', icon: PiggyBank },
+          { id: 'together' as const, text: 'Bersama', icon: Heart },
         ].map((item) => (
           <button
             key={item.id}
@@ -82,16 +74,17 @@ export default function AppNavigation({
             aria-current={page === item.id ? 'page' : undefined}
             onClick={() => go(item.id)}
           >
-            <item.icon size={21} strokeWidth={1.8} />
+            <item.icon size={18} />
             <small>{item.text}</small>
           </button>
         ))}
       </div>
-      <p className="nav-note">
-        Catat hari ini.
-        <br />
-        Rencanakan esok.
-      </p>
+      <button className="capture-button" aria-label="Catat transaksi" onClick={onCapture}>
+        <span>
+          <Plus size={21} />
+        </span>
+        <small>Catat</small>
+      </button>
     </nav>
   );
 }

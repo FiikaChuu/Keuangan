@@ -1,25 +1,23 @@
-import { MoneyAmount } from './MoneyAmount';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   Plus,
-  ArrowUpRight,
   Eye,
   EyeOff,
-  ArrowRight,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowLeftRight,
+  ChartNoAxesCombined,
   Wallet,
   ReceiptText,
-  Heart,
-  TrendingDown,
-  TrendingUp,
-  PiggyBank,
+  ChevronRight,
 } from 'lucide-react';
 import type { Store, Transaction, Account } from './domain';
-import { totals, allocations, spendingByCategory, balances } from './domain';
+import { balances, totals, spendingByCategory } from './domain';
 import { dashboardPeriods, moneyInsights, periodTransactions } from './analytics';
 import type { InsightPreferences } from './preferences';
-import { DesignIcon } from './design';
-import { BalanceChart, CashflowChart, TransactionList, SpendingDonut, EmptyState } from './ui';
+import { MoneyAmount } from './MoneyAmount';
+import { AccountPicker, BalanceChart, CashflowChart, SpendingDonut, TransactionList } from './ui';
 import { NetCashflowChart } from './DashboardCharts';
 
 type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
@@ -31,6 +29,7 @@ export default function Dashboard({
   accountCard,
   onAccount,
   onReport,
+  onCapture,
   preferences,
 }: {
   store: Store;
@@ -41,319 +40,240 @@ export default function Dashboard({
   onAccount: () => void;
   onReport: () => void;
   onStartOwn: () => void;
+  onCapture: (kind: Transaction['kind'], accountId?: string) => void;
   preferences: InsightPreferences;
 }) {
-  const [days, setDays] = useState(30);
+  const [account, setAccount] = useState('');
   const [visible, setVisible] = useState(true);
-  const [refresh, setRefresh] = useState(0);
+  const [days, setDays] = useState(30);
   const [refreshedAt, setRefreshedAt] = useState('');
-  const tx = useMemo(
-    () => periodTransactions(store.transactions, days),
-    [store.transactions, days],
+  const values = balances(store);
+  const selected = store.accounts.find((a) => a.id === account);
+  const scoped = useMemo(
+    () =>
+      store.transactions.filter((t) => !account || t.accountId === account || t.toId === account),
+    [store.transactions, account],
   );
+  const tx = periodTransactions(scoped, days);
   const sum = totals(tx);
-  const plan = allocations(store);
-  const spending = spendingByCategory(tx, '');
-  const accountBalances = balances(store);
-  const sharedAccounts = store.accounts.filter((a) => a.shared);
-  const shared = sharedAccounts.reduce((s, a) => s + accountBalances[a.id], 0);
-  const insights = useMemo(
-    () => moneyInsights(store, days).filter((item) => preferences[item.id]),
-    [store, days, refresh, preferences],
-  );
-  const recent = [...store.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
-  const refreshInsights = () => {
-    setRefresh((v) => v + 1);
-    setRefreshedAt(
-      new Intl.DateTimeFormat('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Asia/Jakarta',
-      }).format(new Date()),
-    );
-  };
+  const insights = moneyInsights(store, days).filter((item) => preferences[item.id]);
+  const recent = [...scoped].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const actions = [
+    { label: 'Pengeluaran', icon: ArrowUpRight, action: () => onCapture('expense', account) },
+    { label: 'Pemasukan', icon: ArrowDownLeft, action: () => onCapture('income', account) },
+    { label: 'Transfer', icon: ArrowLeftRight, action: () => onCapture('transfer', account) },
+    { label: 'Laporan', icon: ChartNoAxesCombined, action: onReport },
+  ];
   return (
-    <div className="figma-dashboard">
-      <header className="figma-dashboard-header">
+    <div className="figma-dashboard wallet-home">
+      <header className="wallet-home-heading">
         <div>
           <h1>Dashboard</h1>
-          <p>Uang hari ini, rencana untuk esok.</p>
+          <p>Semua uangmu, satu tempat.</p>
         </div>
-        <div className="figma-period-control" role="group" aria-label="Periode dashboard">
-          {dashboardPeriods.map((period) => (
-            <button
-              key={period.days}
-              aria-pressed={days === period.days}
-              className={days === period.days ? 'selected' : ''}
-              onClick={() => setDays(period.days)}
-            >
-              {period.label}
+        <button className="icon-btn" aria-label="Tambah dompet" onClick={onAccount}>
+          <Plus size={21} />
+        </button>
+      </header>
+      <section className="wallet-command" aria-label="Saldo seluruh akun">
+        <div className="wallet-switch">
+          <span className="workspace-avatar">
+            <Wallet size={21} />
+          </span>
+          <AccountPicker
+            label="Pilih dompet ringkasan"
+            accounts={store.accounts}
+            values={values}
+            value={account}
+            allowAll
+            onChange={setAccount}
+          />
+        </div>
+        <div className="balance-label">
+          <span>{selected ? 'Saldo dompet' : 'Saldo seluruh akun'}</span>
+          <button
+            className="icon-btn"
+            aria-label={visible ? 'Sembunyikan saldo' : 'Tampilkan saldo'}
+            onClick={() => setVisible(!visible)}
+          >
+            {visible ? <Eye size={16} /> : <EyeOff size={16} />}
+          </button>
+        </div>
+        <strong className="figma-balance-amount">
+          {visible ? <MoneyAmount value={selected ? values[selected.id] : total} /> : 'Rp ••••••'}
+        </strong>
+        <p className="balance-caption">
+          {selected ? selected.name : `${store.accounts.length} dompet dalam catatan`}
+          <span>Tidak terhubung ke bank</span>
+        </p>
+        <div className="wallet-quick-actions">
+          {actions.map((item) => (
+            <button key={item.label} onClick={item.action}>
+              <span>
+                <item.icon size={23} strokeWidth={1.7} />
+              </span>
+              <small>{item.label}</small>
             </button>
           ))}
         </div>
-      </header>
-      <div className="figma-metrics-layout">
-        <section className="figma-balance-card" aria-label="Saldo seluruh akun">
-          <div className="figma-balance-heading">
-            <span>Saldo seluruh akun</span>
-            <div>
-              <span className="figma-wallet-count">
-                <Wallet size={12} />
-                {store.accounts.length} dompet
-              </span>
-              <button
-                aria-label={visible ? 'Sembunyikan saldo' : 'Tampilkan saldo'}
-                onClick={() => setVisible(!visible)}
-              >
-                {visible ? <Eye size={17} /> : <EyeOff size={17} />}
-              </button>
-            </div>
-          </div>
-          <strong className="figma-balance-amount">
-            {visible ? <MoneyAmount value={total} /> : 'Rp ••••••••'}
-          </strong>
-          <dl className="figma-balance-breakdown">
-            <div>
-              <dt>Pribadi</dt>
-              <dd>{visible ? <MoneyAmount value={plan.personal} /> : '••••••'}</dd>
-            </div>
-            <div>
-              <dt>Bersama</dt>
-              <dd>{visible ? <MoneyAmount value={shared} /> : '••••••'}</dd>
-            </div>
-          </dl>
-          <button className="figma-manage-wallets" onClick={() => go('accounts')}>
-            Kelola dompet
-            <ArrowUpRight size={16} />
-          </button>
-        </section>
-        {store.transactions.length > 0 && (
-          <section className="figma-summary-grid" aria-label="Ringkasan keuangan">
-            <article className="figma-stat income">
-              <div>
-                <h2>Pemasukan</h2>
-                <span>
-                  <TrendingUp size={21} strokeWidth={1.8} />
-                </span>
-              </div>
-              <strong>
-                <MoneyAmount value={sum.income} />
-              </strong>
-              <p>{tx.filter((t) => t.kind === 'income').length} kali uang masuk</p>
-            </article>
-            <article className="figma-stat expense">
-              <div>
-                <h2>Pengeluaran</h2>
-                <span>
-                  <TrendingDown size={21} strokeWidth={1.8} />
-                </span>
-              </div>
-              <strong>
-                <MoneyAmount value={sum.expense} />
-              </strong>
-              <p>Dalam periode ini</p>
-            </article>
-            <article className="figma-stat saving">
-              <div>
-                <h2>Bisa ditabung</h2>
-                <span>
-                  <PiggyBank size={21} strokeWidth={1.8} />
-                </span>
-              </div>
-              <strong>
-                <MoneyAmount value={plan.saving} />
-              </strong>
-              <button onClick={() => go('plan')}>
-                Alokasi {store.plan.saving}%<ArrowUpRight size={12} />
-              </button>
-            </article>
-            <article className="figma-stat together">
-              <div>
-                <h2>Dana bersama</h2>
-                <span>
-                  <Heart size={21} strokeWidth={1.8} />
-                </span>
-              </div>
-              <strong>
-                <MoneyAmount value={shared} />
-              </strong>
-              <button onClick={() => go('together')}>
-                {sharedAccounts.length} akun bersama
-                <ArrowUpRight size={12} />
-              </button>
-            </article>
-          </section>
-        )}
-      </div>
-      {!tx.length ? (
-        <section className="dashboard-start" aria-labelledby="dashboard-start-title">
-          <span className="start-icon" aria-hidden="true">
-            <ReceiptText size={32} strokeWidth={1.5} />
-          </span>
-          <div>
-            <h2 id="dashboard-start-title">
-              {store.transactions.length
-                ? 'Belum ada catatan di periode ini'
-                : 'Mulai dari satu catatan.'}
+      </section>
+      <div className="wallet-home-columns">
+        <section className="asset-section" aria-label="Dompet saya">
+          <div className="section-title">
+            <h2>
+              Dompet saya <span className="count-badge">{store.accounts.length}</span>
             </h2>
-            <p>
-              {store.transactions.length
-                ? 'Pilih periode lain untuk melihat aktivitasmu, atau gunakan Catat untuk transaksi baru.'
-                : 'Pilih Catat untuk merekam pemasukan atau pengeluaran pertamamu. Punya nota? Pilih Pindai nota di formulir yang sama.'}
-            </p>
-            {!store.accounts.length && (
-              <button className="btn secondary" onClick={onAccount}>
+            <button className="text-btn" onClick={() => go('accounts')}>
+              Kelola <ChevronRight size={15} />
+            </button>
+          </div>
+          {store.accounts.length ? (
+            <div className="asset-list">{store.accounts.map((a) => accountCard(a))}</div>
+          ) : (
+            <div className="wallet-onboarding">
+              <span className="empty-icon">
+                <Wallet size={28} />
+              </span>
+              <h3>Tempat untuk uangmu</h3>
+              <p>Tambahkan rekening atau e-wallet dan saldo awalnya.</p>
+              <button className="btn primary" onClick={onAccount}>
                 <Plus size={17} />
-                Tambah dompet terlebih dahulu
+                Tambah dompet pertama
               </button>
-            )}
-            <div className="start-steps">
-              <span>
-                <Plus size={16} />
-                Catat transaksi
-              </span>
-              <span>
-                <ReceiptText size={16} />
-                Manual atau pindai nota
-              </span>
             </div>
+          )}
+          <div className="wallet-destinations">
+            <button onClick={() => go('plan')}>
+              <span>
+                Rencana uang<small>Atur alokasi & tujuan</small>
+              </span>
+              <ChevronRight size={18} />
+            </button>
+            <button onClick={() => go('together')}>
+              <span>
+                Ruang bersama<small>Catatan untuk dana bersama</small>
+              </span>
+              <ChevronRight size={18} />
+            </button>
           </div>
         </section>
-      ) : (
-        <div className="figma-dashboard-grid">
-          <section className="panel figma-chart-panel figma-cashflow">
-            <div className="panel-heading">
-              <h2>Pemasukan & pengeluaran</h2>
-              <button className="text-btn" onClick={onReport}>
-                Laporan
-                <ArrowUpRight size={14} />
-              </button>
-            </div>
-            <CashflowChart transactions={tx} days={days} />
-          </section>
-          <section className="panel figma-chart-panel figma-balance-trend">
-            <div className="panel-heading">
-              <h2>Tren saldo</h2>
-              <span className="figma-tiny-legend">
-                <i />
-                Seluruh akun
-              </span>
-            </div>
-            <BalanceChart store={store} days={days} />
-          </section>
-          <section className="panel figma-chart-panel figma-net-trend">
-            <div className="panel-heading">
-              <h2>Arus pemasukan & pengeluaran</h2>
-              <span className="figma-tiny-legend">
-                <i />
-                Selisih
-              </span>
-            </div>
-            <NetCashflowChart transactions={tx} days={days} />
-          </section>
-          <section className="panel figma-spending">
-            <div className="panel-heading">
-              <h2>Kategori pengeluaran</h2>
-            </div>
-            <div className="figma-donut-layout">
-              <SpendingDonut entries={spending} compactCenter />
-            </div>
-          </section>
-          <section className="figma-insights" aria-labelledby="sky-insights-title">
-            <div className="figma-insights-header">
-              <h2 id="sky-insights-title">
-                <DesignIcon name="insights" />
-                Sky Insights
-              </h2>
-              <button aria-label="Perbarui insight" onClick={refreshInsights}>
-                <DesignIcon name="refresh" size={14} />
-                Perbarui
-              </button>
-            </div>
-            <div className="figma-insight-cards">
-              {insights.map((item) => {
-                return (
-                  <article
-                    key={item.id}
-                    className={`figma-insight-card ${item.tone}`}
-                    aria-label={item.title}
-                  >
-                    <span className="figma-insight-icon" aria-hidden="true">
-                      <DesignIcon
-                        name={
-                          item.tone === 'warning'
-                            ? 'insight-warning'
-                            : item.id === 'spending'
-                              ? 'insight-pattern'
-                              : item.id === 'together'
-                                ? 'insight-growth'
-                                : 'insight-idea'
-                        }
-                        size={33}
-                      />
-                    </span>
-                    <div>
-                      <div className="figma-insight-tag">
-                        <span>{item.label}</span>
-                        <i aria-hidden="true">·</i>
-                        <span className="figma-insight-context">{item.context}</span>
-                      </div>
-                      <p>{item.body}</p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-            {refreshedAt && (
-              <p className="insights-updated" role="status">
-                Insight diperbarui pukul {refreshedAt} dari {tx.length} transaksi pada periode ini.
-              </p>
-            )}
-          </section>
-          <section className="panel figma-wallets">
-            <div className="panel-heading">
-              <h2>
-                Dompet saya<span className="count-badge">{store.accounts.length}</span>
-              </h2>
-              <button className="icon-btn" aria-label="Tambah dompet" onClick={onAccount}>
-                <Plus size={20} />
-              </button>
-            </div>
-            {store.accounts.length ? (
-              <>
-                <div className="wallet-strip">
-                  {store.accounts.slice(0, 4).map((a) => accountCard(a))}
-                </div>
-                <button className="all-wallets" onClick={() => go('accounts')}>
-                  Semua dompet
-                  <ArrowRight size={14} />
-                </button>
-              </>
-            ) : (
-              <EmptyState
-                icon={<Wallet size={26} />}
-                title="Mulai dari dompet pertama"
-                text="Tambahkan rekening atau e-wallet beserta saldo awalnya."
-                action={
-                  <button className="btn primary" onClick={onAccount}>
-                    Tambah dompet
-                    <Plus size={17} />
-                  </button>
-                }
-              />
-            )}
-          </section>
-          <section className="panel figma-recent">
-            <div className="panel-heading">
-              <h2>Transaksi terbaru</h2>
-              <button className="text-btn" onClick={() => go('transactions')}>
-                Lihat semua
-                <ArrowRight size={14} />
-              </button>
-            </div>
+        <section className="activity-section">
+          <div className="section-title">
+            <h2>Aktivitas terbaru</h2>
+            <button className="text-btn" onClick={() => go('transactions')}>
+              Semua <ChevronRight size={15} />
+            </button>
+          </div>
+          {recent.length ? (
             <TransactionList store={store} transactions={recent} onSelect={detail} compact />
-          </section>
-        </div>
+          ) : (
+            <div className="dashboard-start">
+              <span className="empty-icon">
+                <ReceiptText size={26} />
+              </span>
+              <h2>Mulai dari satu catatan.</h2>
+              <p>
+                Belum ada aktivitas{selected ? ' di dompet ini' : ''}. Catat pemasukan, pengeluaran,
+                atau pindai nota di formulir transaksi.
+              </p>
+              <button className="btn secondary" onClick={() => onCapture('expense', account)}>
+                <Plus size={17} />
+                Catat sekarang
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+      {store.transactions.length > 0 && (
+        <details className="wallet-analysis">
+          <summary>
+            <ChartNoAxesCombined size={20} />
+            <span>
+              Di balik saldomu<small>Arus kas, tren, dan insight</small>
+            </span>
+            <ChevronRight size={18} />
+          </summary>
+          <div className="wallet-analysis-body">
+            <div className="section-title">
+              <h2>Ringkasan keuangan</h2>
+              <div className="figma-period-control" role="group" aria-label="Periode dashboard">
+                {dashboardPeriods.map((p) => (
+                  <button
+                    key={p.days}
+                    aria-pressed={days === p.days}
+                    className={days === p.days ? 'selected' : ''}
+                    onClick={() => setDays(p.days)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="wallet-flow">
+              <div>
+                <span>Pemasukan</span>
+                <strong className="positive">
+                  <MoneyAmount value={sum.income} />
+                </strong>
+              </div>
+              <div>
+                <span>Pengeluaran</span>
+                <strong>
+                  <MoneyAmount value={sum.expense} />
+                </strong>
+              </div>
+            </div>
+            <div className="analysis-charts">
+              <section>
+                <h3>Pemasukan & pengeluaran</h3>
+                <CashflowChart transactions={tx} days={days} />
+              </section>
+              <section>
+                <h3>Tren saldo</h3>
+                <BalanceChart store={store} days={days} />
+              </section>
+              <section>
+                <h3>Arus pemasukan & pengeluaran</h3>
+                <NetCashflowChart transactions={tx} days={days} />
+              </section>
+              <section>
+                <h3>Kategori pengeluaran</h3>
+                <SpendingDonut entries={spendingByCategory(tx, '')} compactCenter />
+              </section>
+            </div>
+            <section className="wallet-insights">
+              <div className="section-title">
+                <h2>Sky Insights</h2>
+                <button
+                  className="text-btn"
+                  aria-label="Perbarui insight"
+                  onClick={() =>
+                    setRefreshedAt(
+                      new Date().toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }),
+                    )
+                  }
+                >
+                  Perbarui
+                </button>
+              </div>
+              {insights.map((item) => (
+                <article className="figma-insight-card" key={item.id} aria-label={item.title}>
+                  <strong>{item.label}</strong>
+                  <p>{item.body}</p>
+                </article>
+              ))}
+              {refreshedAt && (
+                <p role="status">
+                  Insight diperbarui pukul {refreshedAt} dari {tx.length} transaksi pada periode
+                  ini.
+                </p>
+              )}
+            </section>
+          </div>
+        </details>
       )}
     </div>
   );

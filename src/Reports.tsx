@@ -100,6 +100,7 @@ export default function Reports({ store }: { store: Store }) {
         </div>
       </section>
       <section className="report-summary-section">
+        <div className="report-net"><span>Selisih periode</span><strong className={sum.income >= sum.expense ? 'positive' : 'negative'}>{range.error ? '—' : money(sum.income - sum.expense)}</strong><p>Pemasukan dikurangi pengeluaran pada periode terpilih.</p><div className="report-flow" aria-label="Perbandingan pemasukan dan pengeluaran"><div><span>Pemasukan</span><strong>{money(sum.income)}</strong><i style={{ width: `${Math.max(2, sum.income / Math.max(1,sum.income,sum.expense)*100)}%` }} /></div><div><span>Pengeluaran</span><strong>{money(sum.expense)}</strong><i style={{ width: `${Math.max(2, sum.expense / Math.max(1,sum.income,sum.expense)*100)}%` }} /></div></div></div>
         <div className="report-period">
           <h2>
             <DesignIcon name="nav-reports-active" size={18} />
@@ -113,7 +114,7 @@ export default function Reports({ store }: { store: Store }) {
           {store.demo && <small>Data contoh</small>}
         </div>
         <div className="report-summary">
-          {summary.map((item) => (
+          {summary.filter((item) => item.label !== 'Selisih periode').map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
               <strong className={item.tone}>{range.error ? '—' : item.value}</strong>
@@ -145,9 +146,10 @@ export default function Reports({ store }: { store: Store }) {
           Ekspor CSV
         </button>
       </div>
-      <div className="print-transactions">
+      <section className="report-detail-ledger">
         <h3>Rincian transaksi</h3>
-        <table>
+        {!tx.length && <p className="report-empty">Belum ada transaksi pada periode ini. Pilih tanggal atau jenis transaksi lain.</p>}
+        <div className="report-table-scroll"><table>
           <thead>
             <tr>
               <th>Tanggal</th>
@@ -180,9 +182,9 @@ export default function Reports({ store }: { store: Store }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         <p>Dibuat dengan SkyWallet · {displayDate(today())}</p>
-      </div>
+      </section>
     </div>
   );
 }

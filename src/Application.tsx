@@ -41,6 +41,10 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
     <main className="auth-page auth-layout">
       <section className="auth-intro" aria-labelledby="auth-intro-title">
         <Logo />
+        <div className="auth-wallet-symbol" aria-hidden="true">
+          <span />
+          <NotebookPen size={38} strokeWidth={1.4} />
+        </div>
         <div className="auth-intro-copy">
           <h2 id="auth-intro-title">Ruang untuk catatan dan rencana.</h2>
           <p>Catat uang sehari-hari, pisahkan dana bersama, dan ikuti tujuan tabunganmu.</p>
@@ -142,9 +146,11 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
                     redirectTo: location.origin,
                   });
                   if (error) {
-                    setMessage(error.status === 429
-                      ? 'Batas pengiriman email tercapai. Tunggu beberapa saat lalu coba lagi.'
-                      : 'Tautan pemulihan belum terkirim. Coba lagi nanti.');
+                    setMessage(
+                      error.status === 429
+                        ? 'Batas pengiriman email tercapai. Tunggu beberapa saat lalu coba lagi.'
+                        : 'Tautan pemulihan belum terkirim. Coba lagi nanti.',
+                    );
                     return;
                   }
                   setMessage(

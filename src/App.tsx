@@ -10,7 +10,7 @@ import {
   ChevronRight,
   ShieldCheck,
   ArrowRight,
-  Leaf,
+  Users,
   Download,
   X,
   Check,
@@ -317,37 +317,23 @@ export default function App({
         setPage('transactions');
       }}
     >
-      <div className="wallet-card-top">
-        <ProviderMark account={a} />
-        <span>
-          {a.shared ? (
-            <Heart size={15} />
-          ) : a.suffix ? (
-            `•• ${a.suffix}`
-          ) : (
-            <ArrowUpRight size={16} />
-          )}
-        </span>
-      </div>
-      <div className="wallet-name">
+      <ProviderMark account={a} />
+      <span className="wallet-name">
         <strong>{a.provider}</strong>
-        <span>{a.name}</span>
-      </div>
-      <div className="wallet-balance">
+        <span>
+          {a.name}
+          {a.suffix ? ` •• ${a.suffix}` : ''}
+          {a.shared ? ' · Bersama' : ''}
+        </span>
+      </span>
+      <span className="wallet-balance">
         <strong>
           <MoneyAmount value={b[a.id]} />
         </strong>
-        <ArrowUpRight size={15} />
-      </div>
-      {full && (
-        <span className="wallet-type">
-          {a.shared ? 'Dompet bersama' : 'Dompet pribadi'}
-          <span>
-            Lihat riwayat
-            <ChevronRight size={12} />
-          </span>
-        </span>
-      )}
+        <small>
+          Lihat riwayat <ChevronRight size={12} />
+        </small>
+      </span>
     </button>
   );
   return (
@@ -405,6 +391,12 @@ export default function App({
               onAccount={() => setDialog({ type: 'account' })}
               onReport={() => setPage('reports')}
               onStartOwn={startOwn}
+              onCapture={(kind, accountId) =>
+                setDialog({
+                  type: 'transaction',
+                  defaults: { kind, ...(accountId ? { accountId } : {}) },
+                })
+              }
               preferences={preferences}
             />
           )}
@@ -452,9 +444,9 @@ export default function App({
             />
           )}
           {page === 'together' && (
-            <>
+            <section className="together-workspace">
               <PageHeading
-                eyebrow="BETTER, TOGETHER"
+                eyebrow=""
                 title="Ruang bersama"
                 description="Saldo dan tujuan akun bersama."
                 action={
@@ -469,13 +461,16 @@ export default function App({
               />
               <div className="together-hero">
                 <div className="together-total">
+                  <span className="together-emblem" aria-hidden="true"><Users size={30} /></span>
                   <small>Total dana bersama</small>
                   <strong>
                     {money(
                       store.accounts.filter((a) => a.shared).reduce((sum, a) => sum + b[a.id], 0),
                     )}
                   </strong>
+                  <p>Catatan dana untuk hal yang kita tuju.</p>
                 </div>
+                <div className="together-counters"><div><strong>{store.accounts.filter((a) => a.shared).length}</strong><span>Dompet bersama</span></div><div><strong>{store.goals.filter((g) => store.accounts.find((a) => a.id === g.accountId)?.shared).length}</strong><span>Tujuan bersama</span></div></div>
               </div>
               <div className="info-note together-info">
                 <Info size={17} />
@@ -486,6 +481,7 @@ export default function App({
                   Transfer dari rekening pribadi ke akun bersama tidak dihitung sebagai pengeluaran.
                 </span>
               </div>
+              <div className="together-columns"><div className="together-wallet-column">
               <div className="section-title spaced">
                 <h2>Dompet kita</h2>
                 <span className="muted-label">
@@ -522,6 +518,7 @@ export default function App({
                   }
                 />
               )}
+              </div><aside className="together-goal-column">
               <div className="section-title spaced">
                 <h2>Mimpi kita</h2>
                 <button className="text-btn" onClick={() => setDialog({ type: 'goal' })}>
@@ -534,6 +531,8 @@ export default function App({
                   .filter((g) => store.accounts.find((a) => a.id === g.accountId)?.shared)
                   .map(goalCard)}
               </div>
+              {!store.goals.some((g) => store.accounts.find((a) => a.id === g.accountId)?.shared) && <div className="shared-goal-empty"><Target size={30} /><h3>Satu tujuan, langkah bersama</h3><p>Buat tujuan tabungan dan hubungkan dengan dompet bersama.</p><button className="btn secondary" onClick={() => setDialog({ type: 'goal' })}>Buat tujuan bersama</button></div>}
+              </aside></div>
               <section className="panel shared-history">
                 <div className="panel-heading">
                   <h2>Perjalanan dana bersama</h2>
@@ -551,7 +550,7 @@ export default function App({
                   onSelect={(t) => setDialog({ type: 'detail', tx: t })}
                 />
               </section>
-            </>
+            </section>
           )}
           {page === 'reports' && (
             <section className="reports-page">
@@ -842,7 +841,7 @@ function Planning({
   return (
     <>
       <PageHeading
-        eyebrow="MAKE ROOM FOR WHAT MATTERS"
+        eyebrow=""
         title="Rencana uang"
         description="Rencana fleksibel dari uang yang sudah ada, bukan penghasilan yang belum pasti."
         action={
@@ -852,6 +851,44 @@ function Planning({
           </button>
         }
       />
+        <section className="plan-overview">
+          <div className="panel calculation-card">
+            <span className="soft-icon">
+              <TrendingUp size={23} />
+            </span>
+            <h2>Dana siap direncanakan</h2><strong className="plan-overview-amount">{money(preview.available)}</strong>
+            <p>Uang bersama sudah dipisahkan, supaya rencana pribadi tetap realistis.</p>
+            <dl>
+              <div>
+                <dt>Saldo pribadi</dt>
+                <dd>{money(preview.personal)}</dd>
+              </div>
+              <div>
+                <dt>Cadangan wajib</dt>
+                <dd>−{money(Number(reserve) || 0)}</dd>
+              </div>
+              <div className="calc-total">
+                <dt>Siap dialokasikan</dt>
+                <dd>{money(preview.available)}</dd>
+              </div>
+            </dl>
+            {preview.shortfall > 0 && (
+              <div className="form-error">
+                Dana belum cukup untuk cadangan wajib. Kekurangan {money(preview.shortfall)}.
+                Dahulukan kebutuhan ini sebelum belanja opsional.
+              </div>
+            )}
+            <div className="info-note">
+              <Info size={16} />
+              <span>
+                Persentase dihitung dari dana yang tersisa setelah cadangan wajib. Ini rencana atas
+                saldo saat ini, bukan proyeksi pemasukan bulanan.
+              </span>
+            </div>
+          </div>
+          <p className="plan-manual-note">Rencana tidak mengunci atau memindahkan uang. Transfer nyata tetap kamu lakukan sendiri.</p>
+
+        </section>
       <div className="planning-layout">
         <form className="panel plan-editor" onSubmit={submit}>
           <div className="panel-heading">
@@ -962,50 +999,7 @@ function Planning({
             </button>
           </div>
         </form>
-        <aside className="plan-explanation">
-          <div className="panel calculation-card">
-            <span className="soft-icon">
-              <TrendingUp size={23} />
-            </span>
-            <h2>Kenali ruang gerakmu.</h2>
-            <p>Uang bersama sudah dipisahkan, supaya rencana pribadi tetap realistis.</p>
-            <dl>
-              <div>
-                <dt>Saldo pribadi</dt>
-                <dd>{money(preview.personal)}</dd>
-              </div>
-              <div>
-                <dt>Cadangan wajib</dt>
-                <dd>−{money(Number(reserve) || 0)}</dd>
-              </div>
-              <div className="calc-total">
-                <dt>Siap dialokasikan</dt>
-                <dd>{money(preview.available)}</dd>
-              </div>
-            </dl>
-            {preview.shortfall > 0 && (
-              <div className="form-error">
-                Dana belum cukup untuk cadangan wajib. Kekurangan {money(preview.shortfall)}.
-                Dahulukan kebutuhan ini sebelum belanja opsional.
-              </div>
-            )}
-            <div className="info-note">
-              <Info size={16} />
-              <span>
-                Persentase dihitung dari dana yang tersisa setelah cadangan wajib. Ini rencana atas
-                saldo saat ini, bukan proyeksi pemasukan bulanan.
-              </span>
-            </div>
-          </div>
-          <div className="gentle-card">
-            <Leaf size={25} strokeWidth={1.4} />
-            <h3>Kamu yang pegang kendali.</h3>
-            <p>
-              Saran penempatan memakai dompet milikmu, tanpa menjanjikan bunga atau hasil. Rencana
-              tidak mengunci atau memindahkan uang. Transfer nyata tetap kamu lakukan sendiri.
-            </p>
-          </div>
-        </aside>
+
       </div>
       <div className="section-title spaced">
         <h2>Tujuan tabungan</h2>
@@ -1137,13 +1131,13 @@ function SettingsPanel({
   return (
     <div className="settings-content">
       <section className="settings-local-profile">
-        <span>S</span>
+        <span aria-hidden="true"><ShieldCheck size={28} /></span>
         <div>
           <h2>Ruang pribadi</h2>
-          <p>{remote?.email ?? 'Data contoh pada perangkat ini'}</p>
+          <p>{remote?.email ?? (store.demo ? 'Data contoh pada perangkat ini' : 'Catatan pribadi pada perangkat ini')}</p><small>{remote ? 'Akses akun tersinkron' : 'Penyimpanan lokal · bukan koneksi bank'}</small>
         </div>
       </section>
-      <section className="appearance-settings">
+      <div className="settings-workspace"><div className="settings-device-column"><section className="appearance-settings">
         <h3>
           <DesignIcon name="settings-appearance" size={18} /> Tampilan
         </h3>
@@ -1167,7 +1161,34 @@ function SettingsPanel({
           ))}
         </div>
       </section>
-      <div className="settings-section">
+      <section className="settings-section insight-preferences">
+        <h3>
+          <DesignIcon name="settings-notifications" size={18} />
+          Informasi di aplikasi
+        </h3>
+        <p>Atur informasi yang ditampilkan di dashboard saat SkyWallet dibuka.</p>
+        {(
+          [
+            { id: 'allocation', label: 'Rencana dana pribadi' },
+            { id: 'spending', label: 'Belanja paling besar' },
+            { id: 'together', label: 'Saldo akun bersama' },
+          ] as const
+        ).map((item) => (
+          <div key={item.id}>
+            <span>{item.label}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-label={item.label}
+              aria-checked={preferences[item.id]}
+              onClick={() => onPreferences({ ...preferences, [item.id]: !preferences[item.id] })}
+            >
+              <i />
+            </button>
+          </div>
+        ))}
+      </section>
+      </div><div className="settings-data-column"><div className="settings-section">
         <h3>
           <DesignIcon name="settings-data" size={18} /> Data & cadangan
         </h3>
@@ -1269,34 +1290,9 @@ function SettingsPanel({
           <ChevronRight size={16} />
         </button>
       </div>
-      <section className="settings-section insight-preferences">
-        <h3>
-          <DesignIcon name="settings-notifications" size={18} />
-          Informasi di aplikasi
-        </h3>
-        <p>Atur informasi yang ditampilkan di dashboard saat SkyWallet dibuka.</p>
-        {(
-          [
-            { id: 'allocation', label: 'Rencana dana pribadi' },
-            { id: 'spending', label: 'Belanja paling besar' },
-            { id: 'together', label: 'Saldo akun bersama' },
-          ] as const
-        ).map((item) => (
-          <div key={item.id}>
-            <span>{item.label}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-label={item.label}
-              aria-checked={preferences[item.id]}
-              onClick={() => onPreferences({ ...preferences, [item.id]: !preferences[item.id] })}
-            >
-              <i />
-            </button>
-          </div>
-        ))}
-      </section>
 
+
+      </div></div>
       <div className="settings-version">
         <Logo />
         <span>
