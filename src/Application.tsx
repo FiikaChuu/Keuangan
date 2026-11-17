@@ -371,10 +371,10 @@ function Authenticated() {
 export default function Application({ demo = false }: { demo?: boolean }) {
   useEffect(() => {
     try {
-      const theme = localStorage.getItem('skysave.theme') || 'dark';
-      document.documentElement.dataset.theme = theme;
-      const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', theme === 'light' ? '#F6F6F8' : '#0B0B0D');
+      document.documentElement.dataset.theme = 'dark';
+      document
+        .querySelectorAll('meta[name="theme-color"]')
+        .forEach((meta) => meta.setAttribute('content', '#080808'));
     } catch {
       /* default theme */
     }

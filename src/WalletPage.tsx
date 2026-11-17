@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { Heart, PiggyBank, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import type { Account, Store } from './domain';
 import { balances } from './domain';
 import { MoneyAmount } from './MoneyAmount';
 import { EmptyState } from './ui';
+import { WalletTexture, WalletGlyph } from './WalletArt';
 
 export default function WalletPage({
   store,
@@ -33,6 +34,7 @@ export default function WalletPage({
       </header>
       <div className="wallet-overview-band">
         <section className="wallet-summary" aria-label="Saldo dompet">
+          <WalletTexture />
           <p>Total seluruh dompet</p>
           <strong className="wallet-total">
             <MoneyAmount value={personalTotal + sharedTotal} />
@@ -58,11 +60,11 @@ export default function WalletPage({
       </div>
       <div className="wallet-tools">
         <button onClick={onPlan}>
-          <PiggyBank size={19} />
+          <WalletGlyph name="category-saving" size={22} />
           Rencana uang
         </button>
         <button onClick={onTogether}>
-          <Heart size={19} />
+          <WalletGlyph name="category-together" size={22} />
           Ruang bersama
         </button>
       </div>

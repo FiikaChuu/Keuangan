@@ -19,9 +19,6 @@ import {
   TrendingUp,
   Coffee,
   PiggyBank,
-  Sun,
-  Moon,
-  Monitor,
   RefreshCw,
   Trash2,
   LoaderCircle,
@@ -1046,18 +1043,6 @@ function SettingsPanel({
   preferences: InsightPreferences;
   onPreferences: (value: InsightPreferences) => void;
 }) {
-  const [theme, setTheme] = useState(document.documentElement.dataset.theme ?? 'dark');
-  function chooseTheme(value: string) {
-    setTheme(value);
-    document.documentElement.dataset.theme = value;
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', value === 'light' ? '#F6F6F8' : '#0B0B0D');
-    try {
-      localStorage.setItem('skysave.theme', value);
-    } catch {
-      notify('Tema diterapkan untuk sesi ini. Preferensi belum bisa disimpan.');
-    }
-  }
   const [busy, setBusy] = useState(false);
   const [imported, setImported] = useState<Store | null>(null);
   const [error, setError] = useState('');
@@ -1141,25 +1126,7 @@ function SettingsPanel({
         <h3>
           <DesignIcon name="settings-appearance" size={18} /> Tampilan
         </h3>
-        <p>Pilih suasana SkyWallet sesuai harimu.</p>
-        <div className="theme-options">
-          {[
-            { id: 'light', label: 'Terang', icon: Sun },
-            { id: 'dark', label: 'Gelap', icon: Moon },
-            { id: 'system', label: 'Sistem', icon: Monitor },
-          ].map((t) => (
-            <button
-              key={t.id}
-              aria-pressed={theme === t.id}
-              className={theme === t.id ? 'selected' : ''}
-              onClick={() => chooseTheme(t.id)}
-            >
-              <t.icon size={24} strokeWidth={1.7} aria-hidden="true" />
-              <span>{t.label}</span>
-              {theme === t.id && <Check size={14} />}
-            </button>
-          ))}
-        </div>
+        <p>Satu tampilan SkyWallet. Kanvas hitam, kartu lavender, dan simbol dompet berwarna.</p>
       </section>
       <section className="settings-section insight-preferences">
         <h3>

@@ -322,7 +322,9 @@ test('reports export actual transactions and appearance survives reload', async 
   await expect(page.locator('.report-detail-ledger tbody tr')).toHaveCount(14);
   await page.emulateMedia({ media: 'screen' });
   await navigate(page, 'Pengaturan');
-  await page.getByRole('button', { name: 'Gelap', exact: true }).click();
+  await expect(page.locator('.theme-options')).toHaveCount(0);
+  await page.evaluate(() => localStorage.setItem('skysave.theme', 'light'));
+  await page.emulateMedia({ colorScheme: 'light' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

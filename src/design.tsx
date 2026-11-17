@@ -1,4 +1,5 @@
 import { memo, useEffect, useState } from 'react';
+import { WalletGlyph } from './WalletArt';
 
 // Assets extracted verbatim from the supplied Figma SVGs.
 export const DesignIcon = memo(function DesignIcon({
@@ -10,6 +11,7 @@ export const DesignIcon = memo(function DesignIcon({
   size?: number;
   className?: string;
 }) {
+  if (name.startsWith('category-')) return <WalletGlyph name={name} size={size} />;
   return (
     <img
       className={`design-icon ${className}`}

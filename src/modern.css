@@ -1,49 +1,11 @@
-/* =========================================================
-   SkyWallet — Modern Wallet skin (dark-first)
-   Loaded AFTER reference-ui.css so tokens + rules here win.
-   ========================================================= */
-
-/* ---------- Tokens: LIGHT ---------- */
-:root {
-  --bg: #f6f6f8;
-  --surface: #ffffff;
-  --surface-2: #f1f1f4;
-  --elevated: #ffffff;
-  --soft: #eeeef2;
-  --ink: #0e0e11;
-  --muted: #6f6f77;
-  --line: rgba(14, 14, 17, 0.09);
-  --accent: #6c63e8;
-  --accent-text: #ffffff;
-  --accent-soft: rgba(108, 99, 232, 0.14);
-  --navy: var(--accent);
-  --mint: #12a870;
-  --mint-ink: #0e8a5b;
-  --mint-soft: rgba(42, 194, 129, 0.14);
-  --coral: #e05361;
-  --coral-ink: #c23b48;
-  --coral-soft: rgba(255, 92, 108, 0.12);
-  --turquoise: #3f7fe0;
-  --turquoise-ink: #3367bd;
-  --turquoise-soft: rgba(106, 168, 255, 0.14);
-  --lavender: #c79a1f;
-  --lavender-ink: #a97f12;
-  --lavender-soft: rgba(245, 196, 81, 0.16);
-  --warning-ink: #a97f12;
-  --warning-soft: rgba(245, 196, 81, 0.16);
-  --radius: 18px;
-  --shadow: 0 1px 2px rgba(10, 10, 15, 0.05), 0 10px 30px rgba(10, 10, 15, 0.06);
-  color-scheme: light;
-}
-
-/* ---------- Tokens: DARK ---------- */
-:root[data-theme='dark'],
-:root[data-theme='system'] {
-  --bg: #0b0b0d;
-  --surface: #141417;
-  --surface-2: #1a1a1e;
-  --elevated: #202024;
-  --soft: #1d1d22;
+/* SkyWallet single global palette. */
+:root,
+:root[data-theme='dark'] {
+  --bg: #080808;
+  --surface: #141414;
+  --surface-2: #1c1c1c;
+  --elevated: #242424;
+  --soft: #202020;
   --ink: #f7f7f8;
   --muted: #8a8a90;
   --line: rgba(255, 255, 255, 0.08);
@@ -67,36 +29,6 @@
   --warning-soft: rgba(245, 196, 81, 0.16);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 20px 44px rgba(0, 0, 0, 0.45);
   color-scheme: dark;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-theme='system'] {
-    --bg: #f6f6f8;
-    --surface: #ffffff;
-    --surface-2: #f1f1f4;
-    --elevated: #ffffff;
-    --soft: #eeeef2;
-    --ink: #0e0e11;
-    --muted: #6f6f77;
-    --line: rgba(14, 14, 17, 0.09);
-    --accent: #6c63e8;
-    --accent-text: #ffffff;
-    --accent-soft: rgba(108, 99, 232, 0.14);
-    --mint: #12a870;
-    --mint-ink: #0e8a5b;
-    --mint-soft: rgba(42, 194, 129, 0.14);
-    --coral: #e05361;
-    --coral-ink: #c23b48;
-    --coral-soft: rgba(255, 92, 108, 0.12);
-    --turquoise: #3f7fe0;
-    --turquoise-ink: #3367bd;
-    --turquoise-soft: rgba(106, 168, 255, 0.14);
-    --lavender: #c79a1f;
-    --lavender-ink: #a97f12;
-    --lavender-soft: rgba(245, 196, 81, 0.16);
-    --warning-ink: #a97f12;
-    --warning-soft: rgba(245, 196, 81, 0.16);
-    color-scheme: light;
-  }
 }
 
 /* ---------- Base ---------- */

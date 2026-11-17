@@ -1,0 +1,228 @@
+/* Orb-inspired physical card, original SkyWallet circuit artwork. */
+:root {
+  --radius: 18px;
+  --muted: #a3a3a8;
+}
+.wallet-command,
+.wallet-summary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #c6b8f3;
+  color: #111;
+  border: 0;
+  border-radius: 26px;
+  text-align: left;
+  padding: 28px 32px;
+  min-height: 310px;
+}
+.wallet-texture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+.wallet-command .wallet-switch {
+  background: #ffffff54;
+  padding: 4px 10px 4px 4px;
+  max-width: calc(100% - 70px);
+}
+.wallet-switch .account-picker-trigger {
+  color: #111;
+}
+.wallet-switch .design-icon {
+  filter: brightness(0);
+}
+.wallet-command .workspace-avatar {
+  background: transparent;
+}
+.wallet-command .balance-label {
+  justify-content: flex-start;
+  margin-top: 27px;
+  color: #302743;
+}
+.wallet-command .balance-label .icon-btn {
+  color: #302743;
+  background: transparent;
+}
+.wallet-command .figma-balance-amount {
+  color: #111;
+  font-size: clamp(42px, 5vw, 66px);
+  font-weight: 550;
+  margin: 0 0 8px;
+}
+.wallet-command .balance-caption {
+  color: #302743;
+  text-align: left;
+}
+.wallet-command .money-currency,
+.wallet-summary .money-currency {
+  color: #111;
+}
+.wallet-command .balance-caption span {
+  opacity: 1;
+}
+.orb-controls {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 24px;
+}
+.orb-controls button {
+  background: #111;
+  color: #fff;
+  border-radius: 40px;
+  min-height: 42px;
+  padding: 0 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.orb-controls .orb-add {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+}
+.orb-controls button:hover {
+  background: #302743;
+}
+.wallet-quick-actions {
+  margin: 26px 0 30px;
+  justify-content: flex-start;
+  gap: 28px;
+}
+.wallet-quick-actions button > span,
+.wallet-quick-actions button:first-child > span {
+  background: #282232;
+  color: #c6b8f3;
+  width: 56px;
+  height: 52px;
+  border-radius: 17px;
+}
+.wallet-quick-actions button:hover > span {
+  color: #111;
+  background: #c6b8f3;
+}
+.wallet-glyph {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #17141c;
+  overflow: hidden;
+}
+.provider-mark,
+.provider-mark.large {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: transparent;
+}
+.provider-mark .wallet-glyph {
+  width: 100%;
+  height: 100%;
+}
+.workspace-avatar .wallet-glyph {
+  width: 30px;
+  height: 30px;
+  flex-basis: 30px;
+}
+.category-icon,
+.transaction-icon {
+  background: transparent;
+}
+.category-options .wallet-glyph {
+  width: 38px;
+  height: 38px;
+  flex-basis: 38px;
+}
+.wallet-summary > p,
+.wallet-summary .wallet-total,
+.wallet-summary .wallet-breakdown,
+.wallet-summary .wallet-breakdown p,
+.wallet-summary .wallet-breakdown strong {
+  color: #111;
+}
+.wallet-summary {
+  min-height: 240px;
+}
+.wallet-summary .wallet-total {
+  font-size: clamp(36px, 4vw, 52px);
+}
+.wallet-summary .wallet-breakdown {
+  border-color: #1113;
+}
+.wallet-tools .wallet-glyph {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+}
+button:focus-visible {
+  outline: 2px solid #e2d8ff;
+  outline-offset: 4px;
+}
+.wallet-command button:focus-visible {
+  outline-color: #111;
+}
+@media (min-width: 1000px) {
+  .wallet-command {
+    min-height: 340px;
+    padding: 30px 36px;
+  }
+}
+@media (max-width: 600px) {
+  .wallet-command {
+    border-radius: 23px;
+    min-height: 320px;
+    padding: 21px 20px;
+  }
+  .wallet-command .wallet-switch {
+    max-width: calc(100% - 32px);
+  }
+  .wallet-command .balance-label {
+    margin-top: 31px;
+  }
+  .wallet-command .figma-balance-amount {
+    font-size: clamp(34px, 10.5vw, 43px);
+  }
+  .orb-controls {
+    gap: 7px;
+    margin-top: 25px;
+  }
+  .orb-controls button {
+    padding: 0 12px;
+    gap: 7px;
+    font-size: 11px;
+  }
+  .wallet-quick-actions {
+    justify-content: space-between;
+    gap: 5px;
+    margin: 23px 0 27px;
+  }
+  .wallet-quick-actions button {
+    min-width: 68px;
+  }
+  .wallet-quick-actions small {
+    font-size: 11px;
+  }
+  .wallet-home-columns {
+    padding-top: 22px;
+    gap: 26px;
+  }
+  .wallet-summary {
+    padding: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wallet-quick-actions button > span {
+    transition: none;
+    transform: none;
+  }
+}

@@ -19,6 +19,7 @@ import type { InsightPreferences } from './preferences';
 import { MoneyAmount } from './MoneyAmount';
 import { AccountPicker, BalanceChart, CashflowChart, SpendingDonut, TransactionList } from './ui';
 import { NetCashflowChart } from './DashboardCharts';
+import { WalletTexture, WalletGlyph, ActionGlyph } from './WalletArt';
 
 type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
 export default function Dashboard({
@@ -76,9 +77,10 @@ export default function Dashboard({
         </button>
       </header>
       <section className="wallet-command" aria-label="Saldo seluruh akun">
+        <WalletTexture />
         <div className="wallet-switch">
           <span className="workspace-avatar">
-            <Wallet size={21} />
+            <WalletGlyph name="overview" size={20} />
           </span>
           <AccountPicker
             label="Pilih dompet ringkasan"
@@ -106,17 +108,32 @@ export default function Dashboard({
           {selected ? selected.name : `${store.accounts.length} dompet dalam catatan`}
           <span>Tidak terhubung ke bank</span>
         </p>
-        <div className="wallet-quick-actions">
-          {actions.map((item) => (
-            <button key={item.label} onClick={item.action}>
-              <span>
-                <item.icon size={23} strokeWidth={1.7} />
-              </span>
-              <small>{item.label}</small>
-            </button>
-          ))}
+        <div className="orb-controls">
+          <button
+            className="orb-add"
+            aria-label="Catat transaksi baru"
+            onClick={() => onCapture('expense', account)}
+          >
+            <Plus size={24} />
+          </button>
+          <button onClick={onAccount}>
+            Tambah dompet <Plus size={16} />
+          </button>
+          <button onClick={() => go('transactions')}>
+            Riwayat <ArrowUpRight size={16} />
+          </button>
         </div>
       </section>
+      <div className="wallet-quick-actions" aria-label="Aksi keuangan">
+        {actions.map((item) => (
+          <button key={item.label} onClick={item.action}>
+            <span>
+              <ActionGlyph kind={item.label} />
+            </span>
+            <small>{item.label}</small>
+          </button>
+        ))}
+      </div>
       <div className="wallet-home-columns">
         <section className="asset-section" aria-label="Dompet saya">
           <div className="section-title">

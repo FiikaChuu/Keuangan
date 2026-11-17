@@ -10,6 +10,7 @@ import '../src/app.css';
 import '../src/motion-ui.css';
 import '../src/reference-ui.css';
 import '../src/modern.css';
+import '../src/orb-wallet.css';
 
 export const metadata: Metadata = {
   title: 'SkyWallet — Ruang untuk uangmu.',
@@ -23,14 +24,11 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#0B0B0D' },
-    { media: '(prefers-color-scheme: light)', color: '#F6F6F8' },
-  ],
+  themeColor: '#080808',
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={notoSans.variable}>
+    <html lang="id" data-theme="dark" className={notoSans.variable}>
       <body>{children}</body>
     </html>
   );

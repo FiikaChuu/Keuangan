@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, m, useIsPresent, useReducedMotion } from 'framer-motion';
 import { DesignIcon, categoryArtwork } from './design';
+import { WalletGlyph } from './WalletArt';
 import { sheetSpring } from './motion';
 import { ArrowDownLeft, ArrowUpRight, Cloud, Paperclip, Check } from 'lucide-react';
 import type { Account, Store, Transaction } from './domain';
@@ -32,13 +33,12 @@ export function ProviderMark({
   account: Pick<Account, 'provider' | 'color'>;
   large?: boolean;
 }) {
-  const provider = providers.find((p) => p.name === account.provider);
   return (
     <span
       className={`provider-mark ${large ? 'large' : ''} provider-${account.provider.toLowerCase().replaceAll(' ', '-')}`}
-      style={{ background: account.color }}
+      title="Simbol dompet pribadi, bukan logo bank"
     >
-      {provider?.short ?? account.provider.slice(0, 2)}
+      <WalletGlyph name={account.provider} size={large ? 28 : 24} />
     </span>
   );
 }
@@ -202,11 +202,7 @@ export function AccountPicker({
 export function CategoryIcon({ category, size = 24 }: { category: string; size?: number }) {
   return (
     <DesignIcon
-      name={
-        category === 'Makan' || category === 'Makanan & minuman'
-          ? 'ledger-food'
-          : (categoryArtwork[category] ?? 'category-other')
-      }
+      name={categoryArtwork[category] ?? 'category-other'}
       size={size}
     />
   );
