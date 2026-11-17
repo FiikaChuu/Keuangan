@@ -1,0 +1,321 @@
+/* =========================================================
+   SkyWallet — Modern Wallet skin (dark-first)
+   Loaded AFTER reference-ui.css so tokens + rules here win.
+   ========================================================= */
+
+/* ---------- Tokens: LIGHT ---------- */
+:root {
+  --bg: #f6f6f8;
+  --surface: #ffffff;
+  --surface-2: #f1f1f4;
+  --elevated: #ffffff;
+  --soft: #eeeef2;
+  --ink: #0e0e11;
+  --muted: #6f6f77;
+  --line: rgba(14, 14, 17, 0.09);
+  --accent: #6c63e8;
+  --accent-text: #ffffff;
+  --accent-soft: rgba(108, 99, 232, 0.14);
+  --navy: var(--accent);
+  --mint: #12a870;
+  --mint-ink: #0e8a5b;
+  --mint-soft: rgba(42, 194, 129, 0.14);
+  --coral: #e05361;
+  --coral-ink: #c23b48;
+  --coral-soft: rgba(255, 92, 108, 0.12);
+  --turquoise: #3f7fe0;
+  --turquoise-ink: #3367bd;
+  --turquoise-soft: rgba(106, 168, 255, 0.14);
+  --lavender: #c79a1f;
+  --lavender-ink: #a97f12;
+  --lavender-soft: rgba(245, 196, 81, 0.16);
+  --warning-ink: #a97f12;
+  --warning-soft: rgba(245, 196, 81, 0.16);
+  --radius: 18px;
+  --shadow: 0 1px 2px rgba(10, 10, 15, 0.05), 0 10px 30px rgba(10, 10, 15, 0.06);
+  color-scheme: light;
+}
+
+/* ---------- Tokens: DARK ---------- */
+:root[data-theme='dark'],
+:root[data-theme='system'] {
+  --bg: #0b0b0d;
+  --surface: #141417;
+  --surface-2: #1a1a1e;
+  --elevated: #202024;
+  --soft: #1d1d22;
+  --ink: #f7f7f8;
+  --muted: #8a8a90;
+  --line: rgba(255, 255, 255, 0.08);
+  --accent: #7c6cf2;
+  --accent-text: #ffffff;
+  --accent-soft: rgba(124, 108, 242, 0.16);
+  --navy: var(--accent);
+  --mint: #2ac281;
+  --mint-ink: #37d492;
+  --mint-soft: rgba(42, 194, 129, 0.16);
+  --coral: #ff5c6c;
+  --coral-ink: #ff7a87;
+  --coral-soft: rgba(255, 92, 108, 0.16);
+  --turquoise: #6aa8ff;
+  --turquoise-ink: #8cbdfa;
+  --turquoise-soft: rgba(106, 168, 255, 0.16);
+  --lavender: #f5c451;
+  --lavender-ink: #f7cf74;
+  --lavender-soft: rgba(245, 196, 81, 0.16);
+  --warning-ink: #f7cf74;
+  --warning-soft: rgba(245, 196, 81, 0.16);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 20px 44px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] {
+    --bg: #f6f6f8; --surface: #ffffff; --surface-2: #f1f1f4; --elevated: #ffffff;
+    --soft: #eeeef2; --ink: #0e0e11; --muted: #6f6f77; --line: rgba(14,14,17,0.09);
+    --accent: #6c63e8; --accent-text: #ffffff; --accent-soft: rgba(108,99,232,0.14);
+    --mint: #12a870; --mint-ink: #0e8a5b; --mint-soft: rgba(42,194,129,0.14);
+    --coral: #e05361; --coral-ink: #c23b48; --coral-soft: rgba(255,92,108,0.12);
+    --turquoise: #3f7fe0; --turquoise-ink: #3367bd; --turquoise-soft: rgba(106,168,255,0.14);
+    --lavender: #c79a1f; --lavender-ink: #a97f12; --lavender-soft: rgba(245,196,81,0.16);
+    --warning-ink: #a97f12; --warning-soft: rgba(245,196,81,0.16);
+    color-scheme: light;
+  }
+}
+
+/* ---------- Base ---------- */
+html, body { background: var(--bg); }
+body {
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+::selection { background: var(--accent-soft); color: var(--ink); }
+
+/* ---------- Surfaces ---------- */
+.panel, .empty-state, .auth-card, .auth-form-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+.panel-heading p, .figma-stat p, .empty-state > p { color: var(--muted); }
+
+/* ---------- Balance hero ---------- */
+.figma-balance-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 100% 0%, var(--accent-soft) 0%, transparent 46%),
+    var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  color: var(--ink);
+  box-shadow: none;
+}
+.figma-balance-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.figma-balance-heading, .figma-balance-heading button { color: var(--muted); }
+.figma-balance-amount {
+  font-size: 40px;
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.figma-balance-breakdown { color: var(--muted); }
+.figma-balance-breakdown dt { color: var(--muted); }
+
+/* ---------- Stat cards (no rainbow fills) ---------- */
+.figma-stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+.figma-stat h2 { color: var(--muted); }
+.figma-stat > strong {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.figma-stat p, .figma-stat > button { color: var(--muted); }
+.figma-stat.income > strong, .figma-stat.income > div > span { color: var(--mint-ink); }
+.figma-stat.expense > strong, .figma-stat.expense > div > span { color: var(--coral-ink); }
+.figma-stat.saving > strong, .figma-stat.saving > div > span { color: var(--warning-ink); }
+.figma-stat.together > strong, .figma-stat.together > div > span { color: var(--turquoise-ink); }
+.figma-stat > div > span {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-2);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: transform .16s ease, background-color .16s ease, box-shadow .16s ease, opacity .16s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 6px 20px var(--accent-soft);
+}
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.secondary, .dashboard-header-actions .btn {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.btn:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Segmented controls / pills ---------- */
+.figma-period-control, .filter-tabs, .activity-tabs, .form-tabs, .kind-switch {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px;
+}
+.figma-period-control button, .filter-tabs button, .activity-tabs button,
+.form-tabs button, .kind-switch button {
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.figma-period-control .selected, .filter-tabs .active, .activity-tabs [aria-pressed='true'],
+.form-tabs .active, .kind-switch .active {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 4px 14px var(--accent-soft);
+}
+
+/* ---------- Inputs ---------- */
+input, select, textarea {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+/* ---------- Navigation ---------- */
+.app-navigation {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-right: 1px solid var(--line);
+}
+.nav-brand p, .nav-note { color: var(--muted); }
+.nav-link { border-radius: 12px; color: var(--muted); transition: background-color .16s ease, color .16s ease; }
+.nav-link:hover { background: var(--surface-2); color: var(--ink); }
+.nav-link[aria-current='page'], .nav-link.mobile-current {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.capture-button > span {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 8px 22px var(--accent-soft);
+  border-radius: 50%;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1);
+}
+.capture-button:active > span { transform: scale(0.92); }
+.capture-button small { color: var(--ink); }
+@media (min-width: 900px) {
+  .app-navigation .capture-button, .app-navigation .capture-button small { color: #fff; }
+}
+
+/* Wallet composition: balance is typography, not another dashboard tile. */
+.figma-metrics-layout { display: flex; flex-direction: column; gap: 24px; }
+.figma-balance-card {
+  background: transparent; border: 0; border-radius: 0; padding: 24px 0 12px;
+  text-align: center; overflow: visible;
+}
+.figma-balance-card::after { display: none; }
+.figma-balance-heading { justify-content: center; }
+.figma-balance-heading > div { gap: 12px; }
+.figma-balance-amount { margin: 22px 0 18px; font-size: clamp(40px, 6vw, 68px); }
+.figma-balance-breakdown { justify-content: center; gap: 24px; }
+.figma-balance-breakdown > div { align-items: baseline; }
+.figma-manage-wallets {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 22px auto 0; padding: 12px 22px; min-height: 44px;
+  border-radius: 999px; background: var(--accent-soft); color: var(--ink);
+}
+.figma-summary-grid { gap: 0; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.figma-stat { border: 0; border-radius: 0; padding: 20px; background: var(--surface); }
+.figma-stat + .figma-stat { border-left: 1px solid var(--line); }
+.figma-stat > div { margin-bottom: 12px; }
+.figma-stat > strong { color: var(--ink); }
+.figma-stat p, .figma-stat > button { margin-top: 8px; }
+.figma-dashboard-header h1 { font-size: 22px; }
+.figma-dashboard-header > div:first-child > p { font-size: 13px; }
+.wallet-strip { gap: 0; }
+.wallet-strip > * { border-radius: 0; box-shadow: none; border: 0; border-bottom: 1px solid var(--line); }
+
+/* Focused sign-in portal, not a marketing split with a floating white card. */
+.auth-page.auth-layout {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 30px; min-height: 100svh; padding: 40px 24px;
+}
+.auth-layout .auth-intro { width: min(100%, 420px); padding: 0; text-align: center; }
+.auth-layout .auth-intro > *:first-child { justify-content: center; margin: 0 auto; }
+.auth-layout .auth-intro-copy { margin-top: 28px; }
+.auth-layout .auth-intro-copy h2 { font-size: clamp(30px, 4vw, 42px); line-height: 1.12; letter-spacing: -.045em; }
+.auth-layout .auth-intro-copy p { font-size: 14px; line-height: 1.6; margin-top: 14px; }
+.auth-layout .auth-features { display: none; }
+.auth-layout .auth-form-panel {
+  width: min(100%, 420px); padding: 28px; border-radius: 24px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: none;
+}
+.auth-layout .auth-form-heading { padding-bottom: 0; border: 0; margin-bottom: 24px; }
+.auth-layout .auth-form-heading h1 { font-size: 19px; letter-spacing: -.02em; }
+.auth-layout .auth-form-heading p { font-size: 13px; }
+.auth-layout input { min-height: 50px; background: var(--surface-2); border-radius: 12px; }
+.auth-layout .btn.primary { min-height: 50px; }
+@media (max-width: 700px) {
+  .figma-stat { padding: 16px; }
+  .figma-stat:nth-child(3) { border-left: 0; }
+  .figma-stat:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .figma-balance-card { padding-top: 16px; }
+  .figma-balance-amount { font-size: 46px; }
+  .auth-page.auth-layout { gap: 24px; padding: max(32px, env(safe-area-inset-top)) 20px max(32px, env(safe-area-inset-bottom)); }
+  .auth-layout .auth-form-panel { padding: 24px; }
+  .app-navigation { background: var(--surface); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .figma-balance-amount { animation: wallet-arrive .5s ease-out both; }
+  @keyframes wallet-arrive { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+/* ---------- Charts ---------- */
+.figma-tiny-legend { color: var(--muted); }
+
+/* ---------- Auth / login ---------- */
+.auth-page { background: var(--bg); }
+.auth-intro-copy h1 { letter-spacing: -0.03em; font-weight: 700; }
+.auth-intro-copy p, .auth-features, .auth-access-note, .field-hint { color: var(--muted); }
+.auth-form-heading { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.auth-card { background: var(--surface); }
+
+/* ---------- Modals / sheets ---------- */
+dialog, .sheet, .modal, [role='dialog'] {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}

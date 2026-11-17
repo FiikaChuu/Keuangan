@@ -20,6 +20,8 @@ test('receipt route verifies login and whitelist, uses Gemini structured output,
     to_bank: 'Mandiri',
     notes: 'Biaya admin Rp2.500',
   };
+  let modelReply: (() => Response) | undefined;
+  let sentPrompt = '';
   const png = new Uint8Array(64);
   png.set([137, 80, 78, 71, 13, 10, 26, 10]);
   const request = (body: Uint8Array = png, headers: Record<string, string> = {}) =>
@@ -53,6 +55,7 @@ test('receipt route verifies login and whitelist, uses Gemini structured output,
       /generativelanguage\.googleapis\.com\/.*models\/gemini-2\.5-flash:generateContent/,
     );
     const body = JSON.parse(String(options?.body));
+    sentPrompt = body.contents[0].parts[0].text;
     assert.equal(body.contents[0].parts[1].inlineData.mimeType, 'image/png');
     assert.equal(body.contents[0].parts[1].inlineData.data, Buffer.from(png).toString('base64'));
     assert.equal(body.generationConfig.responseMimeType, 'application/json');
@@ -65,6 +68,7 @@ test('receipt route verifies login and whitelist, uses Gemini structured output,
       'Transfer',
       'Lainnya',
     ]);
+    if (modelReply) return modelReply();
     return Response.json({
       candidates: [
         {
@@ -121,6 +125,78 @@ test('receipt route verifies login and whitelist, uses Gemini structured output,
         assert.deepEqual(await response.json(), output);
         assert.equal(calls.length, 3);
         assert.ok(!calls.some((url) => /storage\/|\/transactions|\/wallets/.test(url)));
+      },
+    );
+    await suite.test(
+      'prompt distinguishes payment evidence from internal movement and unpaid totals',
+      async () => {
+        modelReply = undefined;
+        await POST(request());
+        for (const rule of [
+          /QRIS.*expense/i,
+          /wifi.*Tagihan/i,
+          /internal.*confirm/i,
+          /pending.*checkout.*hold/i,
+          /cropped.*0/i,
+          /discount.*coins.*shipping/i,
+          /balance.*never/i,
+          /fee.*once/i,
+        ])
+          assert.match(sentPrompt, rule);
+      },
+    );
+    await suite.test('Gemini HTTP failures have sanitized actionable classifications', async () => {
+      for (const [upstream, status, code] of [
+        [400, 502, 'SCAN_UPSTREAM'],
+        [401, 503, 'SCAN_UPSTREAM_AUTH'],
+        [403, 503, 'SCAN_UPSTREAM_AUTH'],
+        [429, 429, 'SCAN_UPSTREAM_QUOTA'],
+        [500, 502, 'SCAN_UPSTREAM'],
+        [503, 502, 'SCAN_UPSTREAM'],
+        [504, 504, 'SCAN_TIMEOUT'],
+      ] as const) {
+        modelReply = () =>
+          Response.json(
+            { error: { code: upstream, message: 'PRIVATE-UPSTREAM-DETAIL', status: 'UNKNOWN' } },
+            { status: upstream },
+          );
+        const response = await POST(request());
+        assert.equal(response.status, status);
+        const body = await response.json();
+        assert.equal(body.code, code);
+        assert.equal(typeof body.error, 'string');
+        assert.ok(!JSON.stringify(body).includes('PRIVATE-UPSTREAM-DETAIL'));
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+      }
+      modelReply = undefined;
+    });
+    await suite.test(
+      'transport failures are distinct from unreadable model responses',
+      async () => {
+        for (const [error, status, code] of [
+          [new DOMException('PRIVATE', 'TimeoutError'), 504, 'SCAN_TIMEOUT'],
+          [new TypeError('fetch failed PRIVATE'), 502, 'SCAN_NETWORK'],
+        ] as const) {
+          modelReply = () => {
+            throw error;
+          };
+          const response = await POST(request());
+          assert.equal(response.status, status);
+          assert.equal((await response.json()).code, code);
+        }
+        for (const reply of [
+          {},
+          { candidates: [{ content: { parts: [{ text: 'not JSON PRIVATE' }] } }] },
+          { promptFeedback: { blockReason: 'SAFETY' } },
+        ]) {
+          modelReply = () => Response.json(reply);
+          const response = await POST(request());
+          assert.equal(response.status, 422);
+          const body = await response.json();
+          assert.equal(body.code, 'SCAN_UNREADABLE');
+          assert.ok(!JSON.stringify(body).includes('PRIVATE'));
+        }
+        modelReply = undefined;
       },
     );
     await suite.test(

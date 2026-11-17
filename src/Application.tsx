@@ -137,9 +137,16 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
               onClick={async () => {
                 setBusy(true);
                 try {
-                  await supabase?.auth.resetPasswordForEmail(email.trim(), {
+                  if (!supabase) throw new Error('Auth unavailable');
+                  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
                     redirectTo: location.origin,
                   });
+                  if (error) {
+                    setMessage(error.status === 429
+                      ? 'Batas pengiriman email tercapai. Tunggu beberapa saat lalu coba lagi.'
+                      : 'Tautan pemulihan belum terkirim. Coba lagi nanti.');
+                    return;
+                  }
                   setMessage(
                     'Jika email diizinkan, tautan pemulihan akan dikirim. Periksa kotak masuk.',
                   );
@@ -358,7 +365,10 @@ function Authenticated() {
 export default function Application({ demo = false }: { demo?: boolean }) {
   useEffect(() => {
     try {
-      document.documentElement.dataset.theme = localStorage.getItem('skysave.theme') || 'light';
+      const theme = localStorage.getItem('skysave.theme') || 'dark';
+      document.documentElement.dataset.theme = theme;
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', theme === 'light' ? '#F6F6F8' : '#0B0B0D');
     } catch {
       /* default theme */
     }

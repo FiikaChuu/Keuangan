@@ -1052,10 +1052,12 @@ function SettingsPanel({
   preferences: InsightPreferences;
   onPreferences: (value: InsightPreferences) => void;
 }) {
-  const [theme, setTheme] = useState(document.documentElement.dataset.theme ?? 'light');
+  const [theme, setTheme] = useState(document.documentElement.dataset.theme ?? 'dark');
   function chooseTheme(value: string) {
     setTheme(value);
     document.documentElement.dataset.theme = value;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', value === 'light' ? '#F6F6F8' : '#0B0B0D');
     try {
       localStorage.setItem('skysave.theme', value);
     } catch {

@@ -75,14 +75,14 @@ export function defaultsFromScan(
     return matches.length === 1 ? matches[0].id : '';
   }
   const accountId = result.is_transfer ? unique(result.from_bank) : '';
-  const destination = unique(result.to_bank);
   return {
     kind: result.is_transfer ? 'transfer' : 'expense',
     title: result.category,
     category: result.category,
     amount: result.amount,
     accountId,
-    toId: destination !== accountId ? destination : '',
+    // Bank names alone cannot prove an internal destination. Require explicit selection.
+    toId: '',
     note: result.notes ?? '',
     receiptHash: hash,
   };

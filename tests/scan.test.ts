@@ -50,7 +50,8 @@ test('bank detection selects only unique accounts; same bank never guesses betwe
       suffix: '',
     },
   ];
-  assert.equal(defaultsFromScan(scanResultSchema.parse(valid), 'abc', accounts).toId, 'b');
+  // A bank match is not proof of wallet ownership: destination needs confirmation.
+  assert.equal(defaultsFromScan(scanResultSchema.parse(valid), 'abc', accounts).toId, '');
   assert.equal(
     defaultsFromScan(scanResultSchema.parse(valid), 'abc', [
       ...accounts,

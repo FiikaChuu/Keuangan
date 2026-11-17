@@ -9,12 +9,13 @@ const notoSans = localFont({
 import '../src/app.css';
 import '../src/motion-ui.css';
 import '../src/reference-ui.css';
+import '../src/modern.css';
 
 export const metadata: Metadata = {
   title: 'SkyWallet — Ruang untuk uangmu.',
   description: 'Catatan keuangan pribadi dan bersama.',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, title: 'SkyWallet', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'SkyWallet', statusBarStyle: 'black-translucent' },
   other: { 'apple-mobile-web-app-capable': 'yes' },
   icons: { icon: '/icon.svg', apple: '/icon-192.png' },
 };
@@ -22,7 +23,10 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#f3f6f6',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0B0B0D' },
+    { media: '(prefers-color-scheme: light)', color: '#F6F6F8' },
+  ],
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
