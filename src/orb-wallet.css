@@ -422,6 +422,20 @@ button:focus-visible {
   }
 }
 
+/* Satin is a decorative surface only; balances and controls remain live HTML. */
+.wallet-home > .wallet-command,
+.wallet-carousel-rail > .wallet-command.wallet-slide {
+  background-color: #c6b8f3;
+  background-image: url('/artwork/card-satin-800.webp');
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+.wallet-home > .wallet-command > .wallet-texture,
+.wallet-carousel-rail > .wallet-command.wallet-slide > .wallet-texture {
+  display: none;
+}
+
 /* Compact physical card: artwork owns the right column, never the figures. */
 .wallet-command {
   container-type: inline-size;

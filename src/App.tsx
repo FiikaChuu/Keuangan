@@ -54,6 +54,9 @@ import { MoneyAmount } from './MoneyAmount';
 import { readInsightPreferences, PREFERENCES_KEY } from './preferences';
 import type { InsightPreferences } from './preferences';
 import { DesignIcon } from './design';
+import { walletDeletionReason } from './wallet-delete';
+import { accountLifecycleEnabled, lifecyclePreviewMessage } from './lifecycle-preview';
+import { AccountDeletion, PersonalReset } from './AccountDeletion';
 import type { RemoteFinance } from './use-finance';
 import type { ScanResult } from './scan-contract';
 import { defaultsFromScan } from './share';
@@ -241,6 +244,14 @@ export default function App({
       close();
     }
   }
+  function deleteWallet(account: Account) {
+    if (!accountLifecycleEnabled) { notify(lifecyclePreviewMessage); return; }
+    const reason = walletDeletionReason(store, account);
+    if (reason) { notify(reason); return; }
+    setDialog({ type: 'confirm', title: 'Hapus dompet kosong?', text: `Dompet ${account.name} akan dihapus permanen. Tidak ada riwayat yang dihapus.`, action: async () => {
+      if (await save({ ...store, accounts: store.accounts.filter(a => a.id !== account.id) })) close();
+    }});
+  }
   function askDelete(t: Transaction) {
     setDialog({
       type: 'confirm',
@@ -398,7 +409,7 @@ export default function App({
             />
           )}
           {page === 'accounts' && (
-            <WalletPage
+            <WalletPage onDelete={deleteWallet}
               store={store}
               onAdd={(shared) => setDialog({ type: 'account', shared })}
               onPlan={() => setPage('plan')}
@@ -1226,6 +1237,7 @@ function SettingsPanel({
           </p>
         )}
       </div>
+      <><PersonalReset remote={remote} /><AccountDeletion remote={remote} /></>
       <div className="settings-section settings-danger">
         <h3>
           <DesignIcon name="settings-warning" size={18} /> {remote ? 'Sesi akun' : 'Mulai ulang'}

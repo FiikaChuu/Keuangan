@@ -1,4 +1,5 @@
 export type Account = {
+  readOnly?: boolean;
   version?: number;
   id: string;
   name: string;

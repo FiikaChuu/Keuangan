@@ -20,6 +20,7 @@ export function decodeSnapshot(raw: Record<string, unknown>): Store {
   const ids = new Set(wallets.map((w) => w.id));
   const accounts: Account[] = wallets.map((w) => ({
     id: String(w.id),
+    readOnly: !!raw.user_id && w.owner_id !== raw.user_id,
     name: String(w.name),
     provider: String(w.provider),
     color: String(w.color),
