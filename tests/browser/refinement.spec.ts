@@ -145,7 +145,7 @@ test('card geometry and artwork isolation at 320/390/440/1440, carousel resize a
         scroll: document.documentElement.scrollWidth,
       };
     });
-    expect(geometry.ratio).toBeCloseTo(1.54, 1);
+    expect(geometry.ratio).toBeCloseTo(1.67, 1);
     expect(geometry.balanceRight).toBeLessThanOrEqual(geometry.artLeft);
     expect(new Set(geometry.controls).size).toBe(1);
     expect(geometry.scroll).toBeLessThanOrEqual(width);

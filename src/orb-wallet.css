@@ -308,9 +308,21 @@ textarea {
   border-radius: 50%;
   background: transparent;
 }
+/* Override the account trigger's 34px flex basis so provider circles stay square. */
+.account-picker-trigger > .provider-mark,
+.provider-options .provider-mark {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  aspect-ratio: 1;
+  flex: 0 0 44px;
+}
 .provider-mark .wallet-glyph {
   width: 100%;
   height: 100%;
+  aspect-ratio: 1;
+  flex-shrink: 0;
 }
 .workspace-avatar .wallet-glyph {
   width: 30px;
@@ -416,7 +428,7 @@ button:focus-visible {
   box-sizing: border-box;
   width: 100%;
   max-width: 580px;
-  aspect-ratio: 1.54;
+  aspect-ratio: 1.67;
   min-height: 0;
   padding: clamp(16px, 4vw, 30px);
   display: flex;
@@ -471,6 +483,10 @@ button:focus-visible {
   line-height: 1.15;
   letter-spacing: -0.045em;
   text-align: left;
+}
+.wallet-command .figma-balance-amount,
+.wallet-command .figma-balance-amount .money-number {
+  font-weight: 750;
 }
 .wallet-command .money-amount {
   max-width: 100%;
