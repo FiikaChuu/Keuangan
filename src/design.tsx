@@ -11,7 +11,8 @@ export const DesignIcon = memo(function DesignIcon({
   size?: number;
   className?: string;
 }) {
-  if (name.startsWith('category-')) return <WalletGlyph name={name} size={size} />;
+  if (name.startsWith('category-') || name === 'nav-capture')
+    return <WalletGlyph name={name} size={size} className={className} />;
   return (
     <img
       className={`design-icon ${className}`}
@@ -33,11 +34,11 @@ export const categoryArtwork: Record<string, string> = {
   'Rumah & tagihan': 'category-home',
   'Kuota & internet': 'category-utilities',
   Hiburan: 'category-entertainment',
-  Langganan: 'category-entertainment',
+  Langganan: 'category-subscription',
   Kesehatan: 'category-health',
   Belanja: 'category-shopping',
   Pendidikan: 'category-education',
-  Pasangan: 'category-home',
+  Pasangan: 'category-relationship',
   Transfer: 'category-transfer',
   Pemasukan: 'stat-income',
   'Tarik tunai': 'nav-transactions',

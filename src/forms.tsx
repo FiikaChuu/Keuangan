@@ -1,3 +1,5 @@
+import { useContext, useEffect } from 'react';
+import { SheetDirtyContext } from './ui';
 import { useId, useMemo, useRef, useState } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import type { FormEvent } from 'react';
@@ -107,6 +109,24 @@ export function TransactionForm({
   const [reference, setReference] = useState(defaults.reference ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const reportDirty = useContext(SheetDirtyContext);
+  const snapshot = JSON.stringify([
+    flow,
+    amount,
+    accountId,
+    toId,
+    date,
+    category,
+    source,
+    fee,
+    note,
+    reference,
+  ]);
+  const initialSnapshot = useRef(snapshot);
+  useEffect(() => {
+    reportDirty(snapshot !== initialSnapshot.current);
+  }, [snapshot, reportDirty]);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (submitting.current) return;

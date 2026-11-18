@@ -602,6 +602,7 @@ export default function App({
           <Modal
             key={dialog.key}
             title={dialog.editingId ? 'Ubah transaksi' : 'Catat transaksi'}
+            draggable
             wide
             onClose={close}
           >

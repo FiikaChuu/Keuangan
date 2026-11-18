@@ -42,6 +42,15 @@ test('Orb visual fixtures and real card actions', async ({ page }, info) => {
     ).toBeTruthy();
     if (state === 'funded-empty')
       await expect(page.locator('.figma-balance-amount')).toContainText('14.000');
+    const original = page.viewportSize()!;
+    for (const width of [390, 440, 1440]) {
+      await page.setViewportSize({ width, height: original.height });
+      await page.screenshot({
+        path: `${dir}/${info.project.name}-${width}-${state}.png`,
+        fullPage: true,
+      });
+    }
+    await page.setViewportSize(original);
     await page.screenshot({ path: `${dir}/${info.project.name}-${state}.png`, fullPage: true });
     await page.getByRole('button', { name: 'Catat transaksi baru', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Catat transaksi' })).toBeVisible();

@@ -442,8 +442,15 @@ test('iPhone layouts and nested forms fit narrow, large and landscape screens', 
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       `account sheet at ${width}px`,
     ).toBeTruthy();
-    await page.getByRole('button', { name: 'Tutup dialog', exact: true }).last().click();
-    await page.getByRole('button', { name: 'Tutup dialog', exact: true }).click();
+    await page
+      .getByRole('dialog', { name: 'Dari rekening', exact: true })
+      .getByRole('button', { name: 'Tutup dialog', exact: true })
+      .click();
+    page.once('dialog', (dialog) => dialog.accept());
+    await page
+      .getByRole('dialog', { name: 'Catat transaksi', exact: true })
+      .getByRole('button', { name: 'Tutup dialog', exact: true })
+      .click();
   }
 });
 
@@ -612,6 +619,7 @@ test('additional details fit iPhone widths, retain optional notes, and honor red
     await expect(notes).toHaveCount(0);
     await toggle.click();
     await expect(notes).toHaveValue('Makan bersama keluarga');
+    page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: 'Tutup dialog', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   }

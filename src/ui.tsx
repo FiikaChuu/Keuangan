@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useId } from 'react';
+import { useEffect, useRef, useState, useId, createContext } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, m, useIsPresent, useReducedMotion } from 'framer-motion';
@@ -205,18 +205,22 @@ export function CategoryIcon({ category, size = 24 }: { category: string; size?:
 let openModals = 0;
 let previousBodyOverflow = '';
 
+export const SheetDirtyContext = createContext<(dirty: boolean) => void>(() => {});
+
 export function Modal({
   title,
   subtitle,
   children,
   onClose,
   wide = false,
+  draggable = false,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
+  draggable?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
@@ -224,9 +228,11 @@ export function Modal({
   const titleId = useId();
   const closeRef = useRef(onClose);
   const dragStart = useRef<{ x: number; y: number; id: number } | null>(null);
+  const [dragY, setDragY] = useState(0);
   const dragHeader = {
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
       if (
+        !draggable ||
         !window.matchMedia('(max-width: 899px)').matches ||
         (event.target as HTMLElement).closest('button')
       )
@@ -234,9 +240,14 @@ export function Modal({
       dragStart.current = { x: event.clientX, y: event.clientY, id: event.pointerId };
       event.currentTarget.setPointerCapture(event.pointerId);
     },
+    onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => {
+      const start = dragStart.current;
+      if (start?.id === event.pointerId) setDragY(Math.max(0, event.clientY - start.y));
+    },
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => {
       const start = dragStart.current;
       dragStart.current = null;
+      setDragY(0);
       if (
         start &&
         start.id === event.pointerId &&
@@ -247,16 +258,12 @@ export function Modal({
     },
     onPointerCancel: () => {
       dragStart.current = null;
+      setDragY(0);
     },
   };
   const edited = useRef(false);
   const requestClose = () => {
-    if (
-      title.includes('transaksi') &&
-      edited.current &&
-      !window.confirm('Buang perubahan yang belum disimpan?')
-    )
-      return;
+    if (edited.current && !window.confirm('Buang perubahan yang belum disimpan?')) return;
     onClose();
   };
   closeRef.current = requestClose;
@@ -317,11 +324,11 @@ export function Modal({
       }}
     >
       <m.div
-        className={`modal ${wide ? 'wide' : ''}`}
+        className={`modal ${draggable ? 'draggable-sheet' : ''} ${wide ? 'wide' : ''}`}
         initial={{ y: reducedMotion ? 0 : 32 }}
-        animate={{ y: 0 }}
+        animate={{ y: dragY }}
         exit={{ y: reducedMotion ? 0 : 24 }}
-        transition={reducedMotion ? { duration: 0 } : sheetSpring}
+        transition={reducedMotion || dragStart.current ? { duration: 0 } : sheetSpring}
         ref={ref}
         role="dialog"
         aria-modal={isPresent ? true : undefined}
@@ -337,13 +344,14 @@ export function Modal({
             <DesignIcon name="close" />
           </button>
         </div>
-        <div
-          className="modal-body"
-          onChangeCapture={() => {
-            edited.current = true;
-          }}
-        >
-          {children}
+        <div className="modal-body">
+          <SheetDirtyContext.Provider
+            value={(dirty) => {
+              edited.current = dirty;
+            }}
+          >
+            {children}
+          </SheetDirtyContext.Provider>
         </div>
       </m.div>
     </m.div>,

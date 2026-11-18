@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Wallet } from 'lucide-react';
 import type { Account, Store } from './domain';
 import { balances } from './domain';
@@ -24,6 +24,40 @@ export default function WalletPage({
   const shared = store.accounts.filter((a) => a.shared);
   const rail = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const activeRef = useRef(0);
+  const slideOffsets = () => {
+    const node = rail.current;
+    if (!node) return [];
+    const origin = node.getBoundingClientRect().left;
+    return Array.from(node.children).map(
+      (slide) => slide.getBoundingClientRect().left - origin + node.scrollLeft,
+    );
+  };
+  const updateActive = () => {
+    const offsets = slideOffsets();
+    const left = rail.current?.scrollLeft ?? 0;
+    const nearest = offsets.reduce(
+      (best, offset, index) =>
+        Math.abs(offset - left) < Math.abs(offsets[best] - left) ? index : best,
+      0,
+    );
+    activeRef.current = nearest;
+    setActive(nearest);
+  };
+  useEffect(() => {
+    const node = rail.current;
+    if (!node) return;
+    const align = () => {
+      const index = Math.max(0, Math.min(activeRef.current, store.accounts.length - 1));
+      node.scrollTo({ left: slideOffsets()[index] ?? 0, behavior: 'instant' });
+      activeRef.current = index;
+      setActive(index);
+    };
+    const observer = new ResizeObserver(align);
+    observer.observe(node);
+    align();
+    return () => observer.disconnect();
+  }, [store.accounts.length]);
   return (
     <section className="wallet-page">
       <header className="page-heading">
@@ -39,10 +73,7 @@ export default function WalletPage({
               className="wallet-carousel-rail"
               ref={rail}
               aria-label="Kartu dompet"
-              onScroll={() => {
-                const node = rail.current;
-                if (node) setActive(Math.round(node.scrollLeft / (node.clientWidth + 16)));
-              }}
+              onScroll={updateActive}
             >
               {store.accounts.map((a, index) => (
                 <section
@@ -79,8 +110,10 @@ export default function WalletPage({
                   }
                   onClick={() =>
                     rail.current?.scrollTo({
-                      left: index * (rail.current.clientWidth + 16),
-                      behavior: 'smooth',
+                      left: slideOffsets()[index] ?? 0,
+                      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                        ? 'instant'
+                        : 'smooth',
                     })
                   }
                 />
@@ -109,10 +142,7 @@ export default function WalletPage({
       {personal.length ? (
         <div className="wallet-grid">
           {personal.map((a) => (
-            <div key={a.id}>
-              {accountCard(a, true)}
-
-            </div>
+            <div key={a.id}>{accountCard(a, true)}</div>
           ))}
         </div>
       ) : (
@@ -138,10 +168,7 @@ export default function WalletPage({
           </div>
           <div className="wallet-grid">
             {shared.map((a) => (
-              <div key={a.id}>
-                {accountCard(a, true)}
-
-              </div>
+              <div key={a.id}>{accountCard(a, true)}</div>
             ))}
           </div>
         </>

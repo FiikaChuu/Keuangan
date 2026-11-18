@@ -6,32 +6,41 @@ export function WalletTexture() {
   return (
     <svg
       className="wallet-texture"
-      viewBox="0 0 1000 380"
+      viewBox="0 0 240 500"
       preserveAspectRatio="none"
       aria-hidden="true"
     >
       <defs>
-        <pattern id={id} width="19" height="19" patternUnits="userSpaceOnUse">
+        <pattern id={id} width="12" height="12" patternUnits="userSpaceOnUse">
           <path
-            d="M0 1h11v7h8M1 10v9h10"
+            d="M1 0v12M5 0v7M9 5v7"
             fill="none"
             stroke="white"
-            strokeWidth="1"
-            opacity=".48"
+            strokeWidth="1.5"
+            opacity=".65"
           />
         </pattern>
       </defs>
-      <path d="M450 0h550v380H570L760 190Z" fill={`url(#${id})`} />
-      <g fill="#111111" transform="translate(824 48)">
-        <path d="M0 0h30v30H0zM36 0h30v30H36zM0 36h30v30H0zM36 36h30v30H36z" />
-        <path d="M72 36h30v30H72zM36 72h30v30H36z" />
+      <path d="M0 0h240v500H0z" fill={`url(#${id})`} />
+      <g fill="#111111" transform="translate(46 28)">
+        <path d="M0 0h44v44H0zM50 0h44v44H50zM0 50h44v44H0z" />
+        <circle cx="72" cy="72" r="22" />
+        <path d="M100 50h44v44h-44zM50 100h44v44H50z" />
       </g>
     </svg>
   );
 }
 
 const palettes = ['#ff8fba', '#ffba58', '#77dccc', '#9cacf9', '#d2ef75', '#ec8d6f'];
-export function WalletGlyph({ name = 'wallet', size = 25 }: { name?: string; size?: number }) {
+export function WalletGlyph({
+  name = 'wallet',
+  size = 25,
+  className = '',
+}: {
+  name?: string;
+  size?: number;
+  className?: string;
+}) {
   const index = Array.from(name).reduce((sum, c) => sum + c.charCodeAt(0), 0) % palettes.length;
   const category = name.includes('category');
   const paths = name.includes('transfer') ? (
@@ -88,6 +97,24 @@ export function WalletGlyph({ name = 'wallet', size = 25 }: { name?: string; siz
       <path d="M6 11h20l2 17H4Z" />
       <path d="M11 12V8a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" strokeWidth="2" />
     </>
+  ) : name.includes('entertainment') ? (
+    <>
+      <rect x="3" y="6" width="26" height="21" rx="5" />
+      <path d="m13 11 9 5-9 6Z" fill="var(--avatar-fill)" />
+    </>
+  ) : name.includes('subscription') ? (
+    <>
+      <rect x="6" y="5" width="20" height="24" rx="4" />
+      <path d="M10 3v5m12-5v5M10 13h12" stroke="var(--avatar-fill)" strokeWidth="2.5" />
+      <path d="m11 20 3 3 7-7" fill="none" stroke="var(--avatar-fill)" strokeWidth="2.5" />
+    </>
+  ) : name.includes('relationship') ? (
+    <path d="M16 28 5 17C-4 7 9-2 16 8 23-2 36 7 27 17Z" />
+  ) : name.includes('capture') ? (
+    <>
+      <path d="M3 11V5a2 2 0 0 1 2-2h6v3H6v5Zm18-8h6a2 2 0 0 1 2 2v6h-3V6h-5ZM3 21h3v5h5v3H5a2 2 0 0 1-2-2Zm23 0h3v6a2 2 0 0 1-2 2h-6v-3h5Z" />
+      <path d="M10 9h12v14H10Zm3 4v2h6v-2Zm0 4v2h6v-2Z" fillRule="evenodd" />
+    </>
   ) : name.includes('home') ? (
     <path d="m3 15 13-12 13 12h-4v14h-7v-9h-4v9H7V15Z" />
   ) : category ? (
@@ -105,7 +132,7 @@ export function WalletGlyph({ name = 'wallet', size = 25 }: { name?: string; siz
   );
   return (
     <span
-      className="wallet-glyph"
+      className={`wallet-glyph ${className}`}
       style={
         { background: palettes[index], '--avatar-fill': palettes[index] } as React.CSSProperties
       }

@@ -110,8 +110,8 @@
   line-height: 1.4;
 }
 @media (max-width: 899px) {
-  .modal-heading,
-  .sheet-handle {
+  .draggable-sheet .modal-heading,
+  .draggable-sheet .sheet-handle {
     touch-action: none;
   }
 }
@@ -407,5 +407,120 @@ button:focus-visible {
   .wallet-quick-actions button > span {
     transition: none;
     transform: none;
+  }
+}
+
+/* Compact physical card: artwork owns the right column, never the figures. */
+.wallet-command {
+  container-type: inline-size;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 580px;
+  aspect-ratio: 1.54;
+  min-height: 0;
+  padding: clamp(16px, 4vw, 30px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border-radius: 23px;
+}
+.wallet-command .wallet-texture {
+  inset: 0 0 auto auto;
+  width: 31%;
+  height: 100%;
+}
+.wallet-command .wallet-switch {
+  max-width: 68%;
+  min-width: 0;
+  height: 34px;
+  padding: 2px 8px 2px 2px;
+  flex-shrink: 0;
+}
+.wallet-command .wallet-switch strong,
+.wallet-command .account-picker-trigger > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.wallet-command .wallet-switch .wallet-glyph {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+}
+.wallet-command .account-picker-trigger {
+  min-height: 28px;
+  padding: 0;
+  gap: 5px;
+  font-size: clamp(11px, 3.4cqw, 15px);
+}
+.wallet-command .wallet-switch .account-picker {
+  min-width: 0;
+}
+.wallet-command .balance-label {
+  margin-top: auto;
+  font-size: clamp(11px, 3.4cqw, 15px);
+  gap: 4px;
+  min-height: 24px;
+}
+.wallet-command .figma-balance-amount {
+  width: 68%;
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(27px, 9cqw, 53px);
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+  text-align: left;
+}
+.wallet-command .money-amount {
+  max-width: 100%;
+}
+.wallet-command .orb-controls {
+  margin-top: auto;
+  padding-top: 13px;
+  width: 100%;
+  gap: 7px;
+  flex-wrap: nowrap;
+  z-index: 1;
+}
+.wallet-command .orb-controls button {
+  min-height: 36px;
+  padding: 0 11px;
+  font-size: clamp(10px, 3cqw, 13px);
+  gap: 5px;
+  white-space: nowrap;
+}
+.wallet-command .orb-controls .orb-add {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+}
+.wallet-slide .orb-controls span {
+  max-width: 68%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 9px 13px;
+}
+.wallet-carousel {
+  max-width: 580px;
+}
+@media (max-width: 899px) {
+  .draggable-sheet .sheet-handle {
+    height: 28px;
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    background: transparent;
+    display: grid;
+    place-items: center;
+  }
+  .draggable-sheet .sheet-handle::after {
+    content: '';
+    width: 40px;
+    height: 4px;
+    background: #66636e;
+    border-radius: 4px;
   }
 }
