@@ -17,6 +17,11 @@ begin
  if p_request_id is null or not exists(select 1 from private.account_lifecycle where user_id=p_user_id and not deletion_pending) then
   raise exception 'Akses ditolak.' using errcode='42501'; end if;
  insert into private.personal_reset_requests(user_id,request_id) values(p_user_id,p_request_id) on conflict do nothing;
+ -- Reauthentication can renew only an expired INCOMPLETE capability. Same finance
+ -- lock serializes renewal with execution; completed receipts are immutable.
+ update private.personal_reset_requests set ticket=gen_random_uuid(),created_at=clock_timestamp()
+ where user_id=p_user_id and request_id=p_request_id and not completed
+ and created_at < clock_timestamp()-interval '5 minutes';
  select ticket into t from private.personal_reset_requests where user_id=p_user_id and request_id=p_request_id;
  return t;
 end $$;

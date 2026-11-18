@@ -35,6 +35,9 @@ for (const failure of ['prepare', 'revoke', 'delete', null])
         },
       },
       rpc: async (_name: string, args: { p_user_id: string }) => {
+        if (_name === 'acquire_lifecycle_reauth')
+          return { data: '11111111-1111-4111-8111-111111111111', error: null };
+        if (_name === 'release_lifecycle_reauth') return { data: null, error: null };
         calls.push(`prepare:${args.p_user_id}`);
         return { error: failure === 'prepare' ? {} : null };
       },

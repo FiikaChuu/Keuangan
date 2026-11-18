@@ -47,6 +47,9 @@ function harness(mode = 'ok') {
       },
       rpc: async (name: string, params: unknown) => {
         calls.push({ name, params });
+        if (name === 'acquire_lifecycle_reauth')
+          return { data: '11111111-1111-4111-8111-111111111111', error: null };
+        if (name === 'release_lifecycle_reauth') return { data: null, error: null };
         if (name === 'authorize_personal_reset') return { data: 'ticket', error: null };
         return {
           data: { reset: true, replayed: false },
@@ -88,7 +91,13 @@ test('reset route validates real identity, reauth, strict body; fails closed', a
   ] as const) {
     const h = harness(mode);
     assert.equal((await resetOwnPersonalData(request(), config, h.factory)).status, status);
-    assert.ok(!h.calls.some((c) => (c as { name?: string }).name));
+    assert.ok(
+      !h.calls.some((c) =>
+        ['authorize_personal_reset', 'reset_personal_finance'].includes(
+          (c as { name: string }).name,
+        ),
+      ),
+    );
   }
   const h = harness();
   assert.equal(

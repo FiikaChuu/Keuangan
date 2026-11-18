@@ -11,6 +11,8 @@ test('personal reset: atomic shared rejection, scoped deletion, retries, version
  grant usage on schema auth to authenticated,anon;`);
   for (const file of ['01-schema.sql', '04-tenant-lifecycle.sql', '05-personal-reset.sql'])
     await db.exec(await readFile('supabase/' + file, 'utf8'));
+  // Synthetic administrator opt-in only; production remains closed.
+  await db.exec('update private.lifecycle_controls set signup_enabled=true');
   const a = crypto.randomUUID(),
     b = crypto.randomUUID(),
     p = crypto.randomUUID(),

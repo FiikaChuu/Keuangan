@@ -41,7 +41,10 @@ test('server reauthentication must match token identity; never prepares a victim
             error: null,
           }),
         },
-        rpc: async () => {
+        rpc: async (name: string) => {
+          if (name === 'acquire_lifecycle_reauth')
+            return { data: '11111111-1111-4111-8111-111111111111', error: null };
+          if (name === 'release_lifecycle_reauth') return { data: null, error: null };
           prepared = true;
           return { error: null };
         },

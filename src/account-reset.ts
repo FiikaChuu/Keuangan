@@ -1,5 +1,11 @@
 // Server-only: API route and local tests only. Never import from a client component.
 import { createClient } from '@supabase/supabase-js';
+import {
+  limitedReauth,
+  LifecycleLimitError,
+  lifecycleFetch,
+  readLifecycleBody,
+} from './lifecycle-security';
 
 type Config = { url?: string; key?: string };
 export async function resetOwnPersonalData(
@@ -19,7 +25,7 @@ export async function resetOwnPersonalData(
     return reply(413, 'INVALID_REQUEST', 'Permintaan terlalu besar.');
   let body: { password: string; confirmation: string; requestId: string; revision: string };
   try {
-    const text = await request.text();
+    const text = await readLifecycleBody(request);
     if (text.length > 8192) return reply(413, 'INVALID_REQUEST', 'Permintaan terlalu besar.');
     body = JSON.parse(text);
     if (
@@ -44,6 +50,7 @@ export async function resetOwnPersonalData(
   }
   const options = {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: lifecycleFetch },
   };
   const admin = factory(config.url, config.key, options);
   const verifier = factory(config.url, config.key, options);
@@ -54,10 +61,12 @@ export async function resetOwnPersonalData(
     if (identity.error || !user?.email) return reply(401, 'AUTH_REQUIRED', 'Sesi tidak valid.');
     if (user.factors?.some((f) => f.status === 'verified'))
       return reply(403, 'MFA_UNSUPPORTED', 'Reset akun MFA belum didukung.');
-    const fresh = await verifier.auth.signInWithPassword({
-      email: user.email,
-      password: body.password,
-    });
+    const fresh = await limitedReauth(
+      admin,
+      verifier,
+      { id: user.id, email: user.email },
+      body.password,
+    );
     freshToken = fresh.data.session?.access_token;
     if (fresh.error || fresh.data.user?.id !== user.id || !freshToken)
       return reply(401, 'REAUTH_FAILED', 'Verifikasi kata sandi gagal.');
@@ -72,7 +81,7 @@ export async function resetOwnPersonalData(
     // Execute with ORIGINAL verified caller JWT, never service role or a client target UUID.
     const caller = factory(config.url, config.key, {
       ...options,
-      global: { headers: { Authorization: `Bearer ${token}` } },
+      global: { fetch: lifecycleFetch, headers: { Authorization: `Bearer ${token}` } },
     });
     const result = await caller.rpc('reset_personal_finance', {
       p_request_id: body.requestId,
@@ -101,14 +110,24 @@ export async function resetOwnPersonalData(
       );
     }
     if (result.data?.reset !== true)
-      return reply(503, 'RESET_UNAVAILABLE', 'Status reset belum terkonfirmasi. Ulangi ID permintaan yang sama.');
+      return reply(
+        503,
+        'RESET_UNAVAILABLE',
+        'Status reset belum terkonfirmasi. Ulangi ID permintaan yang sama.',
+      );
     return reply(
       200,
       'RESET_COMPLETE',
       'Data pribadi direset; akun dan data bersama tetap utuh. Masuk kembali.',
       { reset: true, replayed: result.data?.replayed === true, requiresSignIn: true },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof LifecycleLimitError)
+      return reply(
+        error.status,
+        'REAUTH_LIMIT',
+        'Verifikasi dibatasi atau tidak tersedia. Coba lagi nanti.',
+      );
     return reply(
       503,
       'RESET_UNAVAILABLE',

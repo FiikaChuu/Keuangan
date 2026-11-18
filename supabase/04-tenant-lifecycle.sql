@@ -11,6 +11,15 @@ revoke all on private.account_lifecycle from public,anon,authenticated;
 insert into private.account_lifecycle(user_id,household_id)
 select u.id,a.household_id from auth.users u join private.allowed_users a on a.email=lower(u.email);
 
+-- Server-owned signup control: deployment/UI flags cannot open Auth inserts.
+create table private.lifecycle_controls (
+ singleton boolean primary key default true check(singleton),
+ signup_enabled boolean not null default false
+);
+insert into private.lifecycle_controls(singleton) values(true);
+alter table private.lifecycle_controls enable row level security;
+revoke all on private.lifecycle_controls from public,anon,authenticated,service_role;
+
 -- Email eligibility is retained for legacy accounts, but identity and tenant mapping
 -- are server-owned UUID rows. User-editable metadata is deliberately never read.
 create or replace function private.guard_signup() returns trigger
@@ -19,6 +28,10 @@ begin
   if new.email is null then raise exception 'Email diperlukan.' using errcode='42501'; end if;
   if exists(select 1 from private.allowed_users where email=lower(new.email) and not active) then
     raise exception 'Akses ditolak.' using errcode='42501';
+  end if;
+  if not exists(select 1 from private.allowed_users where email=lower(new.email) and active)
+     and not coalesce((select signup_enabled from private.lifecycle_controls where singleton),false) then
+    raise exception 'Pendaftaran ditutup.' using errcode='42501';
   end if;
   return new;
 end $$;

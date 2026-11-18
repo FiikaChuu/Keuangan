@@ -1,10 +1,19 @@
 // Server-only module: imported exclusively by the API route and local tests.
 import { createClient } from '@supabase/supabase-js';
+import {
+  limitedReauth,
+  LifecycleLimitError,
+  lifecycleFetch,
+  readLifecycleBody,
+} from './lifecycle-security';
 
 type Config = { url?: string; key?: string };
 export async function deleteOwnAccount(request: Request, config: Config, factory = createClient) {
   const reply = (status: number, message: string) =>
-    Response.json({ message, ...(status === 200 ? { deleted: true } : {}) }, { status, headers: { 'Cache-Control': 'no-store' } });
+    Response.json(
+      { message, ...(status === 200 ? { deleted: true } : {}) },
+      { status, headers: { 'Cache-Control': 'no-store' } },
+    );
   if (!config.url || !config.key)
     return reply(
       503,
@@ -16,7 +25,7 @@ export async function deleteOwnAccount(request: Request, config: Config, factory
     return reply(413, 'Permintaan terlalu besar.');
   let body: { confirmation?: string; password?: string };
   try {
-    const text = await request.text();
+    const text = await readLifecycleBody(request);
     if (text.length > 8192) return reply(413, 'Permintaan terlalu besar.');
     body = JSON.parse(text);
     if (
@@ -33,10 +42,12 @@ export async function deleteOwnAccount(request: Request, config: Config, factory
   }
   const admin = factory(config.url, config.key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: lifecycleFetch },
   });
   // Separate ephemeral client: reauthentication must not overwrite admin identity.
   const verifier = factory(config.url, config.key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: lifecycleFetch },
   });
   try {
     const identity = await admin.auth.getUser(token);
@@ -47,10 +58,12 @@ export async function deleteOwnAccount(request: Request, config: Config, factory
         403,
         'Penghapusan mandiri akun MFA belum didukung. Hubungi administrator; akun tidak dihapus.',
       );
-    const fresh = await verifier.auth.signInWithPassword({
-      email: user.email,
-      password: body.password!,
-    });
+    const fresh = await limitedReauth(
+      admin,
+      verifier,
+      { id: user.id, email: user.email },
+      body.password!,
+    );
     if (fresh.error || fresh.data.user?.id !== user.id || !fresh.data.session)
       return reply(401, 'Verifikasi kata sandi gagal.');
     // Password is verified by Auth on this request, never by JWT timestamps or metadata.
@@ -76,7 +89,9 @@ export async function deleteOwnAccount(request: Request, config: Config, factory
         'Akses akun dibekukan; penghapusan Auth belum selesai. Ulangi atau hubungi administrator. Riwayat tidak dihapus otomatis.',
       );
     return reply(200, 'Akun telah dihapus.');
-  } catch {
+  } catch (error) {
+    if (error instanceof LifecycleLimitError)
+      return reply(error.status, 'Verifikasi dibatasi atau tidak tersedia. Coba lagi nanti.');
     return reply(
       503,
       'Penghapusan belum selesai. Coba kembali; jangan anggap akun sudah terhapus.',

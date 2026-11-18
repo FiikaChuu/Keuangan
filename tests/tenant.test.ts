@@ -17,6 +17,8 @@ test('tenant migration preserves legacy and isolates public signup without metad
     `);
   await db.query(`insert into auth.users values($1,'legacy@example.com',now(),null)`, [legacy]);
   await db.exec(await readFile('supabase/04-tenant-lifecycle.sql', 'utf8'));
+  // Synthetic administrator explicitly opens signup for isolation tests.
+  await db.exec('update private.lifecycle_controls set signup_enabled=true');
   await db.query(
     `insert into auth.users values($1,'a@example.com',now(),'{"household_id":"0f739560-0427-4dca-8247-9e2f885d5191","role":"admin"}'),($2,'b@example.com',now(),null)`,
     [a, b],
