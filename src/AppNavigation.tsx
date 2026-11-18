@@ -4,7 +4,7 @@ import {
   ChartNoAxesCombined,
   PiggyBank,
   Heart,
-} from 'lucide-react';
+} from './MeshIcon';
 import { Logo } from './ui';
 import { ApprovedIcon } from './ApprovedIcon';
 export type Page =

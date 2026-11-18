@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Wallet } from 'lucide-react';
+import { Wallet } from './MeshIcon';
 import type { Account, Store } from './domain';
 import { balances } from './domain';
 import { MoneyAmount } from './MoneyAmount';

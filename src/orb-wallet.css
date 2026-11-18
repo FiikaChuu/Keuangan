@@ -5,9 +5,6 @@
 .category-options .category-option-emoji {
   max-width: 38px;
 }
-.category-options > button > .design-icon:last-child {
-  filter: brightness(0) invert(1);
-}
 .modal-heading,
 .sheet-handle {
   user-select: none;
@@ -214,9 +211,6 @@ textarea {
 }
 .wallet-switch .account-picker-trigger {
   color: #111;
-}
-.wallet-switch .design-icon {
-  filter: brightness(0);
 }
 .wallet-command .workspace-avatar {
   background: transparent;

@@ -21,7 +21,7 @@ import {
   GraduationCap,
   Laptop,
   ScanLine,
-} from 'lucide-react';
+} from './MeshIcon';
 import type { Store, Transaction, Account, Goal } from './domain';
 import {
   normalizeCategory,

@@ -5,7 +5,7 @@ import { AnimatePresence, m, useIsPresent, useReducedMotion } from 'framer-motio
 import { DesignIcon, categoryArtwork } from './design';
 import { WalletGlyph } from './WalletArt';
 import { sheetSpring } from './motion';
-import { ArrowDownLeft, ArrowUpRight, Cloud, Paperclip, Check } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Cloud, Paperclip, Check } from './MeshIcon';
 import type { Account, Store, Transaction } from './domain';
 export { BalanceChart, CashflowChart } from './DashboardCharts';
 import { providers, money, displayDate, expenseEntryCategories } from './domain';
@@ -14,7 +14,7 @@ export function Logo({ small = false }: { small?: boolean }) {
   return (
     <div className={`logo ${small ? 'small' : ''}`}>
       <span className="logo-symbol">
-        <Cloud size={26} strokeWidth={2.3} />
+        <Cloud size={36} variant="sm" />
         <span />
       </span>
       {!small && (
@@ -64,7 +64,7 @@ export function ProviderPicker({
       >
         {selected && <ProviderMark account={{ provider: selected.name, color: selected.color }} />}
         <span>{value || 'Pilih bank atau e-wallet'}</span>
-        <DesignIcon name="chevron" />
+        <DesignIcon name="chevron" size={18} />
       </button>
       <AnimatePresence>
         {open && (
@@ -89,7 +89,7 @@ export function ProviderPicker({
                 >
                   <ProviderMark account={{ provider: provider.name, color: provider.color }} />
                   <span>{provider.name}</span>
-                  {provider.name === value && <DesignIcon name="check" />}
+                  {provider.name === value && <DesignIcon name="check" size={20} />}
                 </button>
               ))}
             </div>
@@ -135,7 +135,7 @@ export function AccountPicker({
               ? 'Semua rekening'
               : 'Pilih rekening'}
         </span>
-        <DesignIcon name="chevron" />
+        <DesignIcon name="chevron" size={20} tone="ink" />
       </button>
       <AnimatePresence>
         {open && (
@@ -183,7 +183,7 @@ export function AccountPicker({
                       {a.suffix ? ` · ••${a.suffix}` : ''}
                     </small>
                   </span>
-                  {value === a.id && <DesignIcon name="check" />}
+                  {value === a.id && <DesignIcon name="check" size={20} />}
                 </button>
               ))}
               {!accounts.length && (
@@ -341,7 +341,7 @@ export function Modal({
             {subtitle && <p>{subtitle}</p>}
           </div>
           <button className="icon-btn" aria-label="Tutup dialog" onClick={() => closeRef.current()}>
-            <DesignIcon name="close" />
+            <DesignIcon name="close" size={20} />
           </button>
         </div>
         <div className="modal-body">
@@ -426,7 +426,7 @@ export function TransactionList({
               <span className="transaction-copy">
                 <span className="transaction-title">
                   <strong>{t.title}</strong>
-                  {t.receiptId && <Paperclip size={13} />}
+                  {t.receiptId && <Paperclip size={14} />}
                 </span>
                 <span className="transaction-description">
                   {displayDate(t.date, { day: 'numeric', month: 'short' })}
@@ -466,7 +466,7 @@ export function TransactionList({
               <div className="transaction-actions">
                 {onEdit && (
                   <button aria-label={`Edit ${t.title}`} onClick={() => onEdit(t)}>
-                    <DesignIcon name="edit" />
+                    <DesignIcon name="edit" size={20} />
                   </button>
                 )}
                 {onDelete && (
@@ -475,7 +475,7 @@ export function TransactionList({
                     className="delete-transaction"
                     onClick={() => onDelete(t)}
                   >
-                    <DesignIcon name="delete" />
+                    <DesignIcon name="delete" size={20} />
                   </button>
                 )}
               </div>
@@ -625,7 +625,7 @@ export function CategoryPicker({
             'Semua kategori'
           )}
         </span>
-        <DesignIcon name="chevron" />
+        <DesignIcon name="chevron" size={18} />
       </button>
       <AnimatePresence>
         {open && (
@@ -652,7 +652,7 @@ export function CategoryPicker({
                     <DesignIcon name={categoryArtwork[c] ?? 'category-other'} />
                   </span>
                   <span>{c || 'Semua kategori'}</span>
-                  {c === value && <DesignIcon name="check" />}
+                  {c === value && <DesignIcon name="check" size={20} />}
                 </button>
               ))}
             </div>

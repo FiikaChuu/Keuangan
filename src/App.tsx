@@ -29,8 +29,8 @@ import {
   Gem,
   GraduationCap,
   Laptop,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+} from './MeshIcon';
+import type { GlyphIcon } from './MeshIcon';
 import type { Store, Transaction, Account, Goal, Plan } from './domain';
 import {
   STORAGE_KEY,
@@ -59,7 +59,7 @@ import type { ScanResult } from './scan-contract';
 import { defaultsFromScan } from './share';
 import { readBackup } from './backup';
 
-const goalIcons: Record<string, LucideIcon> = {
+const goalIcons: Record<string, GlyphIcon> = {
   '🌱': Sprout,
   '🏡': House,
   '✈️': Plane,
@@ -299,7 +299,7 @@ export default function App({
           <span>{Math.floor(progress)}% terwujud</span>
           <button className="text-btn" onClick={() => openTransfer(g.accountId)}>
             Tambah dana
-            <Plus size={13} />
+            <Plus size={14} />
           </button>
         </div>
       </div>
@@ -328,7 +328,7 @@ export default function App({
           <MoneyAmount value={b[a.id]} />
         </strong>
         <small>
-          Lihat riwayat <ChevronRight size={12} />
+          Lihat riwayat <ChevronRight size={16} />
         </small>
       </span>
     </button>
@@ -359,7 +359,7 @@ export default function App({
               </span>
               <button onClick={startOwn}>
                 Mulai dengan data saya
-                <ArrowRight size={13} />
+                <ArrowRight size={16} />
               </button>
             </div>
           )}
@@ -368,7 +368,7 @@ export default function App({
               {recoveryError}
               <button className="text-btn" onClick={() => setPage('settings')}>
                 Buka pengaturan
-                <ArrowRight size={14} />
+                <ArrowRight size={16} />
               </button>
             </div>
           )}
@@ -976,7 +976,7 @@ function Planning({
                   }}
                 >
                   Catat perpindahan
-                  <ArrowUpRight size={13} />
+                  <ArrowUpRight size={16} />
                 </button>
               )}
             </div>

@@ -11,7 +11,7 @@ import {
   RotateCcw,
   ChevronDown,
   Check,
-} from 'lucide-react';
+} from './MeshIcon';
 import { DesignIcon } from './design';
 import { AnimatedReveal } from './motion';
 import type { Store, Transaction } from './domain';
@@ -167,7 +167,7 @@ export default function TransactionsPage({
                 Filter lanjutan
               </h2>
               <button className="text-btn" onClick={reset}>
-                <RotateCcw size={13} />
+                <RotateCcw size={14} />
                 Reset
               </button>
             </div>
@@ -288,7 +288,7 @@ export default function TransactionsPage({
             </span>
             <button onClick={reset}>
               Hapus filter
-              <X size={13} />
+              <X size={14} />
             </button>
           </div>
         )}

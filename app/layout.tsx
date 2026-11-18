@@ -11,6 +11,7 @@ import '../src/motion-ui.css';
 import '../src/reference-ui.css';
 import '../src/modern.css';
 import '../src/orb-wallet.css';
+import '../src/icons-v2.css';
 
 export const metadata: Metadata = {
   title: 'SkyWallet — Ruang untuk uangmu.',

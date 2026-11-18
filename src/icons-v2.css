@@ -1,0 +1,159 @@
+/* Icon family v2 + flat bottom navigation. Scoped to icon slots and nav chrome only. */
+
+/* Provider/category circles: artwork fills the existing circle with optical padding. */
+.wallet-glyph > .mesh-icon,
+.provider-mark .mesh-icon {
+  width: 82% !important;
+  height: 82% !important;
+}
+.wallet-glyph > .mesh-icon > img,
+.provider-mark .mesh-icon > img {
+  width: 100%;
+  height: 100%;
+}
+.provider-mark,
+.wallet-glyph {
+  overflow: visible;
+}
+
+/* Approved quick actions and navigation keep their own geometry; artwork fills its slot. */
+.approved-icon-slot--nav {
+  width: 28px !important;
+  height: 28px !important;
+}
+.app-navigation .approved-icon-slot--nav > img {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+@media (max-width: 899px) {
+  /* Conventional flat bar: full width, straight hairline top, square corners. */
+  .app-navigation {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
+    display: block;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--bg);
+    z-index: 50;
+  }
+  .app-navigation .nav-primary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    gap: 0;
+  }
+  .app-navigation .nav-link {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    padding: 5px 4px 4px;
+    gap: 3px;
+    border-radius: 12px;
+    background: transparent;
+    transform: none;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .app-navigation .nav-link small {
+    font-size: 10.5px;
+    line-height: 1.15;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+  .app-navigation .nav-link[aria-current='page'],
+  .app-navigation .nav-link.mobile-current {
+    background: transparent;
+    color: var(--ink);
+  }
+  /* Active pill sits behind the artwork only; size never changes between states. */
+  .app-navigation .nav-link .approved-icon-slot::before {
+    content: '';
+    position: absolute;
+    inset: -5px -9px;
+    border-radius: 12px;
+    background: transparent;
+  }
+  .app-navigation .nav-link[aria-current='page'] .approved-icon-slot::before,
+  .app-navigation .nav-link.mobile-current .approved-icon-slot::before {
+    background: var(--accent-soft);
+  }
+  .app-navigation .nav-link[aria-current='page'] small,
+  .app-navigation .nav-link.mobile-current small {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  /* Floating Catat stays a separate, smaller action above the bar. */
+  .app-navigation .capture-button {
+    right: 14px;
+    bottom: calc(100% + 10px);
+    transform: none;
+  }
+  /* Clearance for the floating Catat action *and* the flat bottom bar: content
+     must be able to scroll past the last wallet row without sitting under it. */
+  .app-shell main {
+    padding-bottom: calc(144px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 900px) {
+  .approved-icon-slot--nav {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .app-navigation .approved-icon-slot--nav > img {
+    width: 26px !important;
+    height: 26px !important;
+  }
+}
+
+/* Account selector pill -------------------------------------------------------
+   The chevron is artwork, not a flexible text span: without `flex: 0 0 auto` the
+   generic `.account-picker-trigger > span` rule gave it half the pill and clipped
+   the label to "Semua r...". The label keeps its size and gets the remaining room;
+   the chevron sits at its optical 18px. */
+.account-picker-trigger > .mesh-icon,
+.category-picker-trigger > .mesh-icon {
+  flex: 0 0 auto;
+}
+.wallet-command .wallet-switch {
+  max-width: calc(100% - 4px);
+}
+.wallet-command .account-picker-trigger {
+  gap: 6px;
+}
+.wallet-command .account-picker-trigger > span:not(.mesh-icon) {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  letter-spacing: 0;
+}
+/* On-card glyphs use the ink variant of the 3D render; no brightness(0) filter,
+   which collapsed the artwork into a flat silhouette. */
+.wallet-switch .design-icon,
+.category-options > button > .design-icon:last-child {
+  filter: none;
+}
+
+/* Optical depth cue: a crisp 1px contact shadow under glyphs at 20px and above.
+   A feathered drop shadow turns these thin matte strokes muddy at UI sizes; the
+   hard offset edge reads as the object's own side instead. */
+.mesh-icon.has-depth > img {
+  filter: drop-shadow(0 1px 0 rgba(12, 8, 18, 0.45));
+}
+.wallet-switch .mesh-icon.has-depth > img,
+.balance-label .mesh-icon.has-depth > img {
+  filter: drop-shadow(0 1px 0 rgba(38, 24, 58, 0.4));
+}

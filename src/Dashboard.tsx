@@ -9,7 +9,7 @@ import {
   Wallet,
   ReceiptText,
   ChevronRight,
-} from 'lucide-react';
+} from './MeshIcon';
 import type { Store, Transaction, Account } from './domain';
 import { balances, totals, spendingByCategory } from './domain';
 import { dashboardPeriods, moneyInsights, periodTransactions } from './analytics';
@@ -72,7 +72,7 @@ export default function Dashboard({
           <p>Semua uangmu, satu tempat.</p>
         </div>
         <button className="icon-btn" aria-label="Tambah dompet" onClick={onAccount}>
-          <Plus size={21} />
+          <Plus size={24} />
         </button>
       </header>
       <section className="wallet-command" aria-label="Saldo seluruh akun">
@@ -97,7 +97,7 @@ export default function Dashboard({
             aria-label={visible ? 'Sembunyikan saldo' : 'Tampilkan saldo'}
             onClick={() => setVisible(!visible)}
           >
-            {visible ? <Eye size={16} /> : <EyeOff size={16} />}
+            {visible ? <Eye size={20} tone="ink" /> : <EyeOff size={20} tone="ink" />}
           </button>
         </div>
         <strong className="figma-balance-amount">
@@ -109,7 +109,7 @@ export default function Dashboard({
             aria-label="Catat transaksi baru"
             onClick={() => onCapture('expense', account)}
           >
-            <Plus size={24} />
+            <Plus size={24} variant="sm" />
           </button>
           <button onClick={onAccount}>
             Tambah dompet <Plus size={16} />
@@ -136,7 +136,7 @@ export default function Dashboard({
               Dompet saya <span className="count-badge">{store.accounts.length}</span>
             </h2>
             <button className="text-btn" onClick={() => go('accounts')}>
-              Kelola <ChevronRight size={15} />
+              Kelola <ChevronRight size={16} />
             </button>
           </div>
           {store.accounts.length ? (

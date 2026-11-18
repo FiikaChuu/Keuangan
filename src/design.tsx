@@ -1,29 +1,12 @@
+import { MeshIcon } from './MeshIcon';
+import type { IconTone, IconVariant } from './MeshIcon';
 import { memo, useEffect, useState } from 'react';
 import { WalletGlyph } from './WalletArt';
 
-// Assets extracted verbatim from the supplied Figma SVGs.
-export const DesignIcon = memo(function DesignIcon({
-  name,
-  size = 24,
-  className = '',
-}: {
-  name: string;
-  size?: number;
-  className?: string;
-}) {
-  if (name.startsWith('category-') || name === 'nav-capture')
-    return <WalletGlyph name={name} size={size} className={className} />;
-  return (
-    <img
-      className={`design-icon ${className}`}
-      src={`/design/${name}.svg`}
-      width={size}
-      height={size}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-    />
-  );
+// Transparent mesh-rendered artwork; surrounding controls retain their labels.
+export const DesignIcon = memo(function DesignIcon({name,size=24,className='',tone,variant}:{name:string;size?:number;className?:string;tone?:IconTone;variant?:IconVariant}) {
+ if(name.startsWith('category-') || name==='nav-capture') return <WalletGlyph name={name} size={size} className={className}/>;
+ return <MeshIcon name={name} size={size} className={`design-icon ${className}`} tone={tone} variant={variant} aria-hidden="true"/>;
 });
 
 export const categoryArtwork: Record<string, string> = {
@@ -59,7 +42,7 @@ export const DeviceStatus = memo(function DeviceStatus() {
           .format(time)
           .replace('.', ':')}
       </span>
-      <DesignIcon name="status-icons" size={76} />
+      <DesignIcon name="status" size={76} />
     </div>
   );
 });

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, LazyMotion, MotionConfig } from 'framer-motion';
 import type { Session } from '@supabase/supabase-js';
-import { ArrowRight, LoaderCircle, NotebookPen, ReceiptText, Users } from 'lucide-react';
+import { ArrowRight, LoaderCircle, NotebookPen, ReceiptText, Users } from './MeshIcon';
 import App from './App';
 import { Logo, Modal } from './ui';
 import { loadMotionFeatures } from './motion';
