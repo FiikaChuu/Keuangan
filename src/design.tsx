@@ -38,7 +38,7 @@ export const categoryArtwork: Record<string, string> = {
   Belanja: 'category-shopping',
   Pendidikan: 'category-education',
   Pasangan: 'category-home',
-  Transfer: 'nav-transactions-active',
+  Transfer: 'category-transfer',
   Pemasukan: 'stat-income',
   'Tarik tunai': 'nav-transactions',
   Lainnya: 'category-other',

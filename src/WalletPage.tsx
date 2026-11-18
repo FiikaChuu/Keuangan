@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Wallet } from 'lucide-react';
 import type { Account, Store } from './domain';
 import { balances } from './domain';
@@ -22,8 +22,8 @@ export default function WalletPage({
   const values = balances(store);
   const personal = store.accounts.filter((a) => !a.shared);
   const shared = store.accounts.filter((a) => a.shared);
-  const personalTotal = personal.reduce((sum, a) => sum + values[a.id], 0);
-  const sharedTotal = shared.reduce((sum, a) => sum + values[a.id], 0);
+  const rail = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
   return (
     <section className="wallet-page">
       <header className="page-heading">
@@ -33,27 +33,61 @@ export default function WalletPage({
         </div>
       </header>
       <div className="wallet-overview-band">
-        <section className="wallet-summary" aria-label="Saldo dompet">
-          <WalletTexture />
-          <p>Total seluruh dompet</p>
-          <strong className="wallet-total">
-            <MoneyAmount value={personalTotal + sharedTotal} />
-          </strong>
-          <div className="wallet-breakdown">
-            <div>
-              <p>Pribadi</p>
-              <strong>
-                <MoneyAmount value={personalTotal} />
-              </strong>
+        {store.accounts.length > 0 && (
+          <div className="wallet-carousel">
+            <div
+              className="wallet-carousel-rail"
+              ref={rail}
+              aria-label="Kartu dompet"
+              onScroll={() => {
+                const node = rail.current;
+                if (node) setActive(Math.round(node.scrollLeft / (node.clientWidth + 16)));
+              }}
+            >
+              {store.accounts.map((a, index) => (
+                <section
+                  key={a.id}
+                  className="wallet-command wallet-slide"
+                  aria-label={`Dompet ${index + 1}: ${a.name}`}
+                >
+                  <WalletTexture />
+                  <div className="wallet-switch">
+                    <WalletGlyph name={a.id} size={20} />
+                    <strong>{a.name}</strong>
+                  </div>
+                  <div className="balance-label">Saldo dompet</div>
+                  <strong className="figma-balance-amount">
+                    <MoneyAmount value={values[a.id]} />
+                  </strong>
+                  <div className="orb-controls">
+                    <span>
+                      {a.provider}
+                      {a.suffix ? ` •• ${a.suffix}` : ''}
+                    </span>
+                    <span>{a.shared ? 'Bersama' : 'Pribadi'}</span>
+                  </div>
+                </section>
+              ))}
             </div>
-            <div>
-              <p>Bersama</p>
-              <strong>
-                <MoneyAmount value={sharedTotal} />
-              </strong>
+            <div className="wallet-carousel-bars" aria-label="Pilih kartu dompet">
+              {store.accounts.map((a, index) => (
+                <button
+                  key={a.id}
+                  aria-label={`Lihat dompet ${index + 1}: ${a.name}`}
+                  aria-current={
+                    Math.min(active, store.accounts.length - 1) === index ? 'true' : undefined
+                  }
+                  onClick={() =>
+                    rail.current?.scrollTo({
+                      left: index * (rail.current.clientWidth + 16),
+                      behavior: 'smooth',
+                    })
+                  }
+                />
+              ))}
             </div>
           </div>
-        </section>
+        )}
         <button className="wallet-add-action" onClick={() => onAdd()}>
           <span>+</span>Tambah dompet
         </button>
@@ -73,7 +107,14 @@ export default function WalletPage({
         <span>{personal.length} dompet</span>
       </div>
       {personal.length ? (
-        <div className="wallet-grid">{personal.map((a) => accountCard(a, true))}</div>
+        <div className="wallet-grid">
+          {personal.map((a) => (
+            <div key={a.id}>
+              {accountCard(a, true)}
+
+            </div>
+          ))}
+        </div>
       ) : (
         <EmptyState
           icon={<Wallet size={27} />}
@@ -95,7 +136,14 @@ export default function WalletPage({
               Tambah
             </button>
           </div>
-          <div className="wallet-grid">{shared.map((a) => accountCard(a, true))}</div>
+          <div className="wallet-grid">
+            {shared.map((a) => (
+              <div key={a.id}>
+                {accountCard(a, true)}
+
+              </div>
+            ))}
+          </div>
         </>
       )}
     </section>

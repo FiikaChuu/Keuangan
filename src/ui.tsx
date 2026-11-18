@@ -200,12 +200,7 @@ export function AccountPicker({
   );
 }
 export function CategoryIcon({ category, size = 24 }: { category: string; size?: number }) {
-  return (
-    <DesignIcon
-      name={categoryArtwork[category] ?? 'category-other'}
-      size={size}
-    />
-  );
+  return <DesignIcon name={categoryArtwork[category] ?? 'category-other'} size={size} />;
 }
 let openModals = 0;
 let previousBodyOverflow = '';
@@ -228,7 +223,43 @@ export function Modal({
   const isPresent = useIsPresent();
   const titleId = useId();
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  const dragStart = useRef<{ x: number; y: number; id: number } | null>(null);
+  const dragHeader = {
+    onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
+      if (
+        !window.matchMedia('(max-width: 899px)').matches ||
+        (event.target as HTMLElement).closest('button')
+      )
+        return;
+      dragStart.current = { x: event.clientX, y: event.clientY, id: event.pointerId };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => {
+      const start = dragStart.current;
+      dragStart.current = null;
+      if (
+        start &&
+        start.id === event.pointerId &&
+        event.clientY - start.y > 72 &&
+        Math.abs(event.clientX - start.x) < 70
+      )
+        closeRef.current();
+    },
+    onPointerCancel: () => {
+      dragStart.current = null;
+    },
+  };
+  const edited = useRef(false);
+  const requestClose = () => {
+    if (
+      title.includes('transaksi') &&
+      edited.current &&
+      !window.confirm('Buang perubahan yang belum disimpan?')
+    )
+      return;
+    onClose();
+  };
+  closeRef.current = requestClose;
   useEffect(() => {
     const before = document.activeElement as HTMLElement | null;
     if (openModals++ === 0) previousBodyOverflow = document.body.style.overflow;
@@ -282,7 +313,7 @@ export function Modal({
       inert={!isPresent}
       aria-hidden={!isPresent || undefined}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) closeRef.current();
       }}
     >
       <m.div
@@ -296,17 +327,24 @@ export function Modal({
         aria-modal={isPresent ? true : undefined}
         aria-labelledby={titleId}
       >
-        <div className="sheet-handle" aria-hidden="true" />
-        <div className="modal-heading">
+        <div className="sheet-handle" aria-hidden="true" {...dragHeader} />
+        <div className="modal-heading" {...dragHeader}>
           <div>
             <h2 id={titleId}>{title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
-          <button className="icon-btn" aria-label="Tutup dialog" onClick={onClose}>
+          <button className="icon-btn" aria-label="Tutup dialog" onClick={() => closeRef.current()}>
             <DesignIcon name="close" />
           </button>
         </div>
-        <div className="modal-body">{children}</div>
+        <div
+          className="modal-body"
+          onChangeCapture={() => {
+            edited.current = true;
+          }}
+        >
+          {children}
+        </div>
       </m.div>
     </m.div>,
     document.body,

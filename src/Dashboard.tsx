@@ -104,10 +104,6 @@ export default function Dashboard({
         <strong className="figma-balance-amount">
           {visible ? <MoneyAmount value={selected ? values[selected.id] : total} /> : 'Rp ••••••'}
         </strong>
-        <p className="balance-caption">
-          {selected ? selected.name : `${store.accounts.length} dompet dalam catatan`}
-          <span>Tidak terhubung ke bank</span>
-        </p>
         <div className="orb-controls">
           <button
             className="orb-add"

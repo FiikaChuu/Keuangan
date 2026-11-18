@@ -54,7 +54,34 @@ export async function scanImage(
     signal,
   });
   const json = await response.json();
-  if (!response.ok) throw new Error(json.error || 'Nota belum dapat dibaca.');
+  if (!response.ok) {
+    const codes = [
+      'SCAN_UNREADABLE',
+      'SCAN_MODEL_UNAVAILABLE',
+      'SCAN_UPSTREAM_AUTH',
+      'SCAN_UPSTREAM_QUOTA',
+      'SCAN_TIMEOUT',
+      'SCAN_NETWORK',
+      'SCAN_UPSTREAM',
+    ];
+    const reasons = [
+      'MODEL_UNAVAILABLE',
+      'BLOCKED',
+      'EMPTY_RESPONSE',
+      'INCOMPLETE_OUTPUT',
+      'INVALID_JSON',
+      'AMOUNT_UNREADABLE',
+      'INVALID_SCHEMA',
+    ];
+    const code = codes.includes(json.code) ? json.code : '';
+    const safeReason =
+      typeof json.diagnostic === 'object' && json.diagnostic !== null
+        ? json.diagnostic.reason
+        : json.diagnostic;
+    const reason = reasons.includes(safeReason) ? safeReason : '';
+    const suffix = code ? ` [${code}${reason ? `/${reason}` : ''}]` : '';
+    throw new Error(`Nota belum dapat dibaca. Coba lagi atau catat manual.${suffix}`);
+  }
   return { result: scanResultSchema.parse(json), hash };
 }
 function providerKey(name: string) {

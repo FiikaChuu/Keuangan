@@ -11,8 +11,31 @@ export const runtime = 'nodejs';
 export const maxDuration = 40;
 export const dynamic = 'force-dynamic';
 const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
-const fail = (message: string, status: number, code?: string) =>
-  Response.json({ error: message, ...(code ? { code } : {}) }, { status, headers });
+type ScanDiagnostic = {
+  reason:
+    | 'MODEL_UNAVAILABLE'
+    | 'BLOCKED'
+    | 'EMPTY_RESPONSE'
+    | 'INCOMPLETE_OUTPUT'
+    | 'INVALID_JSON'
+    | 'AMOUNT_UNREADABLE'
+    | 'INVALID_SCHEMA';
+  upstreamStatus?: number;
+};
+const fail = (message: string, status: number, code?: string, diagnostic?: ScanDiagnostic) =>
+  Response.json(
+    { error: message, ...(code ? { code } : {}), ...(diagnostic ? { diagnostic } : {}) },
+    { status, headers },
+  );
+
+// Static allowlisted reasons only: never copy model output, finish messages or errors here.
+const unreadable = (reason: ScanDiagnostic['reason']) =>
+  fail(
+    'Nominal atau detail nota belum terbaca dengan pasti. Periksa gambar atau isi transaksi secara manual.',
+    422,
+    'SCAN_UNREADABLE',
+    { reason },
+  );
 
 // Read only classification signals; never return/log upstream messages or payloads.
 function modelFailure(error: unknown): Response {
@@ -24,6 +47,13 @@ function modelFailure(error: unknown): Response {
       message?: unknown;
       cause?: unknown;
     };
+    if (value.status === 404)
+      return fail(
+        'Model pembaca nota tidak tersedia untuk konfigurasi ini. Pengelola perlu memeriksa akses dan versi model.',
+        503,
+        'SCAN_MODEL_UNAVAILABLE',
+        { reason: 'MODEL_UNAVAILABLE', upstreamStatus: 404 },
+      );
     if (value.status === 401 || value.status === 403)
       return fail(
         'Layanan pembaca nota tidak dapat mengautentikasi. Hubungi pengelola.',
@@ -178,19 +208,26 @@ export async function POST(request: Request) {
         thinkingConfig: { thinkingBudget: 0 },
       },
     });
+    const candidate = result.candidates?.[0];
+    if (result.promptFeedback?.blockReason || candidate?.finishReason === 'SAFETY')
+      return unreadable('BLOCKED');
+    if (!candidate) return unreadable('EMPTY_RESPONSE');
+    // A syntactically valid partial answer must never pass as a completed receipt.
+    if (candidate.finishReason !== 'STOP') return unreadable('INCOMPLETE_OUTPUT');
+    const text = result.text;
+    if (!text?.trim()) return unreadable('EMPTY_RESPONSE');
     let output: unknown;
     try {
-      output = JSON.parse(result.text ?? '{}');
+      output = JSON.parse(text);
     } catch {
-      // Malformed/truncated output is unreadable evidence, not an upstream outage.
+      return unreadable('INVALID_JSON');
     }
     const parsed = scanResultSchema.safeParse(output);
-    if (!parsed.success || result.candidates?.[0]?.finishReason !== 'STOP')
-      return fail(
-        'Nominal atau detail nota belum terbaca dengan pasti. Periksa gambar atau isi transaksi secara manual.',
-        422,
-        'SCAN_UNREADABLE',
-      );
+    if (!parsed.success) {
+      const amountUnreadable =
+        output !== null && typeof output === 'object' && 'amount' in output && output.amount === 0;
+      return unreadable(amountUnreadable ? 'AMOUNT_UNREADABLE' : 'INVALID_SCHEMA');
+    }
     return Response.json(parsed.data, { headers });
   } catch (error) {
     // Never log image bytes, model text, receipts, tokens or private merchant information.

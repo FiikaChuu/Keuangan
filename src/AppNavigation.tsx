@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   ArrowLeftRight,
   House,
@@ -35,6 +36,19 @@ export default function AppNavigation({
   go: (page: Page) => void;
   onCapture: () => void;
 }) {
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const update = () =>
+      setKeyboardOpen(
+        !!viewport &&
+          !!document.activeElement?.matches('input, textarea, [contenteditable="true"]') &&
+          window.innerHeight - viewport.height > 150,
+      );
+    viewport?.addEventListener('resize', update);
+    update();
+    return () => viewport?.removeEventListener('resize', update);
+  }, []);
   const active =
     page === 'reports' ? 'transactions' : ['plan', 'together'].includes(page) ? 'accounts' : page;
   const items = [
@@ -44,7 +58,11 @@ export default function AppNavigation({
     { id: 'settings' as const, label: 'Pengaturan', text: 'Setelan', icon: Settings },
   ];
   return (
-    <nav className="app-navigation" aria-label="Navigasi utama">
+    <nav
+      className="app-navigation"
+      data-keyboard-open={keyboardOpen || undefined}
+      aria-label="Navigasi utama"
+    >
       <div className="nav-brand">
         <Logo />
       </div>
