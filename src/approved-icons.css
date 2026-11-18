@@ -1,0 +1,28 @@
+/* Keep existing control geometry; transparent artwork may fill its optical slot. */
+.approved-icon-slot {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  vertical-align: middle;
+}
+.approved-icon-slot > img {
+  position: absolute;
+  display: block;
+  width: 52px;
+  height: 52px;
+  max-width: none;
+  object-fit: contain;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.app-navigation .approved-icon-slot--nav {
+  width: 20px;
+  height: 20px;
+}
+.app-navigation .approved-icon-slot--nav > img {
+  width: 32px;
+  height: 32px;
+}

@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  ArrowLeftRight,
-  House,
-  Settings,
   Plus,
-  Wallet,
   ChartNoAxesCombined,
   PiggyBank,
   Heart,
 } from 'lucide-react';
 import { Logo } from './ui';
+import { ApprovedIcon } from './ApprovedIcon';
 export type Page =
   'overview' | 'accounts' | 'transactions' | 'reports' | 'plan' | 'together' | 'settings';
 export const pagePaths: Record<Page, string> = {
@@ -52,10 +49,10 @@ export default function AppNavigation({
   const active =
     page === 'reports' ? 'transactions' : ['plan', 'together'].includes(page) ? 'accounts' : page;
   const items = [
-    { id: 'overview' as const, label: 'Ringkasan', text: 'Beranda', icon: House },
-    { id: 'accounts' as const, label: 'Dompet saya', text: 'Dompet', icon: Wallet },
-    { id: 'transactions' as const, label: 'Transaksi', text: 'Aktivitas', icon: ArrowLeftRight },
-    { id: 'settings' as const, label: 'Pengaturan', text: 'Setelan', icon: Settings },
+    { id: 'overview' as const, label: 'Ringkasan', text: 'Beranda', icon: 'home' as const },
+    { id: 'accounts' as const, label: 'Dompet saya', text: 'Dompet', icon: 'wallet' as const },
+    { id: 'transactions' as const, label: 'Transaksi', text: 'Aktivitas', icon: 'activity' as const },
+    { id: 'settings' as const, label: 'Pengaturan', text: 'Setelan', icon: 'settings' as const },
   ];
   return (
     <nav
@@ -75,7 +72,7 @@ export default function AppNavigation({
             aria-current={page === item.id ? 'page' : undefined}
             onClick={() => go(item.id)}
           >
-            <item.icon size={20} strokeWidth={1.7} />
+            <ApprovedIcon name={item.icon} navigation />
             <small>{item.text}</small>
           </button>
         ))}

@@ -5,8 +5,6 @@ import {
   Eye,
   EyeOff,
   ArrowUpRight,
-  ArrowDownLeft,
-  ArrowLeftRight,
   ChartNoAxesCombined,
   Wallet,
   ReceiptText,
@@ -19,7 +17,8 @@ import type { InsightPreferences } from './preferences';
 import { MoneyAmount } from './MoneyAmount';
 import { AccountPicker, BalanceChart, CashflowChart, SpendingDonut, TransactionList } from './ui';
 import { NetCashflowChart } from './DashboardCharts';
-import { WalletTexture, WalletGlyph, ActionGlyph } from './WalletArt';
+import { WalletTexture, WalletGlyph } from './WalletArt';
+import { ApprovedIcon } from './ApprovedIcon';
 
 type Page = 'overview' | 'accounts' | 'transactions' | 'plan' | 'together';
 export default function Dashboard({
@@ -60,10 +59,10 @@ export default function Dashboard({
   const insights = moneyInsights(store, days).filter((item) => preferences[item.id]);
   const recent = [...scoped].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   const actions = [
-    { label: 'Pengeluaran', icon: ArrowUpRight, action: () => onCapture('expense', account) },
-    { label: 'Pemasukan', icon: ArrowDownLeft, action: () => onCapture('income', account) },
-    { label: 'Transfer', icon: ArrowLeftRight, action: () => onCapture('transfer', account) },
-    { label: 'Laporan', icon: ChartNoAxesCombined, action: onReport },
+    { label: 'Pengeluaran', icon: 'expense' as const, action: () => onCapture('expense', account) },
+    { label: 'Pemasukan', icon: 'income' as const, action: () => onCapture('income', account) },
+    { label: 'Transfer', icon: 'transfer' as const, action: () => onCapture('transfer', account) },
+    { label: 'Laporan', icon: 'reports' as const, action: onReport },
   ];
   return (
     <div className="figma-dashboard wallet-home">
@@ -124,7 +123,7 @@ export default function Dashboard({
         {actions.map((item) => (
           <button key={item.label} onClick={item.action}>
             <span>
-              <ActionGlyph kind={item.label} />
+              <ApprovedIcon name={item.icon} />
             </span>
             <small>{item.label}</small>
           </button>
