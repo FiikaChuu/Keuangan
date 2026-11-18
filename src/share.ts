@@ -53,7 +53,8 @@ export async function scanImage(
     cache: 'no-store',
     signal,
   });
-  const json = await response.json();
+  // Proxies and expired sessions may return HTML or an empty body. Never surface raw text.
+  const json = await response.json().catch(() => null);
   if (!response.ok) {
     const codes = [
       'SCAN_UNREADABLE',
@@ -73,14 +74,33 @@ export async function scanImage(
       'AMOUNT_UNREADABLE',
       'INVALID_SCHEMA',
     ];
-    const code = codes.includes(json.code) ? json.code : '';
+    const code = codes.includes(json?.code) ? String(json.code) : '';
     const safeReason =
-      typeof json.diagnostic === 'object' && json.diagnostic !== null
+      typeof json?.diagnostic === 'object' && json.diagnostic !== null
         ? json.diagnostic.reason
-        : json.diagnostic;
-    const reason = reasons.includes(safeReason) ? safeReason : '';
-    const suffix = code ? ` [${code}${reason ? `/${reason}` : ''}]` : '';
-    throw new Error(`Nota belum dapat dibaca. Coba lagi atau catat manual.${suffix}`);
+        : json?.diagnostic;
+    const reason = reasons.includes(safeReason) ? String(safeReason) : '';
+    const messages: Record<string, string> = {
+      SCAN_MODEL_UNAVAILABLE: 'Model pembaca nota tidak tersedia. Hubungi pengelola.',
+      SCAN_UPSTREAM_AUTH: 'Layanan pembaca nota tidak dapat mengautentikasi. Hubungi pengelola.',
+      SCAN_UPSTREAM_QUOTA: 'Kuota layanan pembaca nota sedang terbatas. Coba beberapa saat lagi.',
+      SCAN_TIMEOUT: 'Pembacaan nota melewati batas waktu. Coba lagi atau catat manual.',
+      SCAN_NETWORK: 'Koneksi ke layanan pembaca nota gagal. Coba beberapa saat lagi.',
+      SCAN_UPSTREAM: 'Layanan pembaca nota sedang bermasalah. Coba lagi atau catat manual.',
+      SCAN_UNREADABLE: 'Nominal atau detail nota belum terbaca dengan pasti. Periksa gambar atau catat manual.',
+    };
+    const statusMessages: Record<number, string> = {
+      401: 'Sesi berakhir. Silakan masuk kembali.',
+      403: 'Akun tidak memiliki akses ke pembaca nota. Hubungi pengelola.',
+      413: 'Gambar maksimal 3 MB. Pilih foto yang lebih kecil.',
+      415: 'Gunakan foto JPG, PNG, atau WEBP yang valid.',
+      429: 'Batas pembacaan nota tercapai. Coba beberapa saat lagi.',
+    };
+    let message = messages[code] ?? statusMessages[response.status] ?? messages.SCAN_UPSTREAM;
+    if (code === 'SCAN_UNREADABLE' && reason === 'INCOMPLETE_OUTPUT')
+      message = 'Pembacaan nota belum selesai. Coba lagi atau catat manual.';
+    const suffix = ` [${code || `HTTP_${response.status}`}${code && reason ? `/${reason}` : ''}]`;
+    throw new Error(`${message}${suffix}`);
   }
   return { result: scanResultSchema.parse(json), hash };
 }

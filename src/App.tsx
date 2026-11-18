@@ -574,7 +574,7 @@ export default function App({
               <PageHeading
                 eyebrow=""
                 title="Pengaturan"
-                description="Tampilan dan preferensi aplikasi."
+                description="Preferensi, cadangan, dan akses akun."
               />
               <SettingsPanel
                 remote={remote}
@@ -1129,7 +1129,7 @@ function SettingsPanel({
       <section className="settings-local-profile">
         <span aria-hidden="true"><ShieldCheck size={28} /></span>
         <div>
-          <h2>{remote ? 'Akun saya' : 'Profil penyimpanan'}</h2>
+          <h2>{remote ? 'Akun saya' : 'Penyimpanan perangkat'}</h2>
           <p>{remote?.email ?? (store.demo ? 'Data contoh pada perangkat ini' : 'Catatan pribadi pada perangkat ini')}</p><small>{remote ? 'Akses akun tersinkron' : 'Penyimpanan lokal · bukan koneksi bank'}</small>
         </div>
       </section>
@@ -1139,7 +1139,7 @@ function SettingsPanel({
           <DesignIcon name="settings-notifications" size={18} />
           Preferensi dashboard
         </h3>
-        <p>Atur informasi yang ditampilkan di dashboard saat SkyWallet dibuka.</p>
+        <p>Pilih ringkasan di Beranda.</p>
         {(
           [
             { id: 'allocation', label: 'Rencana dana pribadi' },
@@ -1165,7 +1165,7 @@ function SettingsPanel({
         <h3>
           <DesignIcon name="settings-data" size={18} /> Data & cadangan
         </h3>
-        <p>Cadangan berisi catatan keuangan tanpa gambar nota; simpan secara pribadi.</p>
+        <p>Simpan salinan pribadi. Gambar nota tidak disertakan.</p>
         <button
           className="settings-action"
           onClick={() => {
@@ -1175,7 +1175,7 @@ function SettingsPanel({
         >
           <Download size={19} />
           <span>
-            <strong>{recovery ? 'Unduh data untuk pemulihan' : 'Unduh cadangan lengkap'}</strong>
+            <strong>{recovery ? 'Unduh data untuk pemulihan' : 'Unduh cadangan'}</strong>
             <small>Rekening, transaksi, rencana, dan tujuan</small>
           </span>
           {busy ? <LoaderCircle className="spin" size={16} /> : <ChevronRight size={16} />}
@@ -1236,10 +1236,10 @@ function SettingsPanel({
           </p>
         )}
       </div>
-      <><PersonalReset remote={remote} /><AccountDeletion remote={remote} /></>
+      <section className="settings-section settings-account"><h3>Akun & akses</h3><p>Reset catatan dan penghapusan akun adalah dua tindakan berbeda.</p><PersonalReset remote={remote} /><AccountDeletion remote={remote} /></section>
       <div className="settings-section settings-danger">
         <h3>
-          <DesignIcon name="settings-warning" size={18} /> {remote ? 'Sesi akun' : 'Mulai ulang'}
+          <DesignIcon name="settings-warning" size={18} /> {remote ? 'Sesi perangkat' : 'Data perangkat'}
         </h3>
         <button
           className="settings-action reset-action"

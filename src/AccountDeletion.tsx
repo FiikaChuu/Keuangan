@@ -32,13 +32,13 @@ function LifecycleAction({ kind, remote }: { kind: 'reset' | 'delete'; remote?: 
     setMessage('');
   };
   return (
-    <section className="settings-section settings-danger">
-      <h3>{title}</h3>
-      {!accountLifecycleEnabled && <span className="lifecycle-status">Belum tersedia di preview</span>}
+    <section className={`lifecycle-row ${reset ? 'lifecycle-reset' : 'lifecycle-delete'}`}>
+      <h4>{title}</h4>
+      {!accountLifecycleEnabled && <span className="lifecycle-status">Belum tersedia</span>}
       <p>
         {reset
-          ? 'Hapus dompet pribadi, transaksi dan tujuan terkait, serta rencana pribadi. Login, kata sandi, dan seluruh data bersama tetap. Koneksi ke data bersama membatalkan seluruh reset.'
-          : 'Hanya akun tanpa dompet, riwayat, dan anggota bersama yang dapat dihapus. Tidak ada riwayat keuangan yang dihapus otomatis.'}
+          ? 'Kosongkan catatan pribadi tanpa menghapus akun.'
+          : 'Hapus identitas akun secara permanen setelah semua data dikosongkan.'}
       </p>
       <button
         className="settings-action"
@@ -46,15 +46,15 @@ function LifecycleAction({ kind, remote }: { kind: 'reset' | 'delete'; remote?: 
         disabled={accountLifecycleEnabled && !supabase}
         onClick={() => setOpen(true)}
       >
-        {accountLifecycleEnabled ? title : `Lihat informasi ${reset ? 'reset' : 'penghapusan'}`}
+        <span><strong>{accountLifecycleEnabled ? title : `Tentang ${reset ? 'reset data' : 'hapus akun'}`}</strong></span><span aria-hidden="true">›</span>
       </button>
       {open && (
         <Modal title={title} onClose={close}>
-          <p>
+          <p className="lifecycle-explanation">
             Cadangkan dahulu.{' '}
             {reset
-              ? 'Reset tidak menghapus identitas akun.'
-              : 'Penghapusan identitas akun bersifat permanen, bukan reset pribadi.'}
+              ? 'Dompet pribadi, transaksi, tujuan, dan rencana akan dihapus. Login dan kata sandi tetap. Data bersama tidak dihapus; keterkaitan dengan data bersama membatalkan reset.'
+              : 'Identitas akun dihapus permanen. Akun harus tanpa dompet, riwayat, dan anggota bersama. Tindakan ini tidak menghapus riwayat keuangan otomatis.'}
           </p>
           {!accountLifecycleEnabled && <p role="status" className="info-note">{lifecyclePreviewMessage}</p>}
           {!accountLifecycleEnabled && <button className="btn secondary" onClick={close}>Tutup</button>}
@@ -154,7 +154,7 @@ function LifecycleAction({ kind, remote }: { kind: 'reset' | 'delete'; remote?: 
                   />
                 </label>
                 <button
-                  className="btn primary"
+                  className={`btn ${reset ? 'primary' : 'lifecycle-delete-confirm'}`}
                   type="submit"
                   disabled={!accountLifecycleEnabled || busy || confirmation !== phrase || !password}
                 >
