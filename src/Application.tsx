@@ -3,6 +3,7 @@ import { AnimatePresence, LazyMotion, MotionConfig } from 'framer-motion';
 import type { Session } from '@supabase/supabase-js';
 import { ArrowRight, LoaderCircle, NotebookPen, ReceiptText, Users } from './MeshIcon';
 import App from './App';
+import UpdateNotice from './UpdateNotice';
 import { accountLifecycleEnabled, lifecyclePreviewMessage } from './lifecycle-preview';
 import { AccountDeletion } from './AccountDeletion';
 import { emptyStore } from './domain';
@@ -426,11 +427,11 @@ export default function Application({ demo = false }: { demo?: boolean }) {
     // Previous releases persisted receipt photos; remove that obsolete image store.
     if ('indexedDB' in window) indexedDB.deleteDatabase('skysave-receipts');
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production')
-      void navigator.serviceWorker.register('/sw.js');
+      void navigator.serviceWorker.register('/sw.js').catch(() => { /* Offline registration must not interrupt editing. */ });
   }, []);
   return (
     <LazyMotion features={loadMotionFeatures} strict>
-      <MotionConfig reducedMotion="user">{demo ? <App /> : <Authenticated />}</MotionConfig>
+      <MotionConfig reducedMotion="user"><UpdateNotice />{demo ? <App /> : <Authenticated />}</MotionConfig>
     </LazyMotion>
   );
 }

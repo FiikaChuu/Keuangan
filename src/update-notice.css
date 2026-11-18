@@ -1,0 +1,16 @@
+.update-notice {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+}
+.update-notice p { margin: 4px 0 0; color: var(--muted); }
+.update-notice .mesh-icon { flex: 0 0 16px; }

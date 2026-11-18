@@ -60,6 +60,7 @@ import type { RemoteFinance } from './use-finance';
 import type { ScanResult } from './scan-contract';
 import { defaultsFromScan } from './share';
 import { readBackup } from './backup';
+import { BUILD_ID } from './UpdateNotice';
 
 const goalIcons: Record<string, GlyphIcon> = {
   '🌱': Sprout,
@@ -1271,8 +1272,8 @@ function SettingsPanel({
         <Logo />
         <span>
           {remote
-            ? 'v0.1 · Data tersinkron antar perangkat'
-            : `v0.1 · ${store.demo ? 'Data demo' : 'Data lokal'} pada perangkat ini`}
+            ? `Build ${BUILD_ID.slice(0, 12)} · Data tersinkron antar perangkat`
+            : `Build ${BUILD_ID.slice(0, 12)} · ${store.demo ? 'Data demo' : 'Data lokal'} pada perangkat ini`}
         </span>
       </div>
     </div>
