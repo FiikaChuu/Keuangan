@@ -3,6 +3,9 @@ import { AnimatePresence, LazyMotion, MotionConfig } from 'framer-motion';
 import type { Session } from '@supabase/supabase-js';
 import { ArrowRight, LoaderCircle, NotebookPen, ReceiptText, Users } from './MeshIcon';
 import App from './App';
+import { accountLifecycleEnabled, lifecyclePreviewMessage } from './lifecycle-preview';
+import { AccountDeletion } from './AccountDeletion';
+import { emptyStore } from './domain';
 import { Logo, Modal } from './ui';
 import { loadMotionFeatures } from './motion';
 import { initialAuthRecovery, supabase } from './supabase';
@@ -11,16 +14,23 @@ import { scanImage, takeSharedImage } from './share';
 import type { ScanResult } from './scan-contract';
 
 function Login({ recovery, complete }: { recovery: boolean; complete: () => void }) {
+  const [signup, setSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if ((signup || recovery) && !accountLifecycleEnabled) { setMessage(lifecyclePreviewMessage); return; }
     if (busy || !supabase) return;
     setBusy(true);
     setMessage('');
     try {
+      if (signup && !recovery) {
+        await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: location.origin } });
+        setMessage('Jika pendaftaran dapat diproses, periksa email untuk konfirmasi. Akun yang sudah terdaftar dapat masuk atau memulihkan kata sandi.');
+        return;
+      }
       const { error } = recovery
         ? await supabase.auth.updateUser({ password })
         : await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -28,7 +38,7 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
         setMessage(
           recovery
             ? 'Kata sandi belum dapat diperbarui. Gunakan minimal 12 karakter.'
-            : 'Email atau kata sandi tidak cocok, atau akun belum diundang.',
+            : 'Email atau kata sandi tidak cocok, atau email belum dikonfirmasi.',
         );
       else if (recovery) complete();
     } catch {
@@ -75,11 +85,11 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
       </section>
       <section className="auth-form-panel" aria-labelledby="auth-form-title">
         <header className="auth-form-heading">
-          <h1 id="auth-form-title">{recovery ? 'Atur kata sandi' : 'Masuk ke SkyWallet'}</h1>
+          <h1 id="auth-form-title">{recovery ? 'Atur kata sandi' : signup ? 'Buat akun SkyWallet' : 'Masuk ke SkyWallet'}</h1>
           <p>
             {recovery
               ? 'Buat kata sandi baru untuk melanjutkan ke catatanmu.'
-              : 'Gunakan email yang telah diundang untuk membuka catatanmu.'}
+              : 'Masuk atau buat akun. Akun baru memiliki ruang terisolasi; berbagi antar akun baru belum tersedia.'}
           </p>
         </header>
         <form className="form-stack" onSubmit={submit} aria-busy={busy}>
@@ -104,10 +114,10 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
               id="auth-password"
               name="password"
               type="password"
-              autoComplete={recovery ? 'new-password' : 'current-password'}
+              autoComplete={recovery || signup ? 'new-password' : 'current-password'}
               aria-describedby={recovery ? 'auth-password-hint' : undefined}
               required
-              minLength={recovery ? 12 : 1}
+              minLength={recovery || signup ? 12 : 1}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -118,7 +128,7 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
             )}
           </label>
           <button className="btn primary" type="submit" disabled={busy}>
-            <span>{busy ? 'Memproses…' : recovery ? 'Simpan kata sandi' : 'Masuk'}</span>
+            <span>{busy ? 'Memproses…' : recovery ? 'Simpan kata sandi' : signup ? 'Daftar' : 'Masuk'}</span>
             {busy ? (
               <LoaderCircle className="spin" size={18} aria-hidden="true" />
             ) : (
@@ -133,6 +143,7 @@ function Login({ recovery, complete }: { recovery: boolean; complete: () => void
         </form>
         {!recovery && (
           <div className="auth-recovery">
+            <button className="text-btn" type="button" disabled={busy} onClick={() => { setSignup(!signup); setMessage(''); }}>{signup ? 'Sudah punya akun? Masuk' : 'Buat akun baru'}</button>
             <button
               className="text-btn"
               type="button"
@@ -191,6 +202,8 @@ function Workspace({
   const [scanStatus, setScanStatus] = useState('');
   const scanController = useRef<AbortController | null>(null);
   const [scanError, setScanError] = useState('');
+  const [lifecycleFinished, setLifecycleFinished] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   useEffect(() => {
     if (!shared) return;
     const controller = new AbortController();
@@ -211,9 +224,20 @@ function Workspace({
     return () => controller.abort();
   }, [shared, session.access_token]);
   const signOut = async () => {
-    await supabase!.auth.signOut({ scope: 'local' });
+    const { error } = await supabase!.auth.signOut({ scope: 'local' });
+    if (error) throw new Error('Sesi lokal belum ditutup. Coba keluar kembali.');
     location.replace('/');
   };
+  const stopLifecycle = () => {
+    scanController.current?.abort(); clearShare(); setScan(undefined);
+    finance.stopLifecycle(); setLifecycleFinished(true);
+  };
+  if (lifecycleFinished) return <main className="auth-page"><section className="auth-card auth-state-card">
+    <Logo /><h1>Proses akun dikonfirmasi server</h1>
+    <p role="status">Catatan dan perubahan tertunda telah ditutup. Tunggu satu detik sebelum masuk kembali.</p>
+    <button className="btn primary" onClick={() => void signOut().catch(() => setLogoutError('Sesi lokal belum ditutup. Coba keluar kembali.'))}>Keluar dan masuk kembali</button>
+    {logoutError && <p role="alert">{logoutError}</p>}
+  </section></main>;
   if (!finance.store)
     return (
       <main className="auth-page">
@@ -235,6 +259,17 @@ function Workspace({
               Periksa koneksi, lalu coba muat ulang. Kamu juga dapat keluar untuk masuk kembali.
             </p>
           )}
+          {finance.error && <AccountDeletion remote={{
+            store: emptyStore(), status: finance.error, email: session.user.email ?? '',
+            save: finance.save, signOut, refresh: finance.refresh,
+            getRevision: finance.getRevision, pauseLifecycle: finance.pauseLifecycle,
+            stopLifecycle,
+            finishLifecycle: async () => {
+              const { error } = await supabase!.auth.signOut({ scope: 'local' });
+              if (error) throw new Error('Sesi lokal belum ditutup. Coba keluar kembali.');
+              location.replace('/');
+            },
+          }} />}
           <div className="auth-state-actions">
             <button className="btn primary" onClick={() => void finance.refresh()}>
               Coba lagi
@@ -255,6 +290,16 @@ function Workspace({
           email: session.user.email ?? '',
           save: finance.save,
           signOut,
+          refresh: finance.refresh,
+          getRevision: finance.getRevision,
+          pauseLifecycle: finance.pauseLifecycle,
+          stopLifecycle,
+          finishLifecycle: async () => {
+            scanController.current?.abort(); clearShare(); setScan(undefined);
+            const { error } = await supabase!.auth.signOut({ scope: 'local' });
+            if (error) throw new Error('Sesi lokal belum ditutup. Coba keluar kembali.');
+            location.replace('/');
+          },
         }}
         onReceipt={onReceipt}
         incomingScan={scan}

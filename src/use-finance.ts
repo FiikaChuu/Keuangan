@@ -9,12 +9,21 @@ export type RemoteFinance = {
   email: string;
   save: (before: Store, next: Store) => Promise<void>;
   signOut: () => Promise<void>;
+  refresh: () => Promise<void>;
+  getRevision: () => string;
+  pauseLifecycle: (owner: string) => () => void;
+  stopLifecycle: () => void;
+  finishLifecycle: () => Promise<void>;
 };
 export function useFinance(client: SupabaseClient, userId: string) {
   const [store, setStore] = useState<Store>();
   const [error, setError] = useState('');
   const [status, setStatus] = useState('Menyambungkan…');
   const active = useRef(true);
+  const paused = useRef(false);
+  const lifecycleOwner = useRef<string | null>(null);
+  const stopped = useRef(false);
+  const disconnect = useRef<() => void>(() => {});
   const pending = useRef<Promise<void> | null>(null);
   const again = useRef(false);
   const writing = useRef(false);
@@ -22,6 +31,7 @@ export function useFinance(client: SupabaseClient, userId: string) {
   const revision = useRef<string | undefined>(undefined);
   const request = useRef<{ signature: string; id: string } | null>(null);
   const refresh = useCallback(async () => {
+    if (paused.current || stopped.current) return;
     if (pending.current) {
       again.current = true;
       return pending.current;
@@ -31,7 +41,7 @@ export function useFinance(client: SupabaseClient, userId: string) {
         again.current = false;
         try {
           const next = await readFinance(client, revision.current);
-          if (active.current) {
+          if (active.current && !paused.current && !stopped.current) {
             if (next) {
               revision.current = next.revision;
               setStore(next.store);
@@ -40,7 +50,7 @@ export function useFinance(client: SupabaseClient, userId: string) {
             setStatus(realtimeConnected.current ? 'Tersinkron langsung' : 'Tersinkron berkala');
           }
         } catch (e) {
-          if (active.current) {
+          if (active.current && !paused.current && !stopped.current) {
             setStatus('Koneksi terputus');
             setError(e instanceof Error ? e.message : 'Tidak dapat memuat data.');
             if (e instanceof Error && /Akses akun/.test(e.message)) {
@@ -49,7 +59,7 @@ export function useFinance(client: SupabaseClient, userId: string) {
             }
           }
         }
-      } while (again.current && active.current);
+      } while (again.current && active.current && !paused.current && !stopped.current);
     })().finally(() => {
       pending.current = null;
     });
@@ -59,6 +69,7 @@ export function useFinance(client: SupabaseClient, userId: string) {
     active.current = true;
     let debounce: ReturnType<typeof setTimeout>;
     const schedule = () => {
+      if (paused.current || stopped.current) return;
       clearTimeout(debounce);
       debounce = setTimeout(() => void refresh(), 100);
     };
@@ -84,7 +95,7 @@ export function useFinance(client: SupabaseClient, userId: string) {
     window.addEventListener('offline', offline);
     document.addEventListener('visibilitychange', focus);
     const poll = setInterval(focus, 30000);
-    return () => {
+    disconnect.current = () => {
       active.current = false;
       clearTimeout(debounce);
       clearInterval(poll);
@@ -93,9 +104,12 @@ export function useFinance(client: SupabaseClient, userId: string) {
       window.removeEventListener('offline', offline);
       document.removeEventListener('visibilitychange', focus);
     };
+    return () => disconnect.current();
   }, [client, userId, refresh]);
   const save = useCallback(
     async (before: Store, next: Store) => {
+      if (paused.current || stopped.current)
+        throw new Error('Perubahan dikunci selama proses akun.');
       if (writing.current) throw new Error('Penyimpanan masih berlangsung.');
       if (!navigator.onLine)
         throw new Error('Sedang offline. Hubungkan internet lalu simpan kembali.');
@@ -122,5 +136,35 @@ export function useFinance(client: SupabaseClient, userId: string) {
     },
     [client, refresh],
   );
-  return { store, error, status, save, refresh };
+  const getRevision = () => {
+    if (!revision.current) throw new Error('Muat data terbaru sebelum reset.');
+    return revision.current;
+  };
+  const pauseLifecycle = (owner: string) => {
+    if (
+      writing.current ||
+      pending.current ||
+      (paused.current && lifecycleOwner.current !== owner) ||
+      stopped.current
+    )
+      throw new Error('Sinkronisasi masih berlangsung. Tunggu lalu coba lagi.');
+    paused.current = true;
+    lifecycleOwner.current = owner;
+    return () => {
+      if (!stopped.current) {
+        paused.current = false;
+        lifecycleOwner.current = null;
+      }
+    };
+  };
+  const stopLifecycle = () => {
+    stopped.current = true;
+    paused.current = true;
+    request.current = null;
+    again.current = false;
+    revision.current = undefined;
+    disconnect.current();
+    setStore(undefined);
+  };
+  return { store, error, status, save, refresh, getRevision, pauseLifecycle, stopLifecycle };
 }

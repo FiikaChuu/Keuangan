@@ -12,8 +12,10 @@ export default function WalletPage({
   onPlan,
   onTogether,
   accountCard,
+  onDelete,
 }: {
   store: Store;
+  onDelete: (account: Account) => void;
   onAdd: (shared?: boolean) => void;
   onPlan: () => void;
   onTogether: () => void;
@@ -142,7 +144,7 @@ export default function WalletPage({
       {personal.length ? (
         <div className="wallet-grid">
           {personal.map((a) => (
-            <div key={a.id}>{accountCard(a, true)}</div>
+            <div key={a.id}>{accountCard(a, true)}<button className="text-btn" onClick={() => onDelete(a)}>Hapus dompet {a.name}</button></div>
           ))}
         </div>
       ) : (
@@ -168,7 +170,7 @@ export default function WalletPage({
           </div>
           <div className="wallet-grid">
             {shared.map((a) => (
-              <div key={a.id}>{accountCard(a, true)}</div>
+              <div key={a.id}>{accountCard(a, true)}<button className="text-btn" onClick={() => onDelete(a)}>Hapus dompet {a.name}</button></div>
             ))}
           </div>
         </>

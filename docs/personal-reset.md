@@ -1,0 +1,23 @@
+# Personal-only reset — local implementation, NOT applied
+
+## Exact Settings dialog integration contract
+
+Use `POST /api/account/reset`, header `Authorization: Bearer <current access token>`, JSON `{ "password": "<entered password>", "confirmation": "RESET", "requestId": "<crypto.randomUUID()>", "revision": "<latest finance_snapshot.revision>" }`. No email, user ID, wallet IDs or household ID accepted. Password is sent only to the server on this request; never persist, log, put in URL, or add analytics. Disable submit while in flight. Explain that Auth login/password and all shared data remain; personal wallets, their transactions/goals, and the caller's plan are removed. A shared connection blocks the ENTIRE operation.
+
+Hold requestId AND original revision unchanged for ambiguous network/503 retries. Success is `{ code: 'RESET_COMPLETE', reset: true, replayed: boolean, requiresSignIn: true, message }`. Clear personal UI cache/pending local finance operations and require sign-in again; do not replay a pre-reset mutation queue. Existing JWTs are database-fenced from writes/bootstrap after reset. Auth user and password are not changed, refresh sessions are not globally revoked. Wait until next second before new sign-in/refresh because JWT iat precision is seconds and the cutoff is rounded up.
+
+Errors: 400 INVALID_REQUEST; 401 AUTH_REQUIRED/REAUTH_FAILED; 403 MFA_UNSUPPORTED; 409 STALE_DATA (refresh snapshot and ask for a new confirmation/request ID), SHARED_CONNECTION (no partial deletion; explain dependency), AUTH_STALE_OR_PENDING or RESET_BLOCKED; 503 NOT_CONFIGURED/RESET_UNAVAILABLE (unknown outcome: retry SAME request ID/revision). Never display success on a transport error. No reset ticket is exposed to the UI.
+
+## Security and data boundary
+
+Server verifies original token via Auth getUser, reauthenticates its server-returned email/password in an ephemeral client, matches fresh identity, rejects verified MFA, issues a service-only short-lived identity-bound capability, then calls reset with the ORIGINAL caller JWT. RPC has no owner target argument. It checks active confirmed identity/lifecycle, capability owner, pending status, JWT cutoff and exact finance revision under the existing finance advisory lock `740261519` (the repository uses one global finance lock, not separate user/household locks). All changes are in one RPC transaction. Duplicate completed requests return success without deleting post-reset data; mismatched retry revision is rejected. Tickets expire after five minutes unless completed; completed records are deliberately retained.
+
+Only caller-owned `household_id is null` wallets are selected. Any transaction with a selected endpoint and a non-selected endpoint blocks reset, including shared or another user's personal wallet. Transactions only on shared wallets remain even if created_by is the resetting user. No Auth, allowlist, tenant, membership, shared goal, shared balance/version, other user's personal data, mutation dedup history or scan limits are deleted. No cascade, ID renumbering or shared-ledger recalculation.
+
+Deletion of personal history bypasses reversal ONLY inside an inaccessible transaction-scoped marker table populated by the reset RPC after dependency checks. This avoids transient personal underflow when deleting spent income. Original ledger net-delta behavior is preserved outside that scope. Marker changes roll back on failure. No client-set flag can disable the ledger trigger.
+
+## Verification and release prerequisites
+
+Local PGlite tests apply 01/04/05 with Auth/role stubs and execute real SQL; HTTP tests mock Auth/RPC (NOT a staging Auth verification). SQL05 is additive local-reviewed SQL, not applied to any Supabase project. No credentials or .env were inspected. No deploy, commit, live reset, SQL production execution or concurrent Next build.
+
+Before release: independently review SQL05 and the copied ledger trigger; apply 01/03/04/05 in a disposable staging project, run Supabase security advisors/grant audits and actual Auth password/MFA tests; verify PostgREST schema cache; configure server-only SUPABASE_SERVICE_ROLE_KEY and URL through approved secrets management. Test separate PostgreSQL sessions racing reset vs commit/bootstrap and reset vs reset: the shared advisory lock must serialize, stale revision/JWT must reject, duplicate reset must replay. PGlite serial execution verifies conflict order semantics but does not prove multi-connection PostgreSQL scheduling. Confirm seconds-precision cutoff UX and rate-limit this endpoint/password attempts at ingress. A stronger session revocation policy can be added separately, but must not delete Auth or shared data.
