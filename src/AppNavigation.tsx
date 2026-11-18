@@ -94,7 +94,7 @@ export default function AppNavigation({
           </button>
         ))}
       </div>
-      <button className="capture-button" aria-label="Catat transaksi" onClick={onCapture}>
+      <button className="capture-button" data-settings={page === 'settings' || undefined} aria-label="Catat transaksi" onClick={onCapture}>
         <span>
           <Plus size={21} />
         </span>

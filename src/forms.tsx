@@ -399,11 +399,11 @@ export function TransactionForm({
                   </label>
                 )}
                 <label>
-                  Nomor referensi (opsional)
+                  Referensi (opsional)
                   <input
                     maxLength={100}
                     value={reference}
-                    placeholder="Untuk cek duplikat"
+                    placeholder="Nomor transaksi"
                     onChange={(e) => setReference(e.target.value)}
                   />
                 </label>
@@ -504,7 +504,7 @@ export function AccountForm({
             autoComplete="off"
             required
             maxLength={60}
-            placeholder="Mis. Kebutuhan harian atau tabungan kita"
+            placeholder="Mis. Kebutuhan harian"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />

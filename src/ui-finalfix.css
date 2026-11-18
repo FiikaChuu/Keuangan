@@ -1,0 +1,52 @@
+/* Scoped sheet and Settings refinements. Approved app chrome is untouched. */
+.modal-heading h2 { font-size:20px; line-height:1.3; letter-spacing:-.025em; }
+.modal-heading { padding:18px 20px 14px; align-items:center; }
+.modal-heading p { font-size:13px; line-height:1.5; }
+.modal-form-content { padding:18px 20px; gap:16px; }
+.modal-form-actions { padding:14px 20px calc(16px + env(safe-area-inset-bottom)); gap:10px; }
+.modal .form-stack label:not(.upload-zone):not(.checkbox-field), .modal .field-label { font-size:13px; line-height:1.45; }
+.modal .form-stack input:not([type=checkbox]):not([type=file]), .modal .form-stack textarea, .modal .form-stack select { font-size:16px; min-width:0; width:100%; }
+.modal .form-stack .field-hint, .modal .info-note, .modal .checkbox-field small { font-size:12px; line-height:1.5; }
+.modal .checkbox-field strong { font-size:14px; line-height:1.4; }
+.modal .optional-fields-toggle { font-size:14px; }
+.modal .optional-fields-toggle small { font-size:12px; line-height:1.5; }
+.modal .scan-action strong { font-size:15px; }
+.modal .scan-action small { font-size:12px; }
+.modal .kind-switch button, .modal .btn, .modal .account-picker-trigger, .modal .category-picker-trigger { font-size:14px; }
+.modal .provider-picker-trigger { padding:10px 12px; gap:12px; text-align:left; }
+.modal .provider-picker-trigger > span:not(.provider-mark):not(.mesh-icon) { flex:1 1 auto; min-width:0; font-size:14px; }
+.modal .provider-picker-trigger > .provider-mark { width:44px; height:44px; min-width:44px; flex:0 0 44px; }
+.modal .provider-options button { gap:12px; padding:12px; font-size:14px; }
+.modal .provider-options button > span:not(.provider-mark):not(.mesh-icon) { flex:1; min-width:0; text-align:left; }
+.modal .form-grid { gap:14px; }
+.modal .quick-categories button { padding:10px 2px; gap:6px; }
+.modal .quick-categories small { font-size:11px; }
+.settings-content { display:block; max-width:1000px; }
+.settings-content .settings-local-profile { padding:20px; margin:0 0 20px; border:1px solid var(--line); border-radius:20px; }
+.settings-local-profile h2 { font-size:16px; }
+.settings-local-profile p { font-size:14px; line-height:1.5; }
+.settings-local-profile small { font-size:12px; line-height:1.5; }
+.settings-content .settings-workspace { grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:20px; }
+.settings-workspace .settings-section { padding:20px; margin-bottom:16px; border:1px solid var(--line); border-radius:20px; }
+.settings-page .settings-section h3 { font-size:15px; line-height:1.4; margin-bottom:8px; }
+.settings-page .settings-section > p { font-size:12px; line-height:1.6; margin-bottom:14px; }
+.settings-page .settings-action { min-width:0; padding:14px 0; gap:12px; font-size:14px; text-align:left; }
+.settings-page .settings-action > span { min-width:0; }
+.settings-page .settings-action strong { font-size:14px; font-weight:550; line-height:1.4; }
+.settings-page .settings-action small { font-size:12px; line-height:1.5; margin-top:4px; }
+.settings-page .insight-preferences > div > span { font-size:13px; line-height:1.5; }
+.settings-page .settings-danger { background:var(--surface); }
+.lifecycle-status { display:inline-block; color:var(--muted); font-size:11px; border:1px solid var(--line); border-radius:6px; padding:3px 7px; margin-bottom:10px; }
+.settings-page .settings-version { margin-top:8px; padding-top:12px; font-size:11px; }
+@media(max-width:600px) {
+ .settings-content .settings-workspace { display:block; }
+ .settings-content .settings-local-profile, .settings-workspace .settings-section { padding:18px; border-radius:18px; }
+ .modal .optional-fields-content .form-grid { grid-template-columns:minmax(0,1fr); }
+ .modal .form-grid { grid-template-columns:minmax(0,1fr); }
+ .modal-heading { padding:16px 18px 12px; }
+ .modal-form-content { padding:16px 18px; }
+ .modal-form-actions { padding:12px 18px calc(14px + env(safe-area-inset-bottom)); }
+}
+
+/* Settings has no recording workflow; avoid covering preferences. */
+@media (max-width: 899px) { .capture-button[data-settings] { display: none; } }

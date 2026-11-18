@@ -10,7 +10,6 @@ import {
   ChevronRight,
   ShieldCheck,
   ArrowRight,
-  Users,
   Download,
   X,
   Check,
@@ -469,7 +468,7 @@ export default function App({
               />
               <div className="together-hero">
                 <div className="together-total">
-                  <span className="together-emblem" aria-hidden="true"><Users size={30} /></span>
+                  <span className="together-emblem" aria-hidden="true"><DesignIcon name="shared-space" size={36} /></span>
                   <small>Total dana bersama</small>
                   <strong>
                     {money(
@@ -1130,7 +1129,7 @@ function SettingsPanel({
       <section className="settings-local-profile">
         <span aria-hidden="true"><ShieldCheck size={28} /></span>
         <div>
-          <h2>Ruang pribadi</h2>
+          <h2>{remote ? 'Akun saya' : 'Profil penyimpanan'}</h2>
           <p>{remote?.email ?? (store.demo ? 'Data contoh pada perangkat ini' : 'Catatan pribadi pada perangkat ini')}</p><small>{remote ? 'Akses akun tersinkron' : 'Penyimpanan lokal · bukan koneksi bank'}</small>
         </div>
       </section>
@@ -1138,7 +1137,7 @@ function SettingsPanel({
       <section className="settings-section insight-preferences">
         <h3>
           <DesignIcon name="settings-notifications" size={18} />
-          Informasi di aplikasi
+          Preferensi dashboard
         </h3>
         <p>Atur informasi yang ditampilkan di dashboard saat SkyWallet dibuka.</p>
         {(
@@ -1273,7 +1272,7 @@ function SettingsPanel({
         <span>
           {remote
             ? 'v0.1 · Data tersinkron antar perangkat'
-            : 'v0.1 · Data demo pada perangkat ini'}
+            : `v0.1 · ${store.demo ? 'Data demo' : 'Data lokal'} pada perangkat ini`}
         </span>
       </div>
     </div>

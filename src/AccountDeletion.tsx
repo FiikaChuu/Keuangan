@@ -34,6 +34,7 @@ function LifecycleAction({ kind, remote }: { kind: 'reset' | 'delete'; remote?: 
   return (
     <section className="settings-section settings-danger">
       <h3>{title}</h3>
+      {!accountLifecycleEnabled && <span className="lifecycle-status">Belum tersedia di preview</span>}
       <p>
         {reset
           ? 'Hapus dompet pribadi, transaksi dan tujuan terkait, serta rencana pribadi. Login, kata sandi, dan seluruh data bersama tetap. Koneksi ke data bersama membatalkan seluruh reset.'
@@ -45,7 +46,7 @@ function LifecycleAction({ kind, remote }: { kind: 'reset' | 'delete'; remote?: 
         disabled={accountLifecycleEnabled && !supabase}
         onClick={() => setOpen(true)}
       >
-        {title}
+        {accountLifecycleEnabled ? title : `Lihat informasi ${reset ? 'reset' : 'penghapusan'}`}
       </button>
       {open && (
         <Modal title={title} onClose={close}>
@@ -56,6 +57,7 @@ function LifecycleAction({ kind, remote }: { kind: 'reset' | 'delete'; remote?: 
               : 'Penghapusan identitas akun bersifat permanen, bukan reset pribadi.'}
           </p>
           {!accountLifecycleEnabled && <p role="status" className="info-note">{lifecyclePreviewMessage}</p>}
+          {!accountLifecycleEnabled && <button className="btn secondary" onClick={close}>Tutup</button>}
           <form
             className="form-stack"
             aria-busy={busy}
@@ -128,7 +130,7 @@ function LifecycleAction({ kind, remote }: { kind: 'reset' | 'delete'; remote?: 
               }
             }}
           >
-            {!completed && (
+            {!completed && accountLifecycleEnabled && (
               <>
                 <label>
                   Kata sandi untuk verifikasi ulang
