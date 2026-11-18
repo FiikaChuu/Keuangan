@@ -46,8 +46,14 @@ export default function AppNavigation({
           window.innerHeight - viewport.height > 150,
       );
     viewport?.addEventListener('resize', update);
+    document.addEventListener('focusin', update);
+    document.addEventListener('focusout', update);
     update();
-    return () => viewport?.removeEventListener('resize', update);
+    return () => {
+      viewport?.removeEventListener('resize', update);
+      document.removeEventListener('focusin', update);
+      document.removeEventListener('focusout', update);
+    };
   }, []);
   const active =
     page === 'reports' ? 'transactions' : ['plan', 'together'].includes(page) ? 'accounts' : page;
@@ -97,7 +103,12 @@ export default function AppNavigation({
           </button>
         ))}
       </div>
-      <button className="capture-button" aria-label="Catat transaksi" onClick={onCapture}>
+      <button
+        className="capture-button"
+        data-settings={page === 'settings' || undefined}
+        aria-label="Catat transaksi"
+        onClick={onCapture}
+      >
         <span>
           <Plus size={21} />
         </span>

@@ -72,9 +72,6 @@ export default function Dashboard({
           <h1>Dashboard</h1>
           <p>Semua uangmu, satu tempat.</p>
         </div>
-        <button className="icon-btn" aria-label="Tambah dompet" onClick={onAccount}>
-          <Plus size={21} />
-        </button>
       </header>
       <section className="wallet-command" aria-label="Saldo seluruh akun">
         <WalletTexture />
@@ -105,16 +102,6 @@ export default function Dashboard({
           {visible ? <MoneyAmount value={selected ? values[selected.id] : total} /> : 'Rp ••••••'}
         </strong>
         <div className="orb-controls">
-          <button
-            className="orb-add"
-            aria-label="Catat transaksi baru"
-            onClick={() => onCapture('expense', account)}
-          >
-            <Plus size={24} />
-          </button>
-          <button onClick={onAccount}>
-            Tambah dompet <Plus size={16} />
-          </button>
           <button onClick={() => go('transactions')}>
             Riwayat <ArrowUpRight size={16} />
           </button>

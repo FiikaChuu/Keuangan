@@ -410,13 +410,151 @@ button:focus-visible {
   }
 }
 
+/* Provider avatars must not inherit the trigger's flexible text span sizing. */
+.provider-picker-trigger > .provider-mark,
+.provider-options .provider-mark,
+.wallet-row .provider-mark {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  aspect-ratio: 1;
+  flex: 0 0 44px;
+  padding: 0;
+}
+.provider-mark .wallet-glyph {
+  aspect-ratio: 1;
+  flex-shrink: 0;
+}
+.provider-mark .wallet-glyph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (max-width: 899px) {
+  .app-navigation .capture-button[data-settings] {
+    display: none;
+  }
+}
+
+/* Stable square icon geometry, even in narrow flex rows. */
+.wallet-add-action > span {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  aspect-ratio: 1;
+  flex: 0 0 44px;
+  padding: 0;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+}
+.wallet-command .figma-balance-amount .money-value,
+.wallet-command .figma-balance-amount {
+  font-weight: 750;
+}
+
+/* Ledger: one search surface and one compact financial strip. */
+.ledger-tools .search-field {
+  border: 1px solid #444149;
+  border-radius: 14px;
+  background: #18181b;
+  padding: 0 4px 0 14px;
+  min-height: 52px;
+}
+.ledger-tools .search-field:focus-within {
+  outline: 2px solid #c6b8f3;
+  outline-offset: 2px;
+}
+.ledger-tools .search-field input,
+.ledger-tools .search-field input:focus,
+.ledger-tools .search-field input:focus-visible {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  min-width: 0;
+  padding: 12px 8px;
+}
+.ledger-tools .search-field > .design-icon,
+.ledger-tools .filter-toggle .design-icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.85;
+}
+.ledger-tools .search-field > button,
+.ledger-tools .filter-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  color: #f4f1fa;
+  flex-shrink: 0;
+}
+.ledger-panel .transaction-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 16px 0;
+  border-top: 1px solid #303035;
+  border-bottom: 1px solid #303035;
+}
+.ledger-panel .transaction-summary > div {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 12px;
+}
+.ledger-panel .transaction-summary > div + div {
+  border-left: 1px solid #39363f;
+}
+.ledger-panel .transaction-summary > div > span {
+  font-size: 11px;
+  color: #bdbac5;
+}
+.ledger-panel .transaction-summary strong {
+  font-size: clamp(14px, 3.7vw, 20px);
+  margin-top: 6px;
+}
+.ledger-panel .empty-state {
+  min-height: 0;
+  padding: 32px 16px;
+}
+.ledger-panel .empty-state .empty-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
+}
+.ledger-panel .empty-state h3 {
+  font-size: 17px;
+}
+.ledger-panel .empty-state > p {
+  margin-bottom: 0;
+}
+@media (max-width: 899px) {
+  .transactions-heading > .btn {
+    display: none;
+  }
+  /* Keep every footer action outside the FAB's right-hand lane at ALL scroll offsets. */
+  .ledger-panel .ledger-footer {
+    padding-right: 112px;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .ledger-panel .ledger-footer > .btn {
+    width: auto;
+    min-height: 44px;
+    font-size: 12px;
+    padding: 0 12px;
+  }
+}
+
 /* Compact physical card: artwork owns the right column, never the figures. */
 .wallet-command {
   container-type: inline-size;
   box-sizing: border-box;
   width: 100%;
   max-width: 580px;
-  aspect-ratio: 1.54;
+  aspect-ratio: 1.6;
+  height: auto;
   min-height: 0;
   padding: clamp(16px, 4vw, 30px);
   display: flex;

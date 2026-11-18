@@ -52,12 +52,14 @@ test('Orb visual fixtures and real card actions', async ({ page }, info) => {
     }
     await page.setViewportSize(original);
     await page.screenshot({ path: `${dir}/${info.project.name}-${state}.png`, fullPage: true });
-    await page.getByRole('button', { name: 'Catat transaksi baru', exact: true }).click();
+    await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Catat transaksi' })).toBeVisible();
     await page.getByRole('button', { name: 'Tutup dialog' }).click();
-    await page.locator('.orb-controls').getByRole('button', { name: 'Tambah dompet' }).click();
+    await page.getByRole('button', { name: 'Kelola', exact: true }).click();
+    await page.locator('.wallet-add-action').click();
     await expect(page.getByLabel('Nama dompet')).toBeVisible();
     await page.getByRole('button', { name: 'Tutup dialog' }).click();
+    await page.getByRole('button', { name: 'Ringkasan', exact: true }).click();
     await page.getByRole('button', { name: 'Sembunyikan saldo' }).click();
     await expect(page.locator('.figma-balance-amount')).toContainText('••');
     await page.getByRole('button', { name: 'Tampilkan saldo' }).click();

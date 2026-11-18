@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('mobile header tracks pointer and snaps back below dismissal threshold', async ({ page }) => {
   test.skip(test.info().project.name === 'desktop', 'Mobile-only gesture');
   await page.goto('/');
-  await page.getByRole('button', { name: 'Catat transaksi baru', exact: true }).click();
+  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'Catat transaksi', exact: true });
   await expect(sheet).toBeVisible();
   await page.waitForTimeout(400);

@@ -564,7 +564,7 @@ export default function App({
               <PageHeading
                 eyebrow=""
                 title="Pengaturan"
-                description="Tampilan dan preferensi aplikasi."
+                description="Preferensi, data, dan akun."
               />
               <SettingsPanel
                 remote={remote}
@@ -1123,12 +1123,7 @@ function SettingsPanel({
           <p>{remote?.email ?? (store.demo ? 'Data contoh pada perangkat ini' : 'Catatan pribadi pada perangkat ini')}</p><small>{remote ? 'Akses akun tersinkron' : 'Penyimpanan lokal · bukan koneksi bank'}</small>
         </div>
       </section>
-      <div className="settings-workspace"><div className="settings-device-column"><section className="appearance-settings">
-        <h3>
-          <DesignIcon name="settings-appearance" size={18} /> Tampilan
-        </h3>
-        <p>Satu tampilan SkyWallet. Kanvas hitam, kartu lavender, dan simbol dompet berwarna.</p>
-      </section>
+      <div className="settings-workspace"><div className="settings-device-column">
       <section className="settings-section insight-preferences">
         <h3>
           <DesignIcon name="settings-notifications" size={18} />

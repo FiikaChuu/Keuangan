@@ -17,7 +17,7 @@ async function fixture(page: Page, extreme = false) {
 }
 const sheet = (page: Page) => page.getByRole('dialog', { name: 'Catat transaksi', exact: true });
 async function open(page: Page) {
-  await page.getByRole('button', { name: 'Catat transaksi baru', exact: true }).click();
+  await page.getByRole('button', { name: 'Catat transaksi', exact: true }).click();
   await expect(sheet(page)).toBeVisible();
 }
 async function exit(page: Page, way: string) {
@@ -145,7 +145,7 @@ test('card geometry and artwork isolation at 320/390/440/1440, carousel resize a
         scroll: document.documentElement.scrollWidth,
       };
     });
-    expect(geometry.ratio).toBeCloseTo(1.54, 1);
+    expect(geometry.ratio).toBeCloseTo(1.6, 1);
     expect(geometry.balanceRight).toBeLessThanOrEqual(geometry.artLeft);
     expect(new Set(geometry.controls).size).toBe(1);
     expect(geometry.scroll).toBeLessThanOrEqual(width);
